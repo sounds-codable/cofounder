@@ -47,7 +47,7 @@ export default function ProjectDetail() {
 
     setRequesting(true)
     try {
-      await requestApi.send({ targetProjectId: projectId })
+      await requestApi.applyProject({ projectId })
       Taro.showToast({ title: '请求已发送', icon: 'success' })
     } catch (error: any) {
       Taro.showToast({ title: error.message || '发送失败', icon: 'none' })

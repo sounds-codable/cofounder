@@ -6,50 +6,52 @@ import { storage } from '@/utils/storage'
 import './index.scss'
 
 export default function Requests() {
+  const user = storage.getUser()
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received')
   const [receivedRequests, setReceivedRequests] = useState<any[]>([])
   const [sentRequests, setSentRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadRequests()
+    loadData()
   }, [])
 
-  const loadRequests = async () => {
+  const loadData = async () => {
     setLoading(true)
     try {
       const [received, sent] = await Promise.all([
-        requestApi.received().catch(() => ({ items: [] })),
-        requestApi.sent().catch(() => ({ items: [] })),
+        requestApi.received().catch(() => []),
+        requestApi.sent().catch(() => []),
       ])
-      setReceivedRequests(received.items || [])
-      setSentRequests(sent.items || [])
+      setReceivedRequests(Array.isArray(received) ? received : [])
+      setSentRequests(Array.isArray(sent) ? sent : [])
     } catch (error) {
-      console.log('加载请求失败', error)
+      console.log('加载数据失败', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleAccept = async (id: number) => {
+  const handleAccept = async (id: string) => {
     try {
       await requestApi.accept(id)
       Taro.showToast({ title: '已接受', icon: 'success' })
-      loadRequests()
+      loadData()
     } catch (error: any) {
       Taro.showToast({ title: error.message || '操作失败', icon: 'none' })
     }
   }
 
-  const handleReject = async (id: number) => {
+  const handleReject = async (id: string) => {
     try {
       await requestApi.reject(id)
       Taro.showToast({ title: '已拒绝', icon: 'success' })
-      loadRequests()
+      loadData()
     } catch (error: any) {
       Taro.showToast({ title: error.message || '操作失败', icon: 'none' })
     }
   }
+
 
   const goToTab = (page: string) => {
     Taro.redirectTo({ url: `/pages/${page}/index` })
@@ -108,6 +110,11 @@ export default function Requests() {
                       ? request.sender?.nickname 
                       : request.receiver?.nickname || request.project?.title}
                   </Text>
+                  {request.project && (
+                    <Text className='request-time' style={{ fontSize: '12px', marginTop: '2px' }}>
+                      项目：{request.project.title}
+                    </Text>
+                  )}
                   <Text className='request-time'>
                     {new Date(request.createdAt).toLocaleDateString()}
                   </Text>

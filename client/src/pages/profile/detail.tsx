@@ -62,6 +62,8 @@ export default function EditDetailedProfile() {
       if (currentUser.role === 'developer') {
         setStep('profile')
       }
+      // 项目方默认进入发布项目页（如果从个人中心"发布新项目"按钮进入）
+      // 如果从其他地方进入，保持原有逻辑
       // 加载已有数据
       if (currentUser.realName) setRealName(currentUser.realName)
       if (currentUser.phone) setPhone(currentUser.phone)

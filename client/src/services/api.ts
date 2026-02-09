@@ -85,6 +85,14 @@ export const projectApi = {
   
   delete: (id: string) =>
     request(`/projects/${id}`, { method: 'DELETE' }),
+  
+  // 获取我发布的项目
+  findMyProjects: () =>
+    request<any[]>('/projects/my'),
+  
+  // 关闭项目招募
+  closeProject: (id: string) =>
+    request(`/projects/${id}/close`, { method: 'PATCH' }),
 }
 
 // Developer API
@@ -100,24 +108,32 @@ export const developerApi = {
 
 // Request API
 export const requestApi = {
-  // 发送合伙请求
-  send: (data: { targetUserId?: string; targetProjectId?: string; message?: string }) =>
-    request('/requests', { method: 'POST', data }),
+  // 程序员申请项目
+  applyProject: (data: { projectId: string; message?: string }) =>
+    request('/requests/apply', { method: 'POST', data }),
   
-  // 我收到的请求
+  // 项目方邀请程序员
+  inviteDeveloper: (data: { developerId: string; projectId: string; message?: string }) =>
+    request('/requests/invite', { method: 'POST', data }),
+  
+  // 我收到的请求（返回数组）
   received: () =>
-    request<{ items: any[] }>('/requests/received'),
+    request<any[]>('/requests/received'),
   
-  // 我发出的请求
+  // 我发出的请求（返回数组）
   sent: () =>
-    request<{ items: any[] }>('/requests/sent'),
+    request<any[]>('/requests/sent'),
   
   // 接受请求
   accept: (id: string) =>
-    request(`/requests/${id}/accept`, { method: 'POST' }),
+    request(`/requests/${id}/accept`, { method: 'PATCH' }),
   
   // 拒绝请求
   reject: (id: string) =>
-    request(`/requests/${id}/reject`, { method: 'POST' }),
+    request(`/requests/${id}/reject`, { method: 'PATCH' }),
+  
+  // 获取联系方式
+  getContactInfo: (id: string) =>
+    request<{ realName: string; phone: string; wechat: string; city: string }>(`/requests/${id}/contact`),
 }
 
