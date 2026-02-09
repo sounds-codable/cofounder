@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+client/dist/
+server/dist/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Taro
+client/.taro/
+client/node_modules/.taro/
+
+# TypeScript
+*.tsbuildinfo
+
+# Test
+coverage/
+
+# Temporary files
+tmp/
+temp/
+/tmp/
+
+# SWC cache
+.swc/
+
+# Old folders
+backend/
+

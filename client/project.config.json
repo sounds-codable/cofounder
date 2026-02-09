@@ -1,0 +1,14 @@
+{
+  "miniprogramRoot": "./dist",
+  "projectname": "hehuozao-client",
+  "appid": "touristappid",
+  "setting": {
+    "es6": false,
+    "enhance": true,
+    "postcss": false,
+    "minified": false,
+    "urlCheck": true
+  },
+  "compileType": "miniprogram"
+}
+

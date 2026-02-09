@@ -1,0 +1,152 @@
+.profile {
+  min-height: 100vh;
+  background: #f8fafc;
+  overflow-y: auto;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 16px;
+  color: #64748b;
+}
+
+.tabs {
+  display: flex;
+  background: #ffffff;
+  padding: 0 10px;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.tab {
+  flex: 1;
+  height: 44px;
+  line-height: 44px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+  position: relative;
+
+  &.active {
+    color: #2563eb;
+    font-weight: 600;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 2px;
+      background: #2563eb;
+      border-radius: 1px;
+    }
+  }
+}
+
+.profile-header {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  padding: 36px 20px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.profile-avatar {
+  font-size: 56px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.profile-name {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.profile-role {
+  font-size: 14px;
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.2);
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+.profile-section {
+  background: #ffffff;
+  margin-top: 10px;
+  padding: 0 20px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.section-action {
+  font-size: 14px;
+  color: #2563eb;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.info-label {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #1e293b;
+  text-align: right;
+  flex: 1;
+  margin-left: 10px;
+
+  &.complete {
+    color: #10b981;
+  }
+
+  &.incomplete {
+    color: #f59e0b;
+  }
+}
+
+.profile-actions {
+  padding: 36px 20px;
+}
+
+.btn-logout {
+  width: 100%;
+  height: 44px;
+  background: #ffffff;
+  color: #ef4444;
+  font-size: 15px;
+  border: 1px solid #ef4444;
+  border-radius: 22px;
+}
