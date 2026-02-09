@@ -121,3 +121,33 @@
   border: none;
   margin-top: 12px;
 }
+
+@media (min-width: 768px) {
+  .onboarding {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px;
+  }
+
+  .onboarding-title {
+    font-size: 28px;
+  }
+
+  .form {
+    padding: 32px;
+  }
+
+  .form-label {
+    font-size: 16px;
+  }
+
+  .form-input,
+  .form-textarea,
+  .form-picker {
+    font-size: 16px;
+  }
+
+  .tag {
+    font-size: 15px;
+  }
+}

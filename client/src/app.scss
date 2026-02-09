@@ -4,3 +4,24 @@ page {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+/* 全局表单元素字体统一 */
+taro-input-core,
+taro-textarea-core,
+taro-textarea-core * {
+  font-size: 16px !important;
+}
+
+/* 桌面端响应式：内容区域居中并限制最大宽度 */
+@media (min-width: 768px) {
+  .content-area {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .form-area {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+}

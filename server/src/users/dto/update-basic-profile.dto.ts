@@ -26,8 +26,8 @@ export class UpdateProjectOwnerBasicProfileDto {
 
   @IsInt()
   @Min(0)
-  @IsNotEmpty({ message: '请填写行业经验年限' })
-  industryExperience: number;
+  @IsOptional()
+  industryExperience?: number;
 
   @IsString()
   @IsNotEmpty({ message: '个人简介不能为空' })

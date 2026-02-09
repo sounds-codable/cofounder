@@ -62,6 +62,23 @@
 
 .developer-scroll {
   padding: 10px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .developer-scroll {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 20px 24px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .developer-scroll {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .developer-card {

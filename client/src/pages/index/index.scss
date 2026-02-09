@@ -18,6 +18,8 @@
   padding: 48px 20px 36px;
   text-align: center;
   color: #ffffff;
+  max-width: 800px;
+  margin: 0 auto;
 
   &-emoji {
     font-size: 48px;
@@ -41,6 +43,37 @@
     flex-direction: column;
     gap: 12px;
     padding: 0 10px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .hero {
+    padding: 80px 40px 60px;
+
+    &-emoji {
+      font-size: 64px;
+    }
+
+    &-title {
+      font-size: 32px;
+    }
+
+    &-actions {
+      flex-direction: row;
+      max-width: 500px;
+    }
+  }
+
+  .section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 40px;
+  }
+
+  .btn-role {
+    flex: 1;
   }
 }
 
