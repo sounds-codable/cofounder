@@ -29,7 +29,13 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
         autoLoadEntities: true,
-        synchronize: configService.get('NODE_ENV') === 'development', // 开发环境自动同步
+        // 开发环境可以用 synchronize，生产环境必须用 migrations
+        synchronize: configService.get('NODE_ENV') === 'development',
+        // migrations 配置
+        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+        migrationsTableName: 'migrations',
+        // 生产环境自动运行 migrations
+        migrationsRun: configService.get('NODE_ENV') === 'production',
         logging: configService.get('NODE_ENV') === 'development',
       }),
       inject: [ConfigService],
