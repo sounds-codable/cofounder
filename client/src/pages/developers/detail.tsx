@@ -1,13 +1,13 @@
-import { View, Text, Button, Picker } from '@tarojs/components'
+import { View, Text, Picker } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
+import { AtButton, AtTag } from 'taro-ui'
 import { developerApi, requestApi, projectApi } from '@/services/api'
 import { storage } from '@/utils/storage'
 import './detail.scss'
 
 export default function DeveloperDetail() {
   const router = useRouter()
-  const developerId = router.params.id
   const [developer, setDeveloper] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [requesting, setRequesting] = useState(false)
@@ -16,22 +16,29 @@ export default function DeveloperDetail() {
   const [showProjectPicker, setShowProjectPicker] = useState(false)
   const user = storage.getUser()
 
+  // 获取 developerId，兼容多种路由模式
+  const getDeveloperId = () => {
+    return router.params.id || Taro.getCurrentInstance().router?.params?.id || ''
+  }
+
   useEffect(() => {
-    if (developerId) {
-      loadDeveloper()
+    const id = getDeveloperId()
+    if (id) {
+      loadDeveloper(id)
     }
     if (user?.role === 'project_owner') {
       loadMyProjects()
     }
-  }, [developerId, user])
+  }, [])
 
-  const loadDeveloper = async () => {
+  const loadDeveloper = async (id: string) => {
     setLoading(true)
     try {
-      const result = await developerApi.get(developerId)
+      const result = await developerApi.get(id)
       setDeveloper(result)
-    } catch (error) {
-      Taro.showToast({ title: '加载失败', icon: 'none' })
+    } catch (error: any) {
+      console.log('加载程序员详情失败:', error)
+      Taro.showToast({ title: error.message || '加载失败', icon: 'none' })
     } finally {
       setLoading(false)
     }
@@ -40,7 +47,6 @@ export default function DeveloperDetail() {
   const loadMyProjects = async () => {
     try {
       const projects = await projectApi.findMyProjects()
-      // 只显示招募中的项目
       const openProjects = projects.filter((p: any) => p.status === 'open')
       setMyProjects(openProjects)
     } catch (error) {
@@ -49,20 +55,19 @@ export default function DeveloperDetail() {
   }
 
   const handleSendRequest = async () => {
-    if (!user?.detailedProfileCompleted) {
+    if (!user?.basicProfileCompleted) {
       Taro.showModal({
         title: '完善资料',
-        content: '发送合伙请求前需要完善详细资料，是否前往完善？',
+        content: '邀请合伙前需要完善基础资料，是否前往完善？',
         success: (res) => {
           if (res.confirm) {
-            Taro.navigateTo({ url: '/pages/profile/detail' })
+            Taro.navigateTo({ url: '/pages/onboarding/index' })
           }
         },
       })
       return
     }
 
-    // 如果没有项目，提示先发布项目
     if (myProjects.length === 0) {
       Taro.showModal({
         title: '发布项目',
@@ -76,7 +81,6 @@ export default function DeveloperDetail() {
       return
     }
 
-    // 如果只有一个项目，直接邀请；否则显示选择器
     if (myProjects.length === 1) {
       await doInvite(myProjects[0].id)
     } else {
@@ -95,7 +99,7 @@ export default function DeveloperDetail() {
     setRequesting(true)
     try {
       await requestApi.inviteDeveloper({
-        developerId,
+        developerId: getDeveloperId(),
         projectId,
       })
       Taro.showToast({ title: '邀请已发送', icon: 'success' })
@@ -125,6 +129,9 @@ export default function DeveloperDetail() {
   return (
     <View className='developer-detail'>
       <View className='detail-header'>
+        <View className='back-btn' onClick={() => Taro.navigateBack()}>
+          <Text className='back-icon'>← 返回</Text>
+        </View>
         <Text className='dev-avatar'>👨‍💻</Text>
         <Text className='dev-name'>{developer.nickname}</Text>
         <Text className='dev-exp'>{developer.workYears || '?'}年工作经验</Text>
@@ -142,9 +149,16 @@ export default function DeveloperDetail() {
           <Text className='section-label'>技术方向</Text>
           <View className='tech-tags'>
             {developer.techDirections.map((tech: string, idx: number) => (
-              <Text key={idx} className='tech-tag'>{tech}</Text>
+              <AtTag key={idx} size='small' circle>{tech}</AtTag>
             ))}
           </View>
+        </View>
+      )}
+
+      {developer.projectExperience && (
+        <View className='detail-section'>
+          <Text className='section-label'>项目经历</Text>
+          <Text className='section-content'>{developer.projectExperience}</Text>
         </View>
       )}
 
@@ -155,7 +169,7 @@ export default function DeveloperDetail() {
         </View>
       )}
 
-      {/* 发送请求按钮 - 仅项目方可见 */}
+      {/* 邀请合伙按钮 - 仅项目方可见 */}
       {user?.role === 'project_owner' && (
         <View className='action-bar'>
           {showProjectPicker && myProjects.length > 1 ? (
@@ -167,22 +181,22 @@ export default function DeveloperDetail() {
               onChange={handleProjectSelect}
               onCancel={() => setShowProjectPicker(false)}
             >
-              <Button className='btn-request' loading={requesting}>
+              <AtButton type='primary' loading={requesting} circle>
                 选择项目并邀请
-              </Button>
+              </AtButton>
             </Picker>
           ) : (
-            <Button
-              className='btn-request'
-              loading={requesting}
+            <AtButton 
+              type='primary' 
+              loading={requesting} 
               onClick={handleSendRequest}
+              circle
             >
-              {myProjects.length === 0 ? '先发布项目' : '邀请合伙'}
-            </Button>
+              {myProjects.length === 0 ? '先发布项目' : '🤝 邀请合伙'}
+            </AtButton>
           )}
         </View>
       )}
     </View>
   )
 }
-

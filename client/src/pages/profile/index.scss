@@ -1,7 +1,20 @@
 .profile {
   min-height: 100vh;
   background: #f8fafc;
+  padding-bottom: 120px;
   overflow-y: auto;
+}
+
+.page-header {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  padding: 24px 20px 12px;
+  color: #ffffff;
+}
+
+.page-title {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .loading {
@@ -11,43 +24,6 @@
   height: 100vh;
   font-size: 16px;
   color: #64748b;
-}
-
-.tabs {
-  display: flex;
-  background: #ffffff;
-  padding: 0 10px;
-  border-bottom: 1px solid #e2e8f0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.tab {
-  flex: 1;
-  height: 44px;
-  line-height: 44px;
-  text-align: center;
-  font-size: 13px;
-  color: #64748b;
-  position: relative;
-
-  &.active {
-    color: #2563eb;
-    font-weight: 600;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 24px;
-      height: 2px;
-      background: #2563eb;
-      border-radius: 1px;
-    }
-  }
 }
 
 .profile-header {

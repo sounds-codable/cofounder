@@ -1,8 +1,10 @@
-import { View, Text, ScrollView } from '@tarojs/components'
-import Taro, { usePullDownRefresh } from '@tarojs/taro'
+import { View, Text } from '@tarojs/components'
+import Taro, { usePullDownRefresh, useDidShow } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
+import { AtTag, AtCard } from 'taro-ui'
 import { projectApi } from '@/services/api'
 import { storage } from '@/utils/storage'
+import TabBar from '@/components/TabBar'
 import './index.scss'
 
 export default function ProjectList() {
@@ -13,6 +15,10 @@ export default function ProjectList() {
   useEffect(() => {
     loadProjects()
   }, [])
+
+  useDidShow(() => {
+    loadProjects()
+  })
 
   usePullDownRefresh(() => {
     loadProjects().then(() => {
@@ -36,18 +42,11 @@ export default function ProjectList() {
     Taro.navigateTo({ url: `/pages/projects/detail?id=${id}` })
   }
 
-  const goToTab = (page: string) => {
-    Taro.redirectTo({ url: `/pages/${page}/index` })
-  }
-
   return (
     <View className='project-list'>
-      {/* Tab Navigation */}
-      <View className='tabs'>
-        <View className='tab active'>项目广场</View>
-        <View className='tab' onClick={() => goToTab('developers')}>程序员广场</View>
-        <View className='tab' onClick={() => goToTab('requests')}>我的请求</View>
-        <View className='tab' onClick={() => goToTab('profile')}>个人中心</View>
+      <View className='page-header'>
+        <Text className='page-title'>项目广场</Text>
+        <Text className='page-subtitle'>发现值得合伙的好项目</Text>
       </View>
 
       {loading ? (
@@ -59,49 +58,52 @@ export default function ProjectList() {
           <Text className='empty-emoji'>📭</Text>
           <Text className='empty-text'>暂无项目</Text>
           {user?.role === 'project_owner' && (
-            <Text className='empty-hint'>点击右下角发布您的第一个项目</Text>
+            <Text className='empty-hint'>去个人中心发布您的第一个项目</Text>
           )}
         </View>
       ) : (
-        <ScrollView scrollY className='project-scroll'>
+        <View className='project-scroll'>
           {projects.map((project) => (
             <View
               key={project.id}
               className='project-card'
               onClick={() => handleViewDetail(project.id)}
             >
-              <Text className='project-title'>{project.title}</Text>
-              <View className='project-meta'>
-                <Text className='project-industry'>{project.industry}</Text>
-                <Text className='project-time'>
-                  {new Date(project.createdAt).toLocaleDateString()}
-                </Text>
+              <View className='project-card-top'>
+                <Text className='project-title'>{project.title}</Text>
+                <AtTag size='small' type='primary' circle>
+                  {project.industry}
+                </AtTag>
               </View>
               <Text className='project-desc'>
-                {project.description?.slice(0, 80)}...
+                {project.description?.slice(0, 100)}...
               </Text>
               {project.techNeeds?.length > 0 && (
                 <View className='project-skills'>
                   {project.techNeeds.slice(0, 3).map((skill: string, idx: number) => (
-                    <Text key={idx} className='skill-tag'>{skill}</Text>
+                    <AtTag key={idx} size='small' circle>{skill}</AtTag>
                   ))}
                 </View>
               )}
+              <View className='project-footer'>
+                <Text className='project-owner'>
+                  {project.owner?.nickname || '匿名'}
+                </Text>
+                <Text className='project-time'>
+                  {new Date(project.createdAt).toLocaleDateString()}
+                </Text>
+                {project.applicationCount > 0 && (
+                  <Text className='project-count'>
+                    {project.applicationCount} 人申请
+                  </Text>
+                )}
+              </View>
             </View>
           ))}
-        </ScrollView>
-      )}
-
-      {/* FAB for project owners */}
-      {user?.role === 'project_owner' && (
-        <View
-          className='fab'
-          onClick={() => Taro.navigateTo({ url: '/pages/profile/detail' })}
-        >
-          <Text className='fab-icon'>+</Text>
         </View>
       )}
+
+      <TabBar current={0} />
     </View>
   )
 }
-

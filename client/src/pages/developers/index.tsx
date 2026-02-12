@@ -1,18 +1,23 @@
-import { View, Text, ScrollView } from '@tarojs/components'
-import Taro, { usePullDownRefresh } from '@tarojs/taro'
+import { View, Text } from '@tarojs/components'
+import Taro, { usePullDownRefresh, useDidShow } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
+import { AtTag } from 'taro-ui'
 import { developerApi } from '@/services/api'
 import { storage } from '@/utils/storage'
+import TabBar from '@/components/TabBar'
 import './index.scss'
 
 export default function DeveloperList() {
   const [developers, setDevelopers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const user = storage.getUser()
 
   useEffect(() => {
     loadDevelopers()
   }, [])
+
+  useDidShow(() => {
+    loadDevelopers()
+  })
 
   usePullDownRefresh(() => {
     loadDevelopers().then(() => {
@@ -36,18 +41,11 @@ export default function DeveloperList() {
     Taro.navigateTo({ url: `/pages/developers/detail?id=${id}` })
   }
 
-  const goToTab = (page: string) => {
-    Taro.redirectTo({ url: `/pages/${page}/index` })
-  }
-
   return (
     <View className='developer-list'>
-      {/* Tab Navigation */}
-      <View className='tabs'>
-        <View className='tab' onClick={() => goToTab('projects')}>项目广场</View>
-        <View className='tab active'>程序员广场</View>
-        <View className='tab' onClick={() => goToTab('requests')}>我的请求</View>
-        <View className='tab' onClick={() => goToTab('profile')}>个人中心</View>
+      <View className='page-header'>
+        <Text className='page-title'>程序员广场</Text>
+        <Text className='page-subtitle'>找到你的技术合伙人</Text>
       </View>
 
       {loading ? (
@@ -60,7 +58,7 @@ export default function DeveloperList() {
           <Text className='empty-text'>暂无程序员入驻</Text>
         </View>
       ) : (
-        <ScrollView scrollY className='developer-scroll'>
+        <View className='developer-scroll'>
           {developers.map((dev) => (
             <View
               key={dev.id}
@@ -77,22 +75,23 @@ export default function DeveloperList() {
               
               {dev.techDirections?.length > 0 && (
                 <View className='dev-techs'>
-                  {dev.techDirections.slice(0, 3).map((tech: string, idx: number) => (
-                    <Text key={idx} className='tech-tag'>{tech}</Text>
+                  {dev.techDirections.slice(0, 4).map((tech: string, idx: number) => (
+                    <AtTag key={idx} size='small' circle>{tech}</AtTag>
                   ))}
                 </View>
               )}
 
               {dev.bio && (
                 <Text className='dev-bio'>
-                  {dev.bio.slice(0, 60)}...
+                  {dev.bio.slice(0, 80)}...
                 </Text>
               )}
             </View>
           ))}
-        </ScrollView>
+        </View>
       )}
+
+      <TabBar current={1} />
     </View>
   )
 }
-

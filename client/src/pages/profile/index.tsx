@@ -1,8 +1,10 @@
 import { View, Text, Button } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
+import { AtButton, AtTag } from 'taro-ui'
 import { storage } from '@/utils/storage'
 import { userApi, projectApi } from '@/services/api'
+import TabBar from '@/components/TabBar'
 import './index.scss'
 
 export default function Profile() {
@@ -27,6 +29,7 @@ export default function Profile() {
       loadMyProjects()
     }
   })
+
 
   const loadProfile = async () => {
     try {
@@ -115,12 +118,9 @@ export default function Profile() {
 
   return (
     <View className='profile'>
-      {/* Tab Navigation */}
-      <View className='tabs'>
-        <View className='tab' onClick={() => goToTab('projects')}>项目广场</View>
-        <View className='tab' onClick={() => goToTab('developers')}>程序员广场</View>
-        <View className='tab' onClick={() => goToTab('requests')}>我的请求</View>
-        <View className='tab active'>个人中心</View>
+      {/* 页面头部 */}
+      <View className='page-header'>
+        <Text className='page-title'>个人中心</Text>
       </View>
 
       {/* Profile Header */}
@@ -292,10 +292,12 @@ export default function Profile() {
 
       {/* Actions */}
       <View className='profile-actions'>
-        <Button className='btn-logout' onClick={handleLogout}>
+        <AtButton type='secondary' size='small' circle onClick={handleLogout}>
           退出登录
-        </Button>
+        </AtButton>
       </View>
+
+      <TabBar current={3} />
     </View>
   )
 }

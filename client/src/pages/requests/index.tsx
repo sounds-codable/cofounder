@@ -1,13 +1,16 @@
 import { View, Text, Button } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
+import { AtSegmentedControl, AtButton } from 'taro-ui'
 import { requestApi } from '@/services/api'
 import { storage } from '@/utils/storage'
+import { clearRequestBadgeCache } from '@/utils/request-badge'
+import TabBar from '@/components/TabBar'
 import './index.scss'
 
 export default function Requests() {
   const user = storage.getUser()
-  const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received')
+  const [activeTab, setActiveTab] = useState(0)
   const [receivedRequests, setReceivedRequests] = useState<any[]>([])
   const [sentRequests, setSentRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -15,6 +18,10 @@ export default function Requests() {
   useEffect(() => {
     loadData()
   }, [])
+
+  useDidShow(() => {
+    loadData()
+  })
 
   const loadData = async () => {
     setLoading(true)
@@ -32,9 +39,14 @@ export default function Requests() {
     }
   }
 
+  const pendingCount = user?.role === 'project_owner' 
+    ? receivedRequests.filter((r: any) => r.status === 'pending').length
+    : 0
+
   const handleAccept = async (id: string) => {
     try {
       await requestApi.accept(id)
+      clearRequestBadgeCache()
       Taro.showToast({ title: '已接受', icon: 'success' })
       loadData()
     } catch (error: any) {
@@ -45,6 +57,7 @@ export default function Requests() {
   const handleReject = async (id: string) => {
     try {
       await requestApi.reject(id)
+      clearRequestBadgeCache()
       Taro.showToast({ title: '已拒绝', icon: 'success' })
       loadData()
     } catch (error: any) {
@@ -52,37 +65,25 @@ export default function Requests() {
     }
   }
 
-
-  const goToTab = (page: string) => {
-    Taro.redirectTo({ url: `/pages/${page}/index` })
-  }
-
-  const currentRequests = activeTab === 'received' ? receivedRequests : sentRequests
+  const currentRequests = activeTab === 0 ? receivedRequests : sentRequests
 
   return (
     <View className='requests'>
-      {/* Tab Navigation */}
-      <View className='tabs'>
-        <View className='tab' onClick={() => goToTab('projects')}>项目广场</View>
-        <View className='tab' onClick={() => goToTab('developers')}>程序员广场</View>
-        <View className='tab active'>我的请求</View>
-        <View className='tab' onClick={() => goToTab('profile')}>个人中心</View>
+      <View className='page-header'>
+        <Text className='page-title'>我的请求</Text>
+        <Text className='page-subtitle'>管理您的合伙请求</Text>
       </View>
 
-      {/* Sub Tabs */}
-      <View className='sub-tabs'>
-        <View
-          className={`sub-tab ${activeTab === 'received' ? 'active' : ''}`}
-          onClick={() => setActiveTab('received')}
-        >
-          收到的 ({receivedRequests.length})
-        </View>
-        <View
-          className={`sub-tab ${activeTab === 'sent' ? 'active' : ''}`}
-          onClick={() => setActiveTab('sent')}
-        >
-          发出的 ({sentRequests.length})
-        </View>
+      <View className='segment-wrapper'>
+        <AtSegmentedControl
+          values={[
+            `收到的 (${receivedRequests.length})${pendingCount > 0 ? ' 🔴' : ''}`,
+            `发出的 (${sentRequests.length})`
+          ]}
+          onClick={setActiveTab}
+          current={activeTab}
+          color='#2563eb'
+        />
       </View>
 
       {loading ? (
@@ -93,7 +94,7 @@ export default function Requests() {
         <View className='empty'>
           <Text className='empty-emoji'>📭</Text>
           <Text className='empty-text'>
-            {activeTab === 'received' ? '暂无收到的请求' : '暂无发出的请求'}
+            {activeTab === 0 ? '暂无收到的请求' : '暂无发出的请求'}
           </Text>
         </View>
       ) : (
@@ -105,14 +106,37 @@ export default function Requests() {
                   {request.sender?.role === 'developer' ? '👨‍💻' : '💼'}
                 </Text>
                 <View className='request-info'>
-                  <Text className='request-name'>
-                    {activeTab === 'received' 
+                  <Text 
+                    className='request-name clickable'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (activeTab === 0 && request.sender?.id) {
+                        // 收到的请求：点击查看发送者（程序员/项目方）详情
+                        if (request.sender.role === 'developer') {
+                          Taro.navigateTo({ url: `/pages/developers/detail?id=${request.sender.id}` })
+                        }
+                      } else if (activeTab === 1 && request.receiver?.id) {
+                        // 发出的请求：点击查看接收者详情
+                        if (request.receiver.role === 'developer') {
+                          Taro.navigateTo({ url: `/pages/developers/detail?id=${request.receiver.id}` })
+                        }
+                      }
+                    }}
+                  >
+                    {activeTab === 0 
                       ? request.sender?.nickname 
                       : request.receiver?.nickname || request.project?.title}
+                    {' →'}
                   </Text>
                   {request.project && (
-                    <Text className='request-time' style={{ fontSize: '12px', marginTop: '2px' }}>
-                      项目：{request.project.title}
+                    <Text 
+                      className='request-project clickable'
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        Taro.navigateTo({ url: `/pages/projects/detail?id=${request.project.id}` })
+                      }}
+                    >
+                      📋 {request.project.title} →
                     </Text>
                   )}
                   <Text className='request-time'>
@@ -129,20 +153,14 @@ export default function Requests() {
                 <Text className='request-message'>{request.message}</Text>
               )}
 
-              {activeTab === 'received' && request.status === 'pending' && (
+              {activeTab === 0 && request.status === 'pending' && (
                 <View className='request-actions'>
-                  <Button
-                    className='btn-accept'
-                    onClick={() => handleAccept(request.id)}
-                  >
+                  <AtButton type='primary' size='small' onClick={() => handleAccept(request.id)}>
                     接受
-                  </Button>
-                  <Button
-                    className='btn-reject'
-                    onClick={() => handleReject(request.id)}
-                  >
+                  </AtButton>
+                  <AtButton size='small' onClick={() => handleReject(request.id)}>
                     拒绝
-                  </Button>
+                  </AtButton>
                 </View>
               )}
 
@@ -150,7 +168,7 @@ export default function Requests() {
                 <View className='contact-info'>
                   <Text className='contact-label'>📧 联系邮箱：</Text>
                   <Text className='contact-value'>
-                    {activeTab === 'received' 
+                    {activeTab === 0 
                       ? request.sender?.email 
                       : request.receiver?.email || '待对方接受后显示'}
                   </Text>
@@ -160,7 +178,8 @@ export default function Requests() {
           ))}
         </View>
       )}
+
+      <TabBar current={2} />
     </View>
   )
 }
-

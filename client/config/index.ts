@@ -59,10 +59,19 @@ export default defineConfig(async (merge, { command, mode }) => {
       },
       esnextModules: ['taro-ui'],
       webpackChain(chain) {
-        // 抑制 @tarojs/components 的 webpackExports 警告
         chain.set('ignoreWarnings', [
-          /You don't need `webpackExports`/
+          /You don't need `webpackExports`/,
+          /Deprecation Warning/,
+          /Sass @import rules are deprecated/,
+          /repetitive deprecation warnings omitted/,
+          (warning) => warning.message?.includes('deprecation'),
         ])
+      },
+      sass: {
+        option: {
+          silenceDeprecations: ['import', 'global-builtin'],
+          quietDeps: true,
+        },
       },
       htmlPluginOption: {
         template: path.resolve(__dirname, '..', 'src/index.html'),

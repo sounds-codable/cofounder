@@ -1,25 +1,32 @@
-import { View, Text, Button } from '@tarojs/components'
+import { View, Text } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
+import { AtButton, AtTag } from 'taro-ui'
 import { projectApi, requestApi } from '@/services/api'
 import { storage } from '@/utils/storage'
+import { clearRequestBadgeCache } from '@/utils/request-badge'
 import './detail.scss'
 
 export default function ProjectDetail() {
   const router = useRouter()
-  const projectId = router.params.id
   const [project, setProject] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [requesting, setRequesting] = useState(false)
   const user = storage.getUser()
 
-  useEffect(() => {
-    if (projectId) {
-      loadProject()
-    }
-  }, [projectId])
+  const getProjectId = () => {
+    return router.params.id || Taro.getCurrentInstance().router?.params?.id || ''
+  }
 
-  const loadProject = async () => {
+  useEffect(() => {
+    const id = getProjectId()
+    if (id) {
+      loadProject(id)
+    }
+  }, [])
+
+  const loadProject = async (id?: string) => {
+    const projectId = id || getProjectId()
     setLoading(true)
     try {
       const result = await projectApi.get(projectId)
@@ -32,13 +39,14 @@ export default function ProjectDetail() {
   }
 
   const handleSendRequest = async () => {
-    if (!user?.detailedProfileCompleted) {
+    const projectId = getProjectId()
+    if (!user?.basicProfileCompleted) {
       Taro.showModal({
         title: '完善资料',
-        content: '发送合伙请求前需要完善详细资料，是否前往完善？',
+        content: '申请合作前需要完善基础资料，是否前往完善？',
         success: (res) => {
           if (res.confirm) {
-            Taro.navigateTo({ url: '/pages/profile/detail' })
+            Taro.navigateTo({ url: '/pages/onboarding/index' })
           }
         },
       })
@@ -48,9 +56,17 @@ export default function ProjectDetail() {
     setRequesting(true)
     try {
       await requestApi.applyProject({ projectId })
-      Taro.showToast({ title: '请求已发送', icon: 'success' })
+      clearRequestBadgeCache()
+      Taro.showToast({ 
+        title: '申请已发送！项目方会收到通知', 
+        icon: 'success',
+        duration: 2000
+      })
+      setTimeout(() => {
+        loadProject()
+      }, 500)
     } catch (error: any) {
-      Taro.showToast({ title: error.message || '发送失败', icon: 'none' })
+      Taro.showToast({ title: error.message || '申请失败', icon: 'none' })
     } finally {
       setRequesting(false)
     }
@@ -75,12 +91,18 @@ export default function ProjectDetail() {
   return (
     <View className='project-detail'>
       <View className='detail-header'>
+        <View className='back-btn' onClick={() => Taro.navigateBack()}>
+          <Text className='back-icon'>← 返回</Text>
+        </View>
         <Text className='detail-title'>{project.title}</Text>
         <View className='detail-meta'>
-          <Text className='detail-industry'>{project.industry}</Text>
+          <AtTag size='small' type='primary' circle>{project.industry}</AtTag>
           <Text className='detail-time'>
             发布于 {new Date(project.createdAt).toLocaleDateString()}
           </Text>
+          {project.applicationCount > 0 && (
+            <Text className='detail-count'>{project.applicationCount} 人申请</Text>
+          )}
         </View>
       </View>
 
@@ -108,11 +130,11 @@ export default function ProjectDetail() {
           <Text className='section-label'>需要的技术能力</Text>
           <View className='skill-tags'>
             {project.techNeeds.map((skill: string, idx: number) => (
-              <Text key={idx} className='skill-tag'>{skill}</Text>
+              <AtTag key={idx} size='small' circle>{skill}</AtTag>
             ))}
           </View>
           {project.techNotes && (
-            <Text className='section-content' style={{ marginTop: '16px' }}>{project.techNotes}</Text>
+            <Text className='section-content' style={{ marginTop: '12px' }}>{project.techNotes}</Text>
           )}
         </View>
       )}
@@ -140,19 +162,19 @@ export default function ProjectDetail() {
         </View>
       </View>
 
-      {/* 发送请求按钮 - 仅程序员可见 */}
-      {user?.role === 'developer' && (
+      {/* 申请合作按钮 - 仅程序员可见 */}
+      {user?.role === 'developer' && project.status === 'open' && (
         <View className='action-bar'>
-          <Button
-            className='btn-request'
+          <AtButton 
+            type='primary' 
             loading={requesting}
             onClick={handleSendRequest}
+            circle
           >
-            发送合伙请求
-          </Button>
+            🤝 申请合作
+          </AtButton>
         </View>
       )}
     </View>
   )
 }
-

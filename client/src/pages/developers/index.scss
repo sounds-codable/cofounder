@@ -1,67 +1,41 @@
 .developer-list {
   min-height: 100vh;
   background: #f8fafc;
+  padding-bottom: 120px;
   overflow-y: auto;
 }
 
-.tabs {
-  display: flex;
-  background: #ffffff;
-  padding: 0 10px;
-  border-bottom: 1px solid #e2e8f0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+.page-header {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  padding: 24px 20px 20px;
+  color: #ffffff;
 }
 
-.tab {
-  flex: 1;
-  height: 44px;
-  line-height: 44px;
-  text-align: center;
-  font-size: 13px;
-  color: #64748b;
-  position: relative;
-
-  &.active {
-    color: #2563eb;
-    font-weight: 600;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 24px;
-      height: 2px;
-      background: #2563eb;
-      border-radius: 1px;
-    }
-  }
+.page-title {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
 }
 
-.loading,
-.empty {
+.page-subtitle {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.loading, .empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 80px 20px;
   color: #64748b;
 }
-
-.empty-emoji {
-  font-size: 48px;
-  margin-bottom: 12px;
-}
-
-.empty-text {
-  font-size: 16px;
-}
+.empty-emoji { font-size: 48px; margin-bottom: 12px; }
+.empty-text { font-size: 16px; }
 
 .developer-scroll {
-  padding: 10px;
+  padding: 12px 16px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -83,37 +57,41 @@
 
 .developer-card {
   background: #ffffff;
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
 }
 
 .dev-header {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .dev-avatar {
-  font-size: 32px;
-  margin-right: 10px;
+  font-size: 36px;
+  margin-right: 12px;
 }
 
-.dev-info {
-  flex: 1;
-}
+.dev-info { flex: 1; }
 
 .dev-name {
   display: block;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: #1e293b;
   margin-bottom: 2px;
 }
 
 .dev-exp {
-  font-size: 13px;
+  font-size: 14px;
   color: #64748b;
 }
 
@@ -121,19 +99,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 8px;
-}
-
-.tech-tag {
-  font-size: 12px;
-  color: #2563eb;
-  background: #eff6ff;
-  padding: 4px 10px;
-  border-radius: 10px;
+  margin-bottom: 10px;
 }
 
 .dev-bio {
   font-size: 14px;
   color: #64748b;
-  line-height: 1.5;
+  line-height: 1.6;
 }

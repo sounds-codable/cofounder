@@ -1,154 +1,125 @@
 .requests {
   min-height: 100vh;
   background: #f8fafc;
+  padding-bottom: 120px;
   overflow-y: auto;
 }
 
-.tabs {
-  display: flex;
-  background: #ffffff;
-  padding: 0 10px;
-  border-bottom: 1px solid #e2e8f0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+.page-header {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  padding: 24px 20px 20px;
+  color: #ffffff;
 }
 
-.tab {
-  flex: 1;
-  height: 44px;
-  line-height: 44px;
-  text-align: center;
-  font-size: 13px;
-  color: #64748b;
-  position: relative;
-
-  &.active {
-    color: #2563eb;
-    font-weight: 600;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 24px;
-      height: 2px;
-      background: #2563eb;
-      border-radius: 1px;
-    }
-  }
+.page-title {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
 }
 
-.sub-tabs {
-  display: flex;
-  background: #ffffff;
-  padding: 10px 20px;
-  gap: 10px;
-}
-
-.sub-tab {
-  flex: 1;
-  height: 36px;
-  line-height: 36px;
-  text-align: center;
+.page-subtitle {
   font-size: 14px;
-  color: #64748b;
-  background: #f1f5f9;
-  border-radius: 18px;
-
-  &.active {
-    color: #ffffff;
-    background: #2563eb;
-  }
+  opacity: 0.8;
 }
 
-.loading,
-.empty {
+.segment-wrapper {
+  padding: 12px 16px;
+  background: #ffffff;
+}
+
+.loading, .empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 80px 20px;
   color: #64748b;
 }
-
-.empty-emoji {
-  font-size: 48px;
-  margin-bottom: 12px;
-}
-
-.empty-text {
-  font-size: 16px;
-}
+.empty-emoji { font-size: 48px; margin-bottom: 12px; }
+.empty-text { font-size: 16px; }
 
 .request-list {
-  padding: 10px;
+  padding: 12px 16px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .request-card {
   background: #ffffff;
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .request-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 10px;
 }
 
 .request-avatar {
-  font-size: 28px;
-  margin-right: 8px;
+  font-size: 32px;
+  margin-right: 12px;
 }
 
-.request-info {
-  flex: 1;
-}
+.request-info { flex: 1; }
 
 .request-name {
   display: block;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #1e293b;
+  margin-bottom: 4px;
+
+  &.clickable {
+    color: #2563eb;
+    cursor: pointer;
+    &:active {
+      opacity: 0.7;
+    }
+  }
+}
+
+.request-project {
+  display: block;
+  font-size: 13px;
+  color: #2563eb;
   margin-bottom: 2px;
+
+  &.clickable {
+    cursor: pointer;
+    &:active {
+      opacity: 0.7;
+    }
+  }
 }
 
 .request-time {
-  font-size: 12px;
+  font-size: 13px;
   color: #94a3b8;
 }
 
 .request-status {
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
 
-  &.status-pending {
-    color: #f59e0b;
-    background: #fef3c7;
-  }
-
-  &.status-accepted {
-    color: #10b981;
-    background: #d1fae5;
-  }
-
-  &.status-rejected {
-    color: #ef4444;
-    background: #fee2e2;
-  }
+  &.status-pending { color: #f59e0b; background: #fef3c7; }
+  &.status-accepted { color: #10b981; background: #d1fae5; }
+  &.status-rejected { color: #ef4444; background: #fee2e2; }
 }
 
 .request-message {
   font-size: 14px;
   color: #64748b;
-  line-height: 1.5;
-  margin-bottom: 10px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 8px;
 }
 
 .request-actions {
@@ -156,48 +127,26 @@
   gap: 10px;
 }
 
-.btn-accept {
-  flex: 1;
-  height: 40px;
-  background: #2563eb;
-  color: #ffffff;
-  font-size: 14px;
-  border-radius: 20px;
-  border: none;
-}
-
-.btn-reject {
-  flex: 1;
-  height: 40px;
-  background: #f1f5f9;
-  color: #64748b;
-  font-size: 14px;
-  border-radius: 20px;
-  border: none;
-}
-
 .contact-info {
   background: #f0fdf4;
-  border-radius: 8px;
-  padding: 10px;
-  margin-top: 8px;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 10px;
 }
 
 .contact-label {
-  font-size: 13px;
+  font-size: 14px;
   color: #64748b;
 }
 
 .contact-value {
-  font-size: 14px;
+  font-size: 15px;
   color: #1e293b;
   font-weight: 600;
 }
 
 @media (min-width: 768px) {
   .request-list {
-    max-width: 1200px;
-    margin: 0 auto;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
