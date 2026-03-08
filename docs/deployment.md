@@ -107,9 +107,9 @@ psql -U cofounder -d cofounder
 DB_HOST=127.0.0.1
 # 通过 PgBouncer 端口
 DB_PORT=6432                
-DB_USER=cofounder
+DB_USERNAME=cofounder
 DB_PASSWORD=pass #改一下
-DB_NAME=cofounder
+DB_DATABASE=cofounder
 # 在 PG/pgbouncer 里显示的应用名
 DB_APP_NAME=cofounder  
 

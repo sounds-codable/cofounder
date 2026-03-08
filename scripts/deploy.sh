@@ -37,6 +37,7 @@ RELEASES_DIR="$APP_ROOT/releases"
 
 RELEASE_ID="$(date +%Y%m%d%H%M%S)"
 LOCAL_FRONTEND_DIST="$PROJECT_ROOT/client/dist"
+LOCAL_BACKEND_DIST="$PROJECT_ROOT/server/dist"
 
 log() {
   echo "[$(date '+%F %T')] $*"
@@ -52,6 +53,16 @@ if [[ "$MODE" != "frontend" && "$MODE" != "backend" && "$MODE" != "all" ]]; then
 fi
 
 log "Deploy target: $SSH_TARGET"
+
+if [[ "$MODE" == "backend" || "$MODE" == "all" ]]; then
+  log "Building backend locally"
+  (cd "$PROJECT_ROOT/server" && npm ci)
+  (cd "$PROJECT_ROOT/server" && npm run build)
+
+  if [[ ! -d "$LOCAL_BACKEND_DIST" ]]; then
+    die "Local backend dist not found at $LOCAL_BACKEND_DIST"
+  fi
+fi
 
 if [[ "$MODE" == "frontend" || "$MODE" == "all" ]]; then
   log "Building frontend locally"
@@ -76,8 +87,31 @@ upload_frontend() {
   rsync -az --delete -e ssh "$LOCAL_FRONTEND_DIST/" "$SSH_TARGET:$remote_dist/"
 }
 
+upload_backend() {
+  local remote_server_dir
+  remote_server_dir="$APP_ROOT/releases/$RELEASE_ID/server"
+
+  log "Uploading backend build to $SSH_TARGET:$remote_server_dir"
+  ssh -T "$SSH_TARGET" "mkdir -p '$remote_server_dir' '$APP_ROOT/releases/$RELEASE_ID/client'"
+
+  # dist
+  rsync -az --delete -e ssh "$PROJECT_ROOT/server/dist/" "$SSH_TARGET:$remote_server_dir/dist/"
+
+  # package files (dependencies will be installed on server)
+  rsync -az -e ssh "$PROJECT_ROOT/server/package.json" "$SSH_TARGET:$remote_server_dir/package.json"
+  if [[ -f "$PROJECT_ROOT/server/package-lock.json" ]]; then
+    rsync -az -e ssh "$PROJECT_ROOT/server/package-lock.json" "$SSH_TARGET:$remote_server_dir/package-lock.json"
+  fi
+
+  # .env symlink will be created on remote
+}
+
 if [[ "$MODE" == "frontend" || "$MODE" == "all" ]]; then
   upload_frontend
+fi
+
+if [[ "$MODE" == "backend" || "$MODE" == "all" ]]; then
+  upload_backend
 fi
 
 ssh -T "$SSH_TARGET" env APP_ROOT="$APP_ROOT" BRANCH="$BRANCH" MODE="$MODE" GIT_URL="$GIT_URL" RELEASE_ID="$RELEASE_ID" bash -s <<'EOSSH'
@@ -133,39 +167,38 @@ git -C "$REPO_DIR" checkout "$BRANCH"
 git -C "$REPO_DIR" reset --hard "origin/$BRANCH"
 
 deploy_backend() {
-  log "Deploying backend"
+  log "Deploying backend (remote receives build artifacts from local)"
 
   if [[ ! -f "$SHARED_DIR/server/.env" ]]; then
     die "Missing $SHARED_DIR/server/.env (put production env there first)"
   fi
 
-  rm -f "$REPO_DIR/server/.env"
-  ln -s "$SHARED_DIR/server/.env" "$REPO_DIR/server/.env"
-
-  log "Installing backend dependencies (repo)"
-  (cd "$REPO_DIR/server" && npm ci)
-
-  log "Building backend (repo)"
-  (cd "$REPO_DIR/server" && npm run build)
-
-  log "Preparing backend release dir"
-  mkdir -p "$RELEASE_DIR/server"
-
-  # dist
-  rm -rf "$RELEASE_DIR/server/dist"
-  cp -R "$REPO_DIR/server/dist" "$RELEASE_DIR/server/dist"
-
-  # runtime deps
-  cp "$REPO_DIR/server/package.json" "$RELEASE_DIR/server/package.json"
-  if [[ -f "$REPO_DIR/server/package-lock.json" ]]; then
-    cp "$REPO_DIR/server/package-lock.json" "$RELEASE_DIR/server/package-lock.json"
+  if [[ ! -d "$RELEASE_DIR/server/dist" ]]; then
+    die "Missing $RELEASE_DIR/server/dist on server. Upload step may have failed."
   fi
-  rm -rf "$RELEASE_DIR/server/node_modules"
-  cp -R "$REPO_DIR/server/node_modules" "$RELEASE_DIR/server/node_modules"
+
+  if [[ ! -f "$RELEASE_DIR/server/package.json" ]]; then
+    die "Missing $RELEASE_DIR/server/package.json on server. Upload step may have failed."
+  fi
+
+  log "Installing backend dependencies (release)"
+  (cd "$RELEASE_DIR/server" && npm ci)
 
   # env symlink
   rm -f "$RELEASE_DIR/server/.env"
   ln -s "$SHARED_DIR/server/.env" "$RELEASE_DIR/server/.env"
+
+  log "Switching current symlink (before restart) -> $RELEASE_DIR"
+  if [[ -L "$CURRENT_DIR" ]]; then
+    rm -f "$CURRENT_DIR"
+  elif [[ -e "$CURRENT_DIR" ]]; then
+    rm -rf "$CURRENT_DIR"
+  fi
+  ln -s "$RELEASE_DIR" "$CURRENT_DIR"
+
+  log "Verifying current/server exists"
+  ls -la "$CURRENT_DIR" || true
+  ls -la "$CURRENT_DIR/server" || true
 
   log "Restarting supervisor program cofounder-backend"
   sudo supervisorctl reread
@@ -182,7 +215,7 @@ deploy_frontend() {
 }
 
 log "Creating release dir: $RELEASE_DIR"
-mkdir -p "$RELEASE_DIR"
+mkdir -p "$RELEASE_DIR/server" "$RELEASE_DIR/client"
 
 case "$MODE" in
   backend)
