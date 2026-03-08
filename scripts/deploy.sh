@@ -35,6 +35,9 @@ SHARED_DIR="$APP_ROOT/shared"
 CURRENT_DIR="$APP_ROOT/current"
 RELEASES_DIR="$APP_ROOT/releases"
 
+RELEASE_ID="$(date +%Y%m%d%H%M%S)"
+LOCAL_FRONTEND_DIST="$PROJECT_ROOT/client/dist"
+
 log() {
   echo "[$(date '+%F %T')] $*"
 }
@@ -50,7 +53,34 @@ fi
 
 log "Deploy target: $SSH_TARGET"
 
-ssh -tt "$SSH_TARGET" env APP_ROOT="$APP_ROOT" BRANCH="$BRANCH" MODE="$MODE" GIT_URL="$GIT_URL" bash -s <<'EOSSH'
+if [[ "$MODE" == "frontend" || "$MODE" == "all" ]]; then
+  log "Building frontend locally"
+  (cd "$PROJECT_ROOT/client" && npm ci --legacy-peer-deps)
+  (cd "$PROJECT_ROOT/client" && npm run build:h5)
+
+  if [[ ! -d "$LOCAL_FRONTEND_DIST" ]]; then
+    die "Local frontend dist not found at $LOCAL_FRONTEND_DIST"
+  fi
+fi
+
+upload_frontend() {
+  local remote_dist
+  remote_dist="$APP_ROOT/releases/$RELEASE_ID/client/dist"
+
+  log "Uploading frontend dist to $SSH_TARGET:$remote_dist"
+  ssh -T "$SSH_TARGET" "mkdir -p '$remote_dist'"
+
+  # 使用 rsync 增量上传，避免每次全量 copy
+  # -a: 保留权限/时间戳等
+  # --delete: 远端删除本地已删除的文件（确保 dist 同步）
+  rsync -az --delete -e ssh "$LOCAL_FRONTEND_DIST/" "$SSH_TARGET:$remote_dist/"
+}
+
+if [[ "$MODE" == "frontend" || "$MODE" == "all" ]]; then
+  upload_frontend
+fi
+
+ssh -T "$SSH_TARGET" env APP_ROOT="$APP_ROOT" BRANCH="$BRANCH" MODE="$MODE" GIT_URL="$GIT_URL" RELEASE_ID="$RELEASE_ID" bash -s <<'EOSSH'
 set -euo pipefail
 
 MODE="${MODE:-all}"
@@ -60,10 +90,14 @@ REPO_DIR="$APP_ROOT/repo"
 SHARED_DIR="$APP_ROOT/shared"
 CURRENT_DIR="$APP_ROOT/current"
 RELEASES_DIR="$APP_ROOT/releases"
-RELEASE_ID="$(date +%Y%m%d%H%M%S)"
+RELEASE_ID="${RELEASE_ID:-$(date +%Y%m%d%H%M%S)}"
 RELEASE_DIR="$RELEASES_DIR/$RELEASE_ID"
 
 GIT_URL="${GIT_URL:-}"
+if [[ -z "$GIT_URL" && -f "$SHARED_DIR/server/.env" ]]; then
+  # 从 shared/server/.env 里取 GIT_URL（允许放在同一个 env 文件里）
+  GIT_URL="$(grep -E '^GIT_URL=' "$SHARED_DIR/server/.env" | tail -n 1 | cut -d= -f2- | tr -d '"\r')"
+fi
 
 log() {
   echo "[REMOTE $(date '+%F %T')] $*"
@@ -87,7 +121,7 @@ if [[ ! -d "$REPO_DIR/.git" ]]; then
       die "$REPO_DIR is not empty but not a git repo. Please clean it up manually."
     fi
     mkdir -p "$REPO_DIR"
-    git clone "$GIT_URL" "$REPO_DIR".
+    git clone "$GIT_URL" "$REPO_DIR"
   else
     die "Repo not found at $REPO_DIR. Set GIT_URL env on server (or initialize repo manually)."
   fi
@@ -140,18 +174,11 @@ deploy_backend() {
 }
 
 deploy_frontend() {
-  log "Deploying frontend"
-
-  log "Installing frontend dependencies (repo)"
-  (cd "$REPO_DIR/client" && npm ci --legacy-peer-deps)
-
-  log "Building frontend (repo)"
-  (cd "$REPO_DIR/client" && npm run build:h5)
+  log "Deploying frontend (remote receives static files from local)"
 
   log "Preparing frontend release dir"
   mkdir -p "$RELEASE_DIR/client"
-  rm -rf "$RELEASE_DIR/client/dist"
-  cp -R "$REPO_DIR/client/dist" "$RELEASE_DIR/client/dist"
+  mkdir -p "$RELEASE_DIR/client/dist"
 }
 
 log "Creating release dir: $RELEASE_DIR"
@@ -171,7 +198,11 @@ case "$MODE" in
 esac
 
 log "Updating current symlink -> $RELEASE_DIR"
-rm -f "$CURRENT_DIR"
+if [[ -L "$CURRENT_DIR" ]]; then
+  rm -f "$CURRENT_DIR"
+elif [[ -e "$CURRENT_DIR" ]]; then
+  rm -rf "$CURRENT_DIR"
+fi
 ln -s "$RELEASE_DIR" "$CURRENT_DIR"
 
 log "Keeping last 5 releases"
