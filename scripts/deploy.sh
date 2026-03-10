@@ -209,6 +209,11 @@ deploy_frontend() {
   log "Preparing frontend release dir"
   mkdir -p "$RELEASE_DIR/client"
   mkdir -p "$RELEASE_DIR/client/dist"
+
+  log "Updating current/client -> $RELEASE_DIR/client (do not touch current/server)"
+  mkdir -p "$CURRENT_DIR"
+  rm -f "$CURRENT_DIR/client"
+  ln -s "$RELEASE_DIR/client" "$CURRENT_DIR/client"
 }
 
 log "Creating release dir: $RELEASE_DIR"
@@ -227,15 +232,7 @@ case "$MODE" in
     ;;
 esac
 
-if [[ "$MODE" == "frontend" || "$MODE" == "all" ]]; then
-  log "Updating current symlink -> $RELEASE_DIR"
-  if [[ -L "$CURRENT_DIR" ]]; then
-    rm -f "$CURRENT_DIR"
-  elif [[ -e "$CURRENT_DIR" ]]; then
-    rm -rf "$CURRENT_DIR"
-  fi
-  ln -s "$RELEASE_DIR" "$CURRENT_DIR"
-fi
+log "Current layout: $CURRENT_DIR/{server,client} are symlinks to release content"
 
 log "Keeping last 5 releases"
 ls -1dt "$RELEASES_DIR"/* 2>/dev/null | tail -n +6 | xargs -r rm -rf
