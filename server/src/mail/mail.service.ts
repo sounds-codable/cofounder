@@ -9,13 +9,32 @@ export class MailService {
   constructor(private configService: ConfigService) {
     // 开发环境使用 console 输出，生产环境使用真实邮件
     if (this.configService.get('NODE_ENV') !== 'development') {
+      const host = this.configService.get<string>('MAIL_HOST');
+      const portRaw = this.configService.get<string | number>('MAIL_PORT');
+      const port = typeof portRaw === 'string' ? Number(portRaw) : portRaw;
+
+      const user =
+        this.configService.get<string>('MAIL_USER') ||
+        this.configService.get<string>('MAIL_USERNAME');
+      const pass =
+        this.configService.get<string>('MAIL_PASS') ||
+        this.configService.get<string>('MAIL_PASSWORD');
+
+      const encryption =
+        this.configService.get<string>('MAIL_ENCRYPTION') ||
+        this.configService.get<string>('MAIL_SECURE');
+
+      const secure =
+        (typeof encryption === 'string' && encryption.toLowerCase() === 'ssl') ||
+        port === 465;
+
       this.transporter = nodemailer.createTransport({
-        host: this.configService.get('MAIL_HOST'),
-        port: this.configService.get('MAIL_PORT'),
-        secure: true,
+        host,
+        port,
+        secure,
         auth: {
-          user: this.configService.get('MAIL_USER'),
-          pass: this.configService.get('MAIL_PASS'),
+          user,
+          pass,
         },
       });
     }
@@ -63,12 +82,30 @@ export class MailService {
     `;
 
     if (this.transporter) {
-      await this.transporter.sendMail({
-        from: this.configService.get('MAIL_FROM'),
-        to: email,
-        subject: `【合伙造】您的登录验证码是 ${code}`,
-        html,
-      });
+      const fromAddress =
+        this.configService.get<string>('MAIL_FROM_ADDRESS') ||
+        this.configService.get<string>('MAIL_FROM');
+      const fromName = this.configService.get<string>('MAIL_FROM_NAME');
+      const from = fromName && fromAddress ? `${fromName} <${fromAddress}>` : fromAddress;
+
+      try {
+        await this.transporter.sendMail({
+          from,
+          to: email,
+          subject: `【合伙造】您的登录验证码是 ${code}`,
+          html,
+        });
+      } catch (err) {
+        console.error('[MailService] sendVerificationCode failed', {
+          to: email,
+          from,
+          host: this.configService.get('MAIL_HOST'),
+          port: this.configService.get('MAIL_PORT'),
+          encryption: this.configService.get('MAIL_ENCRYPTION'),
+          error: err instanceof Error ? err.message : err,
+        });
+        throw err;
+      }
     }
   }
 }
