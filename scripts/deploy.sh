@@ -188,13 +188,10 @@ deploy_backend() {
   rm -f "$RELEASE_DIR/server/.env"
   ln -s "$SHARED_DIR/server/.env" "$RELEASE_DIR/server/.env"
 
-  log "Switching current symlink (before restart) -> $RELEASE_DIR"
-  if [[ -L "$CURRENT_DIR" ]]; then
-    rm -f "$CURRENT_DIR"
-  elif [[ -e "$CURRENT_DIR" ]]; then
-    rm -rf "$CURRENT_DIR"
-  fi
-  ln -s "$RELEASE_DIR" "$CURRENT_DIR"
+  log "Updating current/server -> $RELEASE_DIR/server (do not touch current/client)"
+  mkdir -p "$CURRENT_DIR"
+  rm -f "$CURRENT_DIR/server"
+  ln -s "$RELEASE_DIR/server" "$CURRENT_DIR/server"
 
   log "Verifying current/server exists"
   ls -la "$CURRENT_DIR" || true
@@ -230,13 +227,15 @@ case "$MODE" in
     ;;
 esac
 
-log "Updating current symlink -> $RELEASE_DIR"
-if [[ -L "$CURRENT_DIR" ]]; then
-  rm -f "$CURRENT_DIR"
-elif [[ -e "$CURRENT_DIR" ]]; then
-  rm -rf "$CURRENT_DIR"
+if [[ "$MODE" == "frontend" || "$MODE" == "all" ]]; then
+  log "Updating current symlink -> $RELEASE_DIR"
+  if [[ -L "$CURRENT_DIR" ]]; then
+    rm -f "$CURRENT_DIR"
+  elif [[ -e "$CURRENT_DIR" ]]; then
+    rm -rf "$CURRENT_DIR"
+  fi
+  ln -s "$RELEASE_DIR" "$CURRENT_DIR"
 fi
-ln -s "$RELEASE_DIR" "$CURRENT_DIR"
 
 log "Keeping last 5 releases"
 ls -1dt "$RELEASES_DIR"/* 2>/dev/null | tail -n +6 | xargs -r rm -rf
