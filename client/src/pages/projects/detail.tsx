@@ -156,9 +156,17 @@ export default function ProjectDetail() {
       {/* 项目发布者信息 */}
       <View className='detail-section owner-info'>
         <Text className='section-label'>发布者</Text>
-        <View className='owner-card'>
+        <View 
+          className='owner-card clickable'
+          onClick={() => {
+            if (project.owner?.id) {
+              Taro.navigateTo({ url: `/pages/owners/detail?id=${project.owner.id}` })
+            }
+          }}
+        >
           <Text className='owner-name'>{project.owner?.nickname || '匿名'}</Text>
           <Text className='owner-bio'>{project.owner?.bio || '暂无简介'}</Text>
+          <Text className='owner-link'>查看详情 →</Text>
         </View>
       </View>
 

@@ -7,6 +7,7 @@ export default {
     'pages/projects/detail',
     'pages/developers/index',
     'pages/developers/detail',
+    'pages/owners/detail',
     'pages/requests/index',
     'pages/profile/index',
     'pages/profile/basic',

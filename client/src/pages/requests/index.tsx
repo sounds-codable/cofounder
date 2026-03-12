@@ -1,4 +1,4 @@
-import { View, Text, Button } from '@tarojs/components'
+import { View, Text } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
 import { AtSegmentedControl, AtButton } from 'taro-ui'
@@ -39,9 +39,7 @@ export default function Requests() {
     }
   }
 
-  const pendingCount = user?.role === 'project_owner' 
-    ? receivedRequests.filter((r: any) => r.status === 'pending').length
-    : 0
+  const pendingCount = receivedRequests.filter((r: any) => r.status === 'pending').length
 
   const handleAccept = async (id: string) => {
     try {
@@ -110,15 +108,12 @@ export default function Requests() {
                     className='request-name clickable'
                     onClick={(e) => {
                       e.stopPropagation()
-                      if (activeTab === 0 && request.sender?.id) {
-                        // 收到的请求：点击查看发送者（程序员/项目方）详情
-                        if (request.sender.role === 'developer') {
-                          Taro.navigateTo({ url: `/pages/developers/detail?id=${request.sender.id}` })
-                        }
-                      } else if (activeTab === 1 && request.receiver?.id) {
-                        // 发出的请求：点击查看接收者详情
-                        if (request.receiver.role === 'developer') {
-                          Taro.navigateTo({ url: `/pages/developers/detail?id=${request.receiver.id}` })
+                      const targetUser = activeTab === 0 ? request.sender : request.receiver
+                      if (targetUser?.id) {
+                        if (targetUser.role === 'developer') {
+                          Taro.navigateTo({ url: `/pages/developers/detail?id=${targetUser.id}` })
+                        } else if (targetUser.role === 'project_owner') {
+                          Taro.navigateTo({ url: `/pages/owners/detail?id=${targetUser.id}` })
                         }
                       }
                     }}

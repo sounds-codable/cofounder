@@ -56,7 +56,10 @@ export default function Onboarding() {
         Taro.showToast({ title: '请选择行业', icon: 'none' })
         return
       }
-      // industryExperience 为可选字段，不再强制验证
+      if (!industryExperience) {
+        Taro.showToast({ title: '请填写行业经验年限', icon: 'none' })
+        return
+      }
     }
 
     if (user?.role === 'developer') {
@@ -76,12 +79,8 @@ export default function Onboarding() {
 
     setLoading(true)
     try {
-      const ownerData: any = { nickname, bio, industry }
-      if (industryExperience) {
-        ownerData.industryExperience = Number(industryExperience)
-      }
       const data = user?.role === 'project_owner' 
-        ? ownerData
+        ? { nickname, bio, industry, industryExperience: Number(industryExperience) }
         : { nickname, bio, techDirections, workYears: Number(workYears), projectExperience }
       
       const result = await userApi.updateBasicProfile(data)
@@ -152,7 +151,7 @@ export default function Onboarding() {
             </View>
 
             <View className='form-item'>
-              <Text className='form-label'>行业经验年限（选填）</Text>
+              <Text className='form-label'>行业经验年限 *</Text>
               <Input
                 className='form-input'
                 type='number'

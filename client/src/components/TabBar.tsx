@@ -1,7 +1,7 @@
 import { View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { useState, useEffect } from 'react'
-import { AtTabBar, AtBadge } from 'taro-ui'
+import { AtTabBar } from 'taro-ui'
 import { getPendingRequestCount } from '@/utils/request-badge'
 import { storage } from '@/utils/storage'
 
@@ -28,7 +28,7 @@ export default function TabBar({ current }: TabBarProps) {
   const user = storage.getUser()
 
   useEffect(() => {
-    if (user?.role === 'project_owner') {
+    if (user) {
       loadPendingCount()
     }
   }, [])
@@ -44,7 +44,6 @@ export default function TabBar({ current }: TabBarProps) {
     }
   }
 
-  // 为"我的请求"Tab 添加徽章
   const tabListWithBadge = tabList.map((tab, index) => {
     if (index === 2 && pendingCount > 0) {
       return { ...tab, text: String(pendingCount) }
@@ -65,4 +64,3 @@ export default function TabBar({ current }: TabBarProps) {
     </View>
   )
 }
-

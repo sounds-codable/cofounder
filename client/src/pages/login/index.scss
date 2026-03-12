@@ -107,27 +107,3 @@
   border-radius: 22px;
   border: none;
 }
-
-@media (min-width: 768px) {
-  .login {
-    max-width: 500px;
-    margin: 0 auto;
-    padding: 40px;
-  }
-
-  .login-title {
-    font-size: 28px;
-  }
-
-  .login-form {
-    padding: 32px;
-  }
-
-  .form-label {
-    font-size: 16px;
-  }
-
-  .form-input {
-    font-size: 16px;
-  }
-}

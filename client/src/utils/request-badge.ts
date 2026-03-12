@@ -3,21 +3,15 @@ import { storage } from './storage'
 
 let cachedPendingCount: number | null = null
 let cacheTime: number = 0
-const CACHE_DURATION = 30000 // 30秒缓存
+const CACHE_DURATION = 30000
 
-/**
- * 获取待处理的申请数量（仅项目方）
- * 带缓存，避免频繁请求
- */
 export async function getPendingRequestCount(): Promise<number> {
   const user = storage.getUser()
   
-  // 只有项目方才有待处理的申请
-  if (user?.role !== 'project_owner') {
+  if (!user) {
     return 0
   }
 
-  // 检查缓存
   const now = Date.now()
   if (cachedPendingCount !== null && (now - cacheTime) < CACHE_DURATION) {
     return cachedPendingCount
@@ -38,12 +32,7 @@ export async function getPendingRequestCount(): Promise<number> {
   }
 }
 
-/**
- * 清除缓存（当有新的申请或处理了申请后调用）
- */
 export function clearRequestBadgeCache() {
   cachedPendingCount = null
   cacheTime = 0
 }
-
-

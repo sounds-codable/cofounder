@@ -1,0 +1,143 @@
+.owner-detail {
+  min-height: 100vh;
+  background: #f8fafc;
+  padding-bottom: 40px;
+  overflow-y: auto;
+}
+
+.loading,
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 16px;
+  color: #64748b;
+}
+
+.back-btn {
+  text-align: left;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.back-icon {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.detail-header {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  padding: 20px 20px 36px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.owner-avatar {
+  font-size: 56px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.owner-name {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.owner-industry {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.detail-section {
+  background: #ffffff;
+  padding: 16px 20px;
+  margin-top: 10px;
+}
+
+.section-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.section-content {
+  font-size: 15px;
+  color: #1e293b;
+  line-height: 1.7;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.project-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.project-card:active {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.project-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+
+.project-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.project-applicants {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.project-desc {
+  display: block;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  .owner-detail {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .owner-name {
+    font-size: 24px;
+  }
+
+  .section-label {
+    font-size: 16px;
+  }
+
+  .section-content {
+    font-size: 16px;
+  }
+}
