@@ -44,13 +44,13 @@ export default function Index() {
       return
     }
     if (!selectedRole) {
-      Taro.showToast({ title: '请选择您的身份', icon: 'none' })
+      Taro.showToast({ title: '请选择身份', icon: 'none' })
       return
     }
     setSubmitted(true)
     setTimeout(() => {
       Taro.navigateTo({ url: `/pages/login/index?role=${selectedRole}&email=${encodeURIComponent(email)}` })
-    }, 800)
+    }, 600)
   }
 
   const handleDirectLogin = (role: string) => {
@@ -68,330 +68,207 @@ export default function Index() {
   return (
     <View className='landing'>
 
-      {/* ========== HERO ========== */}
+      {/* ===== HERO — ICU ===== */}
       <View className='hero'>
         <View className='hero-inner'>
-          <View className='hero-badge'>
-            <Text className='badge-text'>🚀 面向中国创业者</Text>
-          </View>
+          <View className='hero-pulse' />
+          <Text className='hero-icu'>ICU</Text>
+          <Text className='hero-icu-sub'>February February February February February Febru— I. See. You.</Text>
+
           <Text className='hero-headline'>
-            你有行业经验，{'\n'}
-            却找不到靠谱的技术合伙人？
-          </Text>
-          <Text className='hero-sub'>
-            你有技术能力，{'\n'}
-            却不知道该做什么产品？
-          </Text>
-          <Text className='hero-desc'>
-            合伙造，让行业专家和程序员以股权合伙的方式，
-            把想法变成产品。不是雇佣，是合伙。
+            你的想法正在死去。{'\n'}
+            因为你一个人做不了。
           </Text>
 
-          {/* CTA inline */}
+          <Text className='hero-desc'>
+            行业专家 × 程序员，股权合伙，不是雇佣。
+          </Text>
+
           <View className='hero-cta'>
-            <View 
+            <View
               className='cta-btn cta-primary'
               onClick={() => handleDirectLogin('project_owner')}
             >
-              <Text className='cta-btn-text'>💼 我有项目想法</Text>
+              <Text className='cta-btn-text'>我有想法，缺技术</Text>
             </View>
-            <View 
+            <View
               className='cta-btn cta-secondary'
               onClick={() => handleDirectLogin('developer')}
             >
-              <Text className='cta-btn-text'>💻 我是程序员</Text>
-            </View>
-          </View>
-
-          <View className='hero-stats'>
-            <View className='stat'>
-              <Text className='stat-num'>{projects.length > 0 ? `${projects.length}+` : '—'}</Text>
-              <Text className='stat-label'>项目在找合伙人</Text>
-            </View>
-            <View className='stat-divider' />
-            <View className='stat'>
-              <Text className='stat-num'>{developers.length > 0 ? `${developers.length}+` : '—'}</Text>
-              <Text className='stat-label'>程序员在找项目</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* gradient overlay at bottom */}
-        <View className='hero-fade' />
-      </View>
-
-      {/* ========== WHY — 痛点 ========== */}
-      <View className='section section-why'>
-        <View className='section-inner'>
-          <Text className='section-eyebrow'>WHY — 为什么需要合伙造</Text>
-          <Text className='section-headline'>
-            创业最难的事，{'\n'}不是缺钱，是缺搭档
-          </Text>
-
-          <View className='pain-grid'>
-            <View className='pain-card pain-owner'>
-              <Text className='pain-icon'>💼</Text>
-              <Text className='pain-role'>项目方的痛</Text>
-              <View className='pain-list'>
-                <Text className='pain-item'>❌ 外包做出来的产品，没有灵魂</Text>
-                <Text className='pain-item'>❌ 雇全职开发，启动资金不够</Text>
-                <Text className='pain-item'>❌ 找朋友帮忙，欠的人情还不起</Text>
-                <Text className='pain-item'>❌ 行业资源丰富，但技术一窍不通</Text>
-              </View>
-            </View>
-            <View className='pain-card pain-dev'>
-              <Text className='pain-icon'>💻</Text>
-              <Text className='pain-role'>程序员的痛</Text>
-              <View className='pain-list'>
-                <Text className='pain-item'>❌ 想创业，但不知道做什么产品</Text>
-                <Text className='pain-item'>❌ 有技术，没有行业认知和资源</Text>
-                <Text className='pain-item'>❌ 打工久了，想要股权而非工资</Text>
-                <Text className='pain-item'>❌ 上班写的代码，永远不属于自己</Text>
-              </View>
-            </View>
-          </View>
-
-          <View className='why-conclusion'>
-            <Text className='why-conclusion-text'>
-              问题不在于"找不到人"，而在于——没有一个平台，
-              让双方以合伙人（而非雇佣）的关系开始合作。
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* ========== HOW — 方案 ========== */}
-      <View className='section section-how'>
-        <View className='section-inner'>
-          <Text className='section-eyebrow'>HOW — 合伙造怎么做</Text>
-          <Text className='section-headline'>
-            4步，从想法到合伙
-          </Text>
-
-          <View className='steps'>
-            <View className='step-card'>
-              <View className='step-number'><Text className='step-num-text'>1</Text></View>
-              <View className='step-content'>
-                <Text className='step-title'>发布你的想法或能力</Text>
-                <Text className='step-desc'>
-                  项目方描述你的创业想法、行业背景、需要什么样的技术合伙人。
-                  程序员展示你的技术栈、项目经验、感兴趣的行业。
-                </Text>
-              </View>
-            </View>
-
-            <View className='step-connector' />
-
-            <View className='step-card'>
-              <View className='step-number step-n2'><Text className='step-num-text'>2</Text></View>
-              <View className='step-content'>
-                <Text className='step-title'>双向选择，精准匹配</Text>
-                <Text className='step-desc'>
-                  浏览对方的背景和能力，感兴趣就发起合作请求。
-                  不是大海捞针，是有目标地找合伙人。
-                </Text>
-              </View>
-            </View>
-
-            <View className='step-connector' />
-
-            <View className='step-card'>
-              <View className='step-number step-n3'><Text className='step-num-text'>3</Text></View>
-              <View className='step-content'>
-                <Text className='step-title'>一起做MVP，验证默契</Text>
-                <Text className='step-desc'>
-                  先用最小成本做出产品原型，验证合作是否顺畅。
-                  试错成本极低——不行就换，行就继续。
-                </Text>
-              </View>
-            </View>
-
-            <View className='step-connector' />
-
-            <View className='step-card'>
-              <View className='step-number step-n4'><Text className='step-num-text'>4</Text></View>
-              <View className='step-content'>
-                <Text className='step-title'>确认合伙，分配股权</Text>
-                <Text className='step-desc'>
-                  MVP验证通过后，根据各自贡献和能力，商定股权比例。
-                  不是先谈钱，是先验证能不能一起做事。
-                </Text>
-              </View>
+              <Text className='cta-btn-text'>我有技术，缺方向</Text>
             </View>
           </View>
         </View>
       </View>
 
-      {/* ========== WHAT — 你能得到什么 ========== */}
-      <View className='section section-what'>
+      {/* ===== FLATLINE — 痛点 ===== */}
+      <View className='section section-flatline'>
         <View className='section-inner'>
-          <Text className='section-eyebrow'>WHAT — 你能得到什么</Text>
+          <View className='monitor-line' />
           <Text className='section-headline'>
-            不只是找到一个人，{'\n'}是开启一段合伙关系
+            每天有1000个好想法死掉。{'\n'}
+            死因都一样。
           </Text>
 
-          <View className='benefit-grid'>
-            <View className='benefit-card'>
-              <Text className='benefit-icon'>🎯</Text>
-              <Text className='benefit-title'>精准匹配</Text>
-              <Text className='benefit-desc'>按行业、技术栈、兴趣方向匹配，不是盲目社交</Text>
+          <View className='death-grid'>
+            <View className='death-card'>
+              <Text className='death-label'>💼 项目方</Text>
+              <Text className='death-cause'>有十年行业经验，但不会写一行代码。</Text>
+              <Text className='death-result'>外包做出来的东西，自己都不想用。</Text>
             </View>
-            <View className='benefit-card'>
-              <Text className='benefit-icon'>🤝</Text>
-              <Text className='benefit-title'>合伙人关系</Text>
-              <Text className='benefit-desc'>不是甲方乙方，是平等的合伙人，共同持有股权</Text>
+            <View className='death-card'>
+              <Text className='death-label'>💻 程序员</Text>
+              <Text className='death-cause'>能写任何系统，但不知道该写什么。</Text>
+              <Text className='death-result'>写了十年代码，没有一行属于自己。</Text>
             </View>
-            <View className='benefit-card'>
-              <Text className='benefit-icon'>🛡️</Text>
-              <Text className='benefit-title'>低风险验证</Text>
-              <Text className='benefit-desc'>先做MVP再谈股权，合作不愉快随时退出</Text>
+          </View>
+
+          <Text className='flatline-truth'>
+            不是缺钱。不是缺能力。{'\n'}是缺一个对的搭档。
+          </Text>
+        </View>
+      </View>
+
+      {/* ===== DEFIB — 方案 ===== */}
+      <View className='section section-defib'>
+        <View className='section-inner'>
+          <Text className='defib-charge'>⚡ CLEAR</Text>
+          <Text className='section-headline'>
+            合伙造：给你的想法做心肺复苏
+          </Text>
+
+          <View className='defib-steps'>
+            <View className='d-step'>
+              <Text className='d-num'>01</Text>
+              <Text className='d-title'>发布</Text>
+              <Text className='d-desc'>你的想法或你的能力，3分钟填完</Text>
             </View>
-            <View className='benefit-card'>
-              <Text className='benefit-icon'>⚡</Text>
-              <Text className='benefit-title'>快速启动</Text>
-              <Text className='benefit-desc'>从注册到找到合伙人，最快一天内完成</Text>
+            <View className='d-step'>
+              <Text className='d-num'>02</Text>
+              <Text className='d-title'>匹配</Text>
+              <Text className='d-desc'>按行业×技术精准配对，不是大海捞针</Text>
             </View>
-            <View className='benefit-card'>
-              <Text className='benefit-icon'>💡</Text>
-              <Text className='benefit-title'>资源互补</Text>
-              <Text className='benefit-desc'>行业经验 + 技术能力，1+1 &gt; 2</Text>
+            <View className='d-step'>
+              <Text className='d-num'>03</Text>
+              <Text className='d-title'>做MVP</Text>
+              <Text className='d-desc'>一起做最小产品原型，验证合作默契</Text>
             </View>
-            <View className='benefit-card'>
-              <Text className='benefit-icon'>🔒</Text>
-              <Text className='benefit-title'>隐私保护</Text>
-              <Text className='benefit-desc'>联系方式仅在双方同意后才会展示</Text>
+            <View className='d-step'>
+              <Text className='d-num'>04</Text>
+              <Text className='d-title'>合伙</Text>
+              <Text className='d-desc'>靠谱了再谈股权，不靠谱就分开，零成本</Text>
             </View>
           </View>
         </View>
       </View>
 
-      {/* ========== SOCIAL PROOF ========== */}
-      <View className='section section-proof'>
+      {/* ===== VITALS — 你得到什么 ===== */}
+      <View className='section section-vitals'>
         <View className='section-inner'>
           <Text className='section-headline'>
-            他们的故事，可能就是你的下一步
+            不是找一个人。{'\n'}是救活一个想法。
           </Text>
-          <View className='story-grid'>
-            <View className='story-card'>
-              <Text className='story-quote'>
-                "做了8年医疗器械，一直想做一个给医生用的排班工具。
-                在合伙造上找到了一个全栈工程师，两个月就上线了MVP。"
-              </Text>
-              <View className='story-author'>
-                <Text className='story-avatar'>💼</Text>
-                <View>
-                  <Text className='story-name'>陈总 · 医疗器械行业</Text>
-                  <Text className='story-role'>项目方</Text>
+
+          <View className='vitals-grid'>
+            <View className='vital'>
+              <Text className='vital-icon'>🎯</Text>
+              <Text className='vital-text'>精准匹配，不是盲目社交</Text>
+            </View>
+            <View className='vital'>
+              <Text className='vital-icon'>🤝</Text>
+              <Text className='vital-text'>合伙人关系，不是甲方乙方</Text>
+            </View>
+            <View className='vital'>
+              <Text className='vital-icon'>🛡️</Text>
+              <Text className='vital-text'>先验证再承诺，试错成本为零</Text>
+            </View>
+            <View className='vital'>
+              <Text className='vital-icon'>⚡</Text>
+              <Text className='vital-text'>最快一天找到搭档</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* ===== PULSE — 数据 ===== */}
+      {(projects.length > 0 || developers.length > 0) && (
+        <View className='section section-pulse'>
+          <View className='section-inner'>
+            <Text className='pulse-headline'>此刻，正在发生</Text>
+            <View className='pulse-stats'>
+              {projects.length > 0 && (
+                <View className='pulse-stat'>
+                  <Text className='pulse-num'>{projects.length}+</Text>
+                  <Text className='pulse-label'>个想法在等程序员</Text>
                 </View>
-              </View>
-            </View>
-            <View className='story-card'>
-              <Text className='story-quote'>
-                "在大厂写了5年代码，一直想自己做点什么。
-                在这里认识了一个做供应链的老板，现在我们的SaaS已经有了10家付费客户。"
-              </Text>
-              <View className='story-author'>
-                <Text className='story-avatar'>💻</Text>
-                <View>
-                  <Text className='story-name'>张工 · 全栈工程师</Text>
-                  <Text className='story-role'>程序员</Text>
+              )}
+              {developers.length > 0 && (
+                <View className='pulse-stat'>
+                  <Text className='pulse-num'>{developers.length}+</Text>
+                  <Text className='pulse-label'>个程序员在等想法</Text>
                 </View>
-              </View>
+              )}
             </View>
+            <Text className='pulse-cta-text'>他们已经开始了。你呢？</Text>
           </View>
         </View>
-      </View>
+      )}
 
-      {/* ========== CTA — 留邮箱 ========== */}
+      {/* ===== CTA — 留邮箱 ===== */}
       <View className='section section-cta'>
         <View className='section-inner'>
-          <Text className='cta-headline'>
-            {submitted 
-              ? '🎉 正在跳转...' 
-              : '准备好找你的合伙人了吗？'
-            }
-          </Text>
-          {!submitted && (
-            <Text className='cta-subtitle'>
-              留下邮箱，30秒完成注册，开始寻找你的创业搭档
-            </Text>
-          )}
+          {!submitted ? (
+            <View className='cta-box'>
+              <Text className='cta-headline'>
+                别让你的想法死在脑子里。
+              </Text>
+              <Text className='cta-subtitle'>留下邮箱，30秒注册，今天就开始。</Text>
 
-          {!submitted && (
-            <View className='cta-form'>
-              <View className='role-selector'>
-                <View 
-                  className={`role-chip ${selectedRole === 'project_owner' ? 'active' : ''}`}
-                  onClick={() => setSelectedRole('project_owner')}
-                >
-                  <Text className='role-chip-text'>💼 我是项目方</Text>
+              <View className='cta-form'>
+                <View className='role-selector'>
+                  <View
+                    className={`role-chip ${selectedRole === 'project_owner' ? 'active' : ''}`}
+                    onClick={() => setSelectedRole('project_owner')}
+                  >
+                    <Text className='role-chip-text'>💼 项目方</Text>
+                  </View>
+                  <View
+                    className={`role-chip ${selectedRole === 'developer' ? 'active' : ''}`}
+                    onClick={() => setSelectedRole('developer')}
+                  >
+                    <Text className='role-chip-text'>💻 程序员</Text>
+                  </View>
                 </View>
-                <View 
-                  className={`role-chip ${selectedRole === 'developer' ? 'active' : ''}`}
-                  onClick={() => setSelectedRole('developer')}
-                >
-                  <Text className='role-chip-text'>💻 我是程序员</Text>
+
+                <View className='email-row'>
+                  <Input
+                    className='email-input'
+                    type='text'
+                    placeholder='your@email.com'
+                    value={email}
+                    onInput={(e) => setEmail(e.detail.value)}
+                    placeholderStyle='color: #475569;'
+                  />
+                  <View className='email-btn' onClick={handleEmailSubmit}>
+                    <Text className='email-btn-text'>开始 →</Text>
+                  </View>
                 </View>
+                <Text className='cta-note'>免费 · 无需密码 · 验证码登录</Text>
               </View>
-
-              <View className='email-row'>
-                <Input
-                  className='email-input'
-                  type='text'
-                  placeholder='your@email.com'
-                  value={email}
-                  onInput={(e) => setEmail(e.detail.value)}
-                  placeholderStyle='color: #64748b;'
-                />
-                <View className='email-btn' onClick={handleEmailSubmit}>
-                  <Text className='email-btn-text'>开始 →</Text>
-                </View>
-              </View>
-
-              <Text className='cta-note'>无需密码，邮箱验证码登录，30秒搞定</Text>
             </View>
-          )}
-
-          {submitted && (
+          ) : (
             <View className='cta-success'>
-              <Text className='success-text'>正在为你跳转注册页面...</Text>
+              <Text className='success-icon'>💓</Text>
+              <Text className='success-text'>有心跳了。正在跳转...</Text>
             </View>
           )}
         </View>
       </View>
 
-      {/* ========== FAQ ========== */}
-      <View className='section section-faq'>
-        <View className='section-inner'>
-          <Text className='section-headline'>常见问题</Text>
-          <View className='faq-list'>
-            <View className='faq-item'>
-              <Text className='faq-q'>Q: 需要付费吗？</Text>
-              <Text className='faq-a'>完全免费。我们希望帮更多人找到合伙人。</Text>
-            </View>
-            <View className='faq-item'>
-              <Text className='faq-q'>Q: 股权怎么分配？</Text>
-              <Text className='faq-a'>由合伙双方自行协商。我们建议先做MVP验证合作后再谈股权，平台不参与分配。</Text>
-            </View>
-            <View className='faq-item'>
-              <Text className='faq-q'>Q: 我的信息安全吗？</Text>
-              <Text className='faq-a'>你的联系方式（手机、微信等）只有在双方都同意合作后才会相互展示。</Text>
-            </View>
-            <View className='faq-item'>
-              <Text className='faq-q'>Q: 合作不顺利怎么办？</Text>
-              <Text className='faq-a'>MVP阶段没有任何法律约束，不合适就分开，试错成本极低。</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* ========== Footer ========== */}
+      {/* ===== Footer ===== */}
       <View className='footer'>
-        <View className='footer-inner'>
-          <Text className='footer-brand'>合伙造</Text>
-          <Text className='footer-tagline'>让创业合伙更简单</Text>
-          <Text className='footer-copy'>© 2026 合伙造 HeHuoZao. All rights reserved.</Text>
-        </View>
+        <Text className='footer-brand'>合伙造</Text>
+        <Text className='footer-copy'>© 2026 HeHuoZao</Text>
       </View>
     </View>
   )

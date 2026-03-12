@@ -12,6 +12,7 @@ export default {
     'pages/profile/index',
     'pages/profile/basic',
     'pages/profile/detail',
+    'pages/simple/index',
   ],
   window: {
     backgroundTextStyle: 'light',
