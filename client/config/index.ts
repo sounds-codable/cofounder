@@ -99,7 +99,7 @@ export default defineConfig(async (merge, { command, mode }) => {
         historyApiFallback: true,
         proxy: {
           '/api': {
-            target: 'http://localhost:3000',
+            target: 'http://localhost:3010',
             changeOrigin: true
           }
         }
