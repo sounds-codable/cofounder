@@ -15,7 +15,7 @@ export default function Index6() {
 
   const renderMvpHint = (tipKey: Exclude<MvpTipKey, null>) => (
     <View
-      className={`mvp-wrap ${activeMvpTip === tipKey ? 'show' : ''}`}
+      className={`mvp-wrap tip-${tipKey} ${activeMvpTip === tipKey ? 'show' : ''}`}
       onClick={(e) => {
         e.stopPropagation()
         setActiveMvpTip((prev) => (prev === tipKey ? null : tipKey))
@@ -120,7 +120,7 @@ export default function Index6() {
           </Text>
         </View>
 
-        <View className='coop-card'>
+        <View className={`coop-card ${activeMvpTip === 'how' ? 'active-tip' : ''}`}>
           <Text className='kicker'>HOW</Text>
           <Text className='coop-title'>我们怎么让双方真正合作</Text>
           <View className='coop-line'>
