@@ -27,7 +27,7 @@
 
 ```
 34create/
-├── client/          # 前端 (Taro H5)
+├── client/          # 前端 (Taro H5 + 微信小程序)
 │   ├── config/      # Taro 配置
 │   ├── src/
 │   │   ├── pages/   # 页面组件
@@ -109,6 +109,77 @@ npm run dev:h5
 | `MAIL_HOST` | SMTP 服务器（仅生产） | - |
 | `MAIL_USER` | 邮箱账号（仅生产） | - |
 | `MAIL_PASS` | SMTP 授权码（仅生产） | - |
+
+## 📦 微信小程序编译与发布
+
+下面是从开发到正式上线的完整流程（基于 Taro）。
+
+### 0. 发布前准备
+
+1. 在微信公众平台创建小程序，拿到 `AppID`。  
+2. 后端 API 必须有公网 **HTTPS** 域名（小程序不支持 `localhost` 直连）。  
+3. 在小程序后台配置服务器域名：
+   - 登录微信公众平台 → 开发管理 → 开发设置 → 服务器域名
+   - 把你的后端域名加到 `request 合法域名`
+   - 示例：`https://api.yourdomain.com`
+
+### 1. 配置前端小程序项目
+
+编辑 `client/project.config.json`：
+
+```json
+{
+  "appid": "你的小程序AppID",
+  "miniprogramRoot": "./dist"
+}
+```
+
+> 默认 `touristappid` 仅用于体验，不可用于正式发布。
+
+### 2. 配置接口地址（重点）
+
+小程序环境不能依赖 H5 的 `/api` 代理，必须使用真实 HTTPS API 地址。  
+请在前端 API 配置中确认小程序使用的是公网地址（例如 `https://api.yourdomain.com/api`）。
+
+建议发布前在微信开发者工具里重点验证：
+- 登录发送验证码
+- 项目列表/详情
+- 合伙请求收发
+
+### 3. 本地编译小程序
+
+```bash
+cd client
+npm install --legacy-peer-deps
+
+# 开发调试（监听）
+npm run dev:weapp
+
+# 生产编译（打包）
+npm run build:weapp
+```
+
+编译产物目录：`client/dist`
+
+### 4. 微信开发者工具上传
+
+1. 打开微信开发者工具  
+2. 选择“导入项目”，项目目录选 `client`（会读取 `project.config.json`）  
+3. 确认编译正常后，点击“上传”  
+4. 填写版本号（如 `1.0.0`）和项目备注
+
+### 5. 提审与发布
+
+1. 登录微信公众平台  
+2. 进入「版本管理」找到刚上传的开发版本  
+3. 提交审核（按要求填写类目、功能说明、测试账号等）  
+4. 审核通过后点击发布
+
+### 6. 常见问题排查
+
+- **请求失败 / 域名不合法**：检查小程序后台 `request 合法域名` 是否配置且为 HTTPS。  
+- **登录接口本地可用，小程序不可用**：通常是接口地址仍在用 `localhost` 或 `/api` 代理。  
+- **上传时报 `appid` 问题**：确认 `client/project.config.json` 已替换成真实 AppID。  
 
 ## 📱 页面说明
 

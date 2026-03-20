@@ -133,3 +133,12 @@ export const requestApi = {
     request<{ realName: string; phone: string; wechat: string; city: string }>(`/requests/${id}/contact`),
 }
 
+// Waitlist API
+export const waitlistApi = {
+  subscribe: (email: string) =>
+    request<{ success: boolean; message: string }>('/waitlist/subscribe', {
+      method: 'POST',
+      data: { email },
+    }),
+}
+

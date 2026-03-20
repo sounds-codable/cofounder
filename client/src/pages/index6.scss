@@ -1,0 +1,240 @@
+.index6 {
+  position: relative;
+  min-height: 100vh;
+  padding: 30px 16px 44px;
+  background: linear-gradient(180deg, #f7fbff 0%, #edf6ff 100%);
+  color: #0f172a;
+  overflow: hidden;
+}
+
+@keyframes breathe {
+  0% { transform: scale(1) translateY(0); opacity: 0.38; }
+  50% { transform: scale(1.08) translateY(-6px); opacity: 0.62; }
+  100% { transform: scale(1) translateY(0); opacity: 0.38; }
+}
+
+.bg-breathe {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(2px);
+  animation: breathe 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.bubble-1 {
+  width: 220px;
+  height: 220px;
+  background: rgba(59, 130, 246, 0.24);
+  top: -70px;
+  right: -50px;
+}
+
+.bubble-2 {
+  width: 180px;
+  height: 180px;
+  background: rgba(16, 185, 129, 0.22);
+  bottom: 30px;
+  left: -60px;
+  animation-delay: .9s;
+}
+
+.hero {
+  position: relative;
+  max-width: 920px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 14px 12px 10px;
+}
+
+.brand {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.headline {
+  display: block;
+  margin-top: 8px;
+  font-size: 34px;
+  line-height: 1.16;
+  font-weight: 900;
+}
+
+.subline {
+  display: block;
+  margin-top: 10px;
+  font-size: 15px;
+  color: #334155;
+}
+
+.why-block {
+  position: relative;
+  z-index: 1;
+  max-width: 980px;
+  margin: 16px auto 0;
+  padding: 18px;
+  background: linear-gradient(135deg, #eff6ff, #ffffff);
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.08);
+}
+
+.why-title {
+  display: block;
+  margin-top: 4px;
+  font-size: 24px;
+  line-height: 1.35;
+  font-weight: 900;
+}
+
+.why-desc {
+  display: block;
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.75;
+  color: #334155;
+}
+
+.how-what-grid {
+  position: relative;
+  z-index: 1;
+  max-width: 980px;
+  margin: 12px auto 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.06);
+}
+
+.kicker {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2563eb;
+  letter-spacing: 1px;
+}
+
+.panel-title {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.panel-desc {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.82;
+  white-space: pre-line;
+  color: #334155;
+}
+
+.cta-card {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  margin: 18px auto 0;
+  padding: 18px;
+  border-radius: 16px;
+  background: #0f172a;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.25);
+}
+
+.cta-title {
+  display: block;
+  text-align: center;
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.cta-sub {
+  display: block;
+  text-align: center;
+  margin-top: 6px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.email {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #111827;
+  color: #f8fafc;
+  padding: 0 14px;
+  box-sizing: border-box;
+}
+
+.submit {
+  height: 46px;
+  padding: 0 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.submit.disabled {
+  opacity: .62;
+  cursor: default;
+}
+
+.submit-text {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ok, .err {
+  display: block;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.ok { color: #86efac; }
+.err { color: #fda4af; }
+
+.note {
+  display: block;
+  margin-top: 8px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+@media (min-width: 900px) {
+  .how-what-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .headline {
+    font-size: 42px;
+  }
+
+  .why-title {
+    font-size: 28px;
+  }
+}

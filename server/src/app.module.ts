@@ -8,6 +8,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { DevelopersModule } from './developers/developers.module';
 import { ProjectOwnersModule } from './project-owners/project-owners.module';
 import { RequestsModule } from './requests/requests.module';
+import { WaitlistModule } from './waitlist/waitlist.module';
 import { MailModule } from './mail/mail.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
@@ -43,6 +44,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     DevelopersModule,
     ProjectOwnersModule,
     RequestsModule,
+    WaitlistModule,
     MailModule,
   ],
   providers: [

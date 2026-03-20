@@ -1,5 +1,6 @@
 export default {
   pages: [
+    'pages/index',
     'pages/index/index',
     'pages/login/index',
     'pages/onboarding/index',
@@ -12,7 +13,15 @@ export default {
     'pages/profile/index',
     'pages/profile/basic',
     'pages/profile/detail',
-    'pages/simple/index',
+    'pages/index0',
+    'pages/index1',
+    'pages/index2',
+    'pages/index3',
+    'pages/index4',
+    'pages/index5',
+    'pages/index6',
+    'pages/index7',
+    'pages/welcome',
   ],
   window: {
     backgroundTextStyle: 'light',

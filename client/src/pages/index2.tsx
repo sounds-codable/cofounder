@@ -3,9 +3,9 @@ import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import { storage } from '@/utils/storage'
 import { projectApi, developerApi } from '@/services/api'
-import './index.scss'
+import './index2.scss'
 
-export default function SimpleLanding() {
+export default function Index2() {
   const [projects, setProjects] = useState<any[]>([])
   const [developers, setDevelopers] = useState<any[]>([])
   const [email, setEmail] = useState('')
@@ -13,16 +13,7 @@ export default function SimpleLanding() {
   const [selectedRole, setSelectedRole] = useState('')
 
   useDidShow(() => {
-    if (storage.isLoggedIn()) {
-      const user = storage.getUser()
-      if (user?.basicProfileCompleted) {
-        Taro.redirectTo({ url: '/pages/projects/index' })
-      } else {
-        Taro.redirectTo({ url: '/pages/onboarding/index' })
-      }
-    } else {
-      loadData()
-    }
+    loadData()
   })
 
   const loadData = async () => {
@@ -55,14 +46,6 @@ export default function SimpleLanding() {
 
   const handleDirectLogin = (role: string) => {
     Taro.navigateTo({ url: `/pages/login/index?role=${role}` })
-  }
-
-  if (storage.isLoggedIn()) {
-    return (
-      <View className='loading-screen'>
-        <Text className='loading-text'>加载中...</Text>
-      </View>
-    )
   }
 
   return (
