@@ -165,6 +165,7 @@ curl -H "Authorization: token api_user:your_api_token" \
 
 1. **可以用 API 改发件人地址**（`app.from_email`）。
 2. **确认邮件正文/按钮文案/页脚不是通过 Subscribers API 改**，而是通过 **System templates**（静态模板文件）改。
+3. **System templates 是全局生效**（不是按发件人隔离）。若同一套 Listmonk 承载多个项目，建议在模板内按 `{{ .Lists }}` 做条件分支。
 3. 你要去掉“私人列表”与“powered by listmonk”，需要修改模板：
    - `email-templates/subscriber-optin.html`
    - `email-templates/base.html`
@@ -174,6 +175,8 @@ curl -H "Authorization: token api_user:your_api_token" \
 - Templating / System templates：
   - https://listmonk.app/docs/templating/
   - https://listmonk.app/docs/configuration/
+- 社区讨论（按 list 覆盖默认模板仍是需求项）：
+  - https://github.com/knadh/listmonk/issues/2337
 
 ### 7.2 设置发件人（API 方式）
 
@@ -205,11 +208,24 @@ curl -X PUT -H "Authorization: token api_user:your_api_token" \
 - 说明当前 API 用户没有 settings 读写权限。
 - 请在 Listmonk 后台给该用户补权限，或改用 Super Admin 的 API token 调 `GET/PUT /api/settings`。
 
+如果你改了 token 权限后仍看到旧发件人（例如 `SDS <...>`），先直接核对 `app.from_email` 当前值：
+
+```bash
+curl -s -H "Authorization: token api_user:your_api_token" \
+  http://127.0.0.1:9000/api/settings | jq -r '.data["app.from_email"]'
+```
+
+只要这里还是旧值，订阅确认邮件就会继续使用旧发件人。
+
 ### 7.3 设置确认邮件正文（模板方式）
 
 本仓库已提供一套可直接使用的模板示例：
 - `docs/listmonk-templates/subscriber-optin.html`
 - `docs/listmonk-templates/base.html`
+
+当前模板策略：
+- `base.html` 页脚已改为空白。
+- `subscriber-optin.html` 采用“按 list 条件分支”：仅 `ID=10`（Cofounder waitlist）使用定制文案，其它 list 走官方默认文案，避免影响同实例下其它项目。
 
 你可以将它们覆盖到 Listmonk 的自定义静态目录（按官方 `--static-dir` 机制）。
 
