@@ -26,7 +26,7 @@ async function bootstrap() {
   // API 前缀
   app.setGlobalPrefix('api');
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 3010;
   await app.listen(port);
 
   console.log(`🚀 合伙造后端服务已启动: http://localhost:${port}`);
