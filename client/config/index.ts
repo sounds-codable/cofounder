@@ -55,7 +55,10 @@ export default defineConfig(async (merge, { command, mode }) => {
       publicPath: '/',
       staticDirectory: 'static',
       router: {
-        mode: 'browser'
+        mode: 'browser',
+        customRoutes: {
+          '/pages/index': '/',
+        },
       },
       esnextModules: ['taro-ui'],
       webpackChain(chain) {

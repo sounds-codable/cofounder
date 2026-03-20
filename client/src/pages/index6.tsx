@@ -5,11 +5,32 @@ import { waitlistApi } from '@/services/api'
 import './index6.scss'
 
 type SubmitState = 'idle' | 'loading' | 'done' | 'error'
+type MvpTipKey = 'hero' | 'how' | null
 
 export default function Index6() {
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<SubmitState>('idle')
   const [message, setMessage] = useState('')
+  const [activeMvpTip, setActiveMvpTip] = useState<MvpTipKey>(null)
+
+  const renderMvpHint = (tipKey: Exclude<MvpTipKey, null>) => (
+    <View
+      className={`mvp-wrap ${activeMvpTip === tipKey ? 'show' : ''}`}
+      onClick={(e) => {
+        e.stopPropagation()
+        setActiveMvpTip((prev) => (prev === tipKey ? null : tipKey))
+      }}
+    >
+      <Text className='mvp-text'>MVP</Text>
+      <Text className='mvp-icon'>i</Text>
+      <View className='mvp-pop'>
+        <Text className='mvp-pop-title'>为什么先做 MVP？</Text>
+        <Text className='mvp-pop-desc'>
+          先做最小可用版本，能用更少时间和成本，快速验证是否有人真的愿意使用和付费。
+        </Text>
+      </View>
+    </View>
+  )
 
   const handleSubmit = async () => {
     if (!email || !email.includes('@')) {
@@ -23,7 +44,14 @@ export default function Index6() {
       const res = await waitlistApi.subscribe(email)
       if (res.success) {
         setStatus('done')
-        setMessage('已加入 waitlist，上线第一时间通知你。')
+        const successMessage = res.message || '申请成功，已加入排队序列。名额开放后我们会邮件通知你，请留意邮箱。'
+        setMessage(successMessage)
+        Taro.showModal({
+          title: '申请已提交',
+          content: successMessage,
+          showCancel: false,
+          confirmText: '我知道了',
+        })
       } else {
         setStatus('error')
         setMessage(res.message || '订阅失败，请稍后重试')
@@ -35,49 +63,85 @@ export default function Index6() {
   }
 
   return (
-    <View className='index6'>
-      <View className='bg-breathe bubble-1' />
-      <View className='bg-breathe bubble-2' />
+    <View className='index6 theme-tech' onClick={() => setActiveMvpTip(null)}>
+      <View className='bg-glow glow-1' />
+      <View className='bg-glow glow-2' />
 
       <View className='hero'>
-        <Text className='brand'>合伙造</Text>
-        <Text className='headline'>程序员 × 专家，今天就能开始</Text>
-        <Text className='subline'>不是找外包，不是空聊想法。是一起把产品做出来。</Text>
+        <Text className='brand'>ICU · I SEE YOU</Text>
+        <Text className='headline'>AI 时代，不做旁观者。</Text>
+        <View className='subline mvp-line'>
+          <Text>先做一个 </Text>
+          {renderMvpHint('hero')}
+          <Text>，给自己留住主动权，而不是等被替代。</Text>
+        </View>
       </View>
 
-      <View className='why-block'>
-        <Text className='kicker'>WHY</Text>
-        <Text className='why-title'>多数好想法，不是输在方向，而是停在没人并肩。</Text>
-        <Text className='why-desc'>
-          专家有行业洞察，程序员有产品实现。分开都很强，合在一起才有结果。
-        </Text>
-      </View>
-
-      <View className='how-what-grid'>
+      <View className='risk-grid'>
         <View className='panel'>
-          <Text className='kicker'>HOW</Text>
-          <Text className='panel-title'>怎么做</Text>
-          <Text className='panel-desc'>
-            1) 双向匹配{'\n'}
-            2) 快速组队{'\n'}
-            3) 先做 MVP 验证
-          </Text>
+          <Text className='kicker'>给项目方 / 专业人士</Text>
+          <Text className='panel-title'>两件事会很快发生</Text>
+          <View className='panel-list'>
+            <View className='panel-item'>
+              <Text className='bullet'>•</Text>
+              <Text className='panel-item-text'>AI 替代工作是必然，而且速度会超出多数人的预期。</Text>
+            </View>
+            <View className='panel-item'>
+              <Text className='bullet'>•</Text>
+              <Text className='panel-item-text'>职场中年危机一直存在，年轻人会持续冲击传统岗位。</Text>
+            </View>
+            <Text className='panel-plain'>现在最稳妥的做法，不是观望，而是尽快把行业经验做成细分应用。</Text>
+          </View>
         </View>
 
         <View className='panel'>
+          <Text className='kicker'>给程序员</Text>
+          <Text className='panel-title'>现实已经很明确</Text>
+          <View className='panel-list'>
+            <View className='panel-item'>
+              <Text className='bullet'>•</Text>
+              <Text className='panel-item-text'>大量程序员已经被优化，更多人正在路上。</Text>
+            </View>
+            <View className='panel-item'>
+              <Text className='bullet'>•</Text>
+              <Text className='panel-item-text'>大多数人只看得到通用需求，而通用需求会被大厂快速覆盖。</Text>
+            </View>
+            <Text className='panel-plain'>更容易成功的方向，是和垂直领域专家一起做小而深的应用。</Text>
+          </View>
+        </View>
+      </View>
+
+      <View className='coop-grid'>
+        <View className='coop-card'>
+          <Text className='kicker'>WHY</Text>
+          <Text className='coop-title'>为什么必须是「程序员 × 专家」</Text>
+          <Text className='coop-desc'>
+            只有专家，想法落不了地；只有程序员，产品容易偏方向。两个人一起，才是最快且最稳的起点。
+          </Text>
+        </View>
+
+        <View className='coop-card'>
+          <Text className='kicker'>HOW</Text>
+          <Text className='coop-title'>我们怎么让双方真正合作</Text>
+          <View className='coop-line'>
+            <Text>专家发布场景与资源，程序员发布技术与节奏。双向匹配后先做 </Text>
+            {renderMvpHint('how')}
+            <Text>，边做边验证，边合作边迭代。</Text>
+          </View>
+        </View>
+
+        <View className='coop-card'>
           <Text className='kicker'>WHAT</Text>
-          <Text className='panel-title'>你会得到</Text>
-          <Text className='panel-desc'>
-            更快落地速度{'\n'}
-            更低试错成本{'\n'}
-            更真实的合作关系
+          <Text className='coop-title'>你会得到什么结果</Text>
+          <Text className='coop-desc'>
+            专家拿到可落地产品，程序员拿到真实业务场景。一起把「点子」变成「可验证的产品」。
           </Text>
         </View>
       </View>
 
       <View className='cta-card'>
-        <Text className='cta-title'>把你放进第一批内测名单</Text>
-        <Text className='cta-sub'>上线即通知，优先体验</Text>
+        <Text className='cta-title'>现在就开始你的副业 / 创业试验</Text>
+        <Text className='cta-sub'>小投入，快验证，借助 AI 做出睡后收入</Text>
 
         <View className='row'>
           <Input
@@ -85,18 +149,20 @@ export default function Index6() {
             type='text'
             value={email}
             onInput={(e) => setEmail(e.detail.value)}
-            placeholder='your@email.com'
-            placeholderStyle='color:#94a3b8;'
+            placeholder='请输入邮箱，例如 your@email.com'
+            placeholderStyle='color: var(--text-placeholder);'
             disabled={status === 'loading'}
           />
-          <View className={`submit ${status === 'loading' ? 'disabled' : ''}`} onClick={status === 'loading' ? undefined : handleSubmit}>
-            <Text className='submit-text'>{status === 'loading' ? '提交中...' : '通知我'}</Text>
+          <View
+            className={`submit ${status === 'loading' ? 'disabled' : ''}`}
+            onClick={status === 'loading' ? undefined : handleSubmit}
+          >
+            <Text className='submit-text'>{status === 'loading' ? '提交中...' : '抢先体验'}</Text>
           </View>
         </View>
 
         {status === 'done' && <Text className='ok'>{message}</Text>}
         {status === 'error' && <Text className='err'>{message}</Text>}
-        <Text className='note'>免费 · 不会发垃圾邮件 · 随时退订</Text>
       </View>
     </View>
   )

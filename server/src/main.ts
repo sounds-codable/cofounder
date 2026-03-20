@@ -29,7 +29,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3010;
   await app.listen(port);
 
-  console.log(`🚀 合伙造后端服务已启动: http://localhost:${port}`);
+  console.log(`🚀 叩饭（Cofounder）后端服务已启动: http://localhost:${port}`);
   console.log(`📚 API 地址: http://localhost:${port}/api`);
 }
 bootstrap();

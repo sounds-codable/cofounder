@@ -1,0 +1,18 @@
+{{ define "subscriber-optin" }}
+{{ template "header" . }}
+<h2 style="margin: 0 0 12px;">叩饭（Cofounder）定向邀请确认</h2>
+<p>你好 {{ .Subscriber.FirstName }}，</p>
+<p>
+  叩饭（Cofounder）正在定向邀请首批用户使用。当前仅开放少量公开名额，
+  点击下方按钮申请使用后，你将进入排队序列。
+</p>
+<p>
+  名额释放时，我们会通过后续通知邮件与你联系，请留意收件箱。
+</p>
+<p>
+  <a href="{{ .OptinURL }}" class="button">申请使用（进入排队序列）</a>
+</p>
+<p style="margin-top: 24px;">Cofounder</p>
+<p style="margin-top: 4px;"><a href="https://cofounder.icu" target="_blank" rel="noreferrer">https://cofounder.icu</a></p>
+{{ template "footer" }}
+{{ end }}

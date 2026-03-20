@@ -117,7 +117,7 @@ export default function Index3() {
         <View className='section-inner'>
           <Text className='defib-charge'>⚡ CLEAR</Text>
           <Text className='section-headline'>
-            合伙造：给你的想法做心肺复苏
+            叩饭（Cofounder）：给你的想法做心肺复苏
           </Text>
 
           <View className='defib-steps'>
@@ -250,7 +250,7 @@ export default function Index3() {
 
       {/* ===== Footer ===== */}
       <View className='footer'>
-        <Text className='footer-brand'>合伙造</Text>
+        <Text className='footer-brand'>叩饭（Cofounder）</Text>
         <Text className='footer-copy'>© 2026 HeHuoZao</Text>
       </View>
     </View>

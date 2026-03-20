@@ -51,7 +51,7 @@ export default function Index7() {
             也值得遇到一个能一起做出来的人。
           </Text>
           <Text className='hero-desc'>
-            合伙造，连接程序员与专家。不是外包，不是雇佣，是并肩把产品做出来。
+            叩饭（Cofounder），连接程序员与专家。不是外包，不是雇佣，是并肩把产品做出来。
           </Text>
 
           <View className='waitlist-box top-waitlist'>

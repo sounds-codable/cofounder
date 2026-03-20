@@ -26,7 +26,7 @@ export default {
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#2563EB',
-    navigationBarTitleText: '合伙造',
+    navigationBarTitleText: '叩饭（Cofounder）',
     navigationBarTextStyle: 'white',
   },
 }

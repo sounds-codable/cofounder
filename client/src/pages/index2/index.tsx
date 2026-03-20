@@ -66,7 +66,7 @@ export default function Index2() {
             却不知道该做什么产品？
           </Text>
           <Text className='hero-desc'>
-            合伙造，让行业专家和程序员以股权合伙的方式，
+            叩饭（Cofounder），让行业专家和程序员以股权合伙的方式，
             把想法变成产品。不是雇佣，是合伙。
           </Text>
 
@@ -106,7 +106,7 @@ export default function Index2() {
       {/* ========== WHY — 痛点 ========== */}
       <View className='section section-why'>
         <View className='section-inner'>
-          <Text className='section-eyebrow'>WHY — 为什么需要合伙造</Text>
+          <Text className='section-eyebrow'>WHY — 为什么需要叩饭（Cofounder）</Text>
           <Text className='section-headline'>
             创业最难的事，{'\n'}不是缺钱，是缺搭档
           </Text>
@@ -146,7 +146,7 @@ export default function Index2() {
       {/* ========== HOW — 方案 ========== */}
       <View className='section section-how'>
         <View className='section-inner'>
-          <Text className='section-eyebrow'>HOW — 合伙造怎么做</Text>
+          <Text className='section-eyebrow'>HOW — 叩饭（Cofounder）怎么做</Text>
           <Text className='section-headline'>
             4步，从想法到合伙
           </Text>
@@ -258,7 +258,7 @@ export default function Index2() {
             <View className='story-card'>
               <Text className='story-quote'>
                 "做了8年医疗器械，一直想做一个给医生用的排班工具。
-                在合伙造上找到了一个全栈工程师，两个月就上线了MVP。"
+                在叩饭（Cofounder）上找到了一个全栈工程师，两个月就上线了MVP。"
               </Text>
               <View className='story-author'>
                 <Text className='story-avatar'>💼</Text>
@@ -371,9 +371,9 @@ export default function Index2() {
       {/* ========== Footer ========== */}
       <View className='footer'>
         <View className='footer-inner'>
-          <Text className='footer-brand'>合伙造</Text>
+          <Text className='footer-brand'>叩饭（Cofounder）</Text>
           <Text className='footer-tagline'>让创业合伙更简单</Text>
-          <Text className='footer-copy'>© 2026 合伙造 HeHuoZao. All rights reserved.</Text>
+          <Text className='footer-copy'>© 2026 叩饭（Cofounder）. All rights reserved.</Text>
         </View>
       </View>
     </View>

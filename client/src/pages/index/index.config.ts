@@ -1,5 +1,5 @@
 export default {
-  navigationBarTitleText: '合伙造',
+  navigationBarTitleText: '叩饭（Cofounder）',
   navigationBarBackgroundColor: '#2563EB',
   navigationBarTextStyle: 'white',
 }

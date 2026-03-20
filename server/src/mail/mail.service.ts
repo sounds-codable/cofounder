@@ -57,13 +57,13 @@ export class MailService {
     const html = `
       <div style="font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2563EB; font-size: 28px; margin: 0;">🤝 合伙造</h1>
+          <h1 style="color: #2563EB; font-size: 28px; margin: 0;">🤝 叩饭（Cofounder）</h1>
           <p style="color: #64748B; font-size: 14px; margin-top: 8px;">行业专家 × 程序员 = 合伙创业</p>
         </div>
         
         <div style="background: #F8FAFC; border-radius: 12px; padding: 30px; margin-bottom: 20px;">
           <p style="color: #1E293B; font-size: 16px; margin: 0 0 20px;">您好！</p>
-          <p style="color: #1E293B; font-size: 16px; margin: 0 0 20px;">您正在登录合伙造平台，验证码为：</p>
+          <p style="color: #1E293B; font-size: 16px; margin: 0 0 20px;">您正在登录叩饭（Cofounder）平台，验证码为：</p>
           
           <div style="background: #2563EB; color: white; font-size: 32px; font-weight: bold; letter-spacing: 8px; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
             ${code}
@@ -76,7 +76,7 @@ export class MailService {
         
         <div style="text-align: center; color: #94A3B8; font-size: 12px;">
           <p>如果这不是您本人的操作，请忽略此邮件。</p>
-          <p>© 2026 合伙造 - 让创业合伙更简单</p>
+          <p>© 2026 叩饭（Cofounder） - 让创业合伙更简单</p>
         </div>
       </div>
     `;
@@ -92,7 +92,7 @@ export class MailService {
         await this.transporter.sendMail({
           from,
           to: email,
-          subject: `【合伙造】您的登录验证码是 ${code}`,
+          subject: `【叩饭（Cofounder）】您的登录验证码是 ${code}`,
           html,
         });
       } catch (err) {

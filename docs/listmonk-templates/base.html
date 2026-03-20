@@ -1,0 +1,103 @@
+{{ define "header" }}
+<!doctype html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+    <base target="_blank" />
+
+    <style>
+      body {
+        background-color: #f0f4fa;
+        font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Helvetica, sans-serif;
+        font-size: 15px;
+        line-height: 1.75;
+        margin: 0;
+        color: #233044;
+      }
+
+      .wrap {
+        background-color: #ffffff;
+        padding: 30px;
+        max-width: 560px;
+        margin: 0 auto;
+        border-radius: 10px;
+        border: 1px solid #dbe6f3;
+      }
+
+      .header {
+        border-bottom: 1px solid #e6edf7;
+        padding-bottom: 16px;
+        margin-bottom: 16px;
+      }
+
+      .footer {
+        text-align: center;
+        font-size: 13px;
+        color: #5b6b84;
+      }
+
+      .footer a {
+        color: #1d4ed8;
+      }
+
+      .gutter {
+        padding: 28px;
+      }
+
+      .button {
+        background: #0ea5e9;
+        color: #fff !important;
+        display: inline-block;
+        border-radius: 8px;
+        padding: 11px 24px;
+        text-align: center;
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      .button:hover {
+        background: #0284c7;
+        color: #fff;
+      }
+
+      img {
+        max-width: 100%;
+      }
+
+      a {
+        color: #0ea5e9;
+      }
+
+      a:hover {
+        color: #0369a1;
+      }
+
+      @media screen and (max-width: 600px) {
+        .gutter {
+          padding: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="gutter">&nbsp;</div>
+    <div class="wrap">
+      <div class="header">
+        {{ if ne LogoURL "" }}
+        <img src="{{ LogoURL }}" alt="Cofounder" />
+        {{ else }}
+        <strong style="font-size: 18px; color: #0b1f3a;">叩饭（Cofounder）</strong>
+        {{ end }}
+      </div>
+{{ end }}
+
+{{ define "footer" }}
+    </div>
+    <div class="footer">
+      <p style="margin: 0;">Cofounder · <a href="https://cofounder.icu" target="_blank" rel="noreferrer">https://cofounder.icu</a></p>
+    </div>
+    <div class="gutter">&nbsp;</div>
+  </body>
+</html>
+{{ end }}

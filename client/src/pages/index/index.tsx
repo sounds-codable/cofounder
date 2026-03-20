@@ -50,7 +50,7 @@ export default function Index() {
     <View className='page'>
       <View className='center'>
         {/* Logo */}
-        <Text className='logo'>合伙造</Text>
+        <Text className='logo'>叩饭（Cofounder）</Text>
 
         {/* Tagline */}
         <Text className='tagline'>
@@ -101,7 +101,7 @@ export default function Index() {
       </View>
 
       {/* Footer */}
-      <Text className='foot'>© 2026 合伙造</Text>
+      <Text className='foot'>© 2026 叩饭（Cofounder）</Text>
     </View>
   )
 }

@@ -41,7 +41,7 @@ export default function Index5() {
   return (
     <View className='index5'>
       <View className='hero'>
-        <Text className='eyebrow'>合伙造 · 内测招募中</Text>
+        <Text className='eyebrow'>叩饭（Cofounder） · 内测招募中</Text>
         <Text className='title'>一个人走得快，两个人走得远。</Text>
         <Text className='subtitle'>
           专家懂方向，程序员能落地。先匹配，再共建，用结果说话。
@@ -94,7 +94,7 @@ export default function Index5() {
           <Text className='block-num'>01</Text>
           <Text className='block-title'>好想法死于找不到对的人</Text>
           <Text className='block-desc'>
-            懂业务的缺技术，能写代码的缺场景。合伙造让互补的两个人直接碰面。
+            懂业务的缺技术，能写代码的缺场景。叩饭（Cofounder）让互补的两个人直接碰面。
           </Text>
         </View>
 

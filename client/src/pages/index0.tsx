@@ -114,7 +114,7 @@ export default function Index0() {
       )}
 
       <View className='footer'>
-        <Text className='footer-text'>© 2026 合伙造 - 让创业合伙更简单</Text>
+        <Text className='footer-text'>© 2026 叩饭（Cofounder） - 让创业合伙更简单</Text>
       </View>
     </View>
   )

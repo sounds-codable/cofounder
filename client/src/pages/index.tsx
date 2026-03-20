@@ -1,3 +1,3 @@
-import IndexPage from './index/index'
+import IndexPage from './index6'
 
 export default IndexPage
