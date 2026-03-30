@@ -1,25 +1,19 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { SendCodeDto } from './dto/send-code.dto';
-import { VerifyCodeDto } from './dto/verify-code.dto';
-import { Public } from '../common/decorators/public.decorator';
+import { SendLoginCodeDto } from './dto/send-login-code.dto';
+import { VerifyLoginCodeDto } from './dto/verify-login-code.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Public()
   @Post('send-code')
-  @HttpCode(HttpStatus.OK)
-  async sendCode(@Body() dto: SendCodeDto) {
-    return this.authService.sendVerificationCode(dto);
+  sendCode(@Body() body: SendLoginCodeDto) {
+    return this.authService.sendLoginCode(body.email);
   }
 
-  @Public()
-  @Post('verify')
-  @HttpCode(HttpStatus.OK)
-  async verify(@Body() dto: VerifyCodeDto) {
-    return this.authService.verifyAndLogin(dto);
+  @Post('verify-code')
+  verifyCode(@Body() body: VerifyLoginCodeDto) {
+    return this.authService.verifyLoginCode(body.email, body.code);
   }
 }
-

@@ -66,8 +66,8 @@ fi
 
 if [[ "$MODE" == "frontend" || "$MODE" == "all" ]]; then
   log "Building frontend locally"
-  (cd "$PROJECT_ROOT/client" && npm ci --legacy-peer-deps)
-  (cd "$PROJECT_ROOT/client" && npm run build:h5)
+  (cd "$PROJECT_ROOT/client" && npm ci)
+  (cd "$PROJECT_ROOT/client" && npm run build)
 
   if [[ ! -d "$LOCAL_FRONTEND_DIST" ]]; then
     die "Local frontend dist not found at $LOCAL_FRONTEND_DIST"

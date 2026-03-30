@@ -1,58 +1,45 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { APP_GUARD } from '@nestjs/core';
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { ProjectsModule } from './projects/projects.module';
-import { DevelopersModule } from './developers/developers.module';
-import { ProjectOwnersModule } from './project-owners/project-owners.module';
-import { RequestsModule } from './requests/requests.module';
-import { WaitlistModule } from './waitlist/waitlist.module';
-import { MailModule } from './mail/mail.module';
-import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { AuthController } from './auth/auth.controller';
+import { MailService } from './auth/mail.service';
+import { AuthService } from './auth/auth.service';
+import { ContactMethod } from './contacts/contact-method.entity';
+import { HealthController } from './health/health.controller';
+import { MeController } from './me/me.controller';
+import { MeService } from './me/me.service';
+import { Card } from './platform/card.entity';
+import { DetailRequest } from './platform/detail-request.entity';
+import { PlatformController } from './platform/platform.controller';
+import { PlatformService } from './platform/platform.service';
+import { SeedService } from './platform/seed.service';
+import { RequestsController } from './requests/requests.controller';
+import { RequestsService } from './requests/requests.service';
+import { User } from './users/user.entity';
 
 @Module({
   imports: [
-    // 配置模块
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
     }),
-
-    // 数据库模块
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
+      inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        database: configService.get('DB_DATABASE'),
+        host: configService.get<string>('DB_HOST', 'localhost'),
+        port: Number(configService.get<string>('DB_PORT', '5432')),
+        username: configService.get<string>('DB_USERNAME', 'postgres'),
+        password: configService.get<string>('DB_PASSWORD', 'postgres'),
+        database: configService.get<string>('DB_DATABASE', 'cofounder_new'),
         autoLoadEntities: true,
-        synchronize: configService.get('NODE_ENV') === 'development', // 开发环境自动同步
-        logging: configService.get('NODE_ENV') === 'development',
+        synchronize: configService.get<string>('TYPEORM_SYNCHRONIZE', 'true') === 'true',
+        logging: configService.get<string>('DB_LOGGING', 'false') === 'true',
       }),
-      inject: [ConfigService],
     }),
-
-    // 业务模块
-    AuthModule,
-    UsersModule,
-    ProjectsModule,
-    DevelopersModule,
-    ProjectOwnersModule,
-    RequestsModule,
-    WaitlistModule,
-    MailModule,
+    TypeOrmModule.forFeature([User, ContactMethod, Card, DetailRequest]),
   ],
-  providers: [
-    // 全局 JWT 认证守卫
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-  ],
+  controllers: [HealthController, PlatformController, AuthController, MeController, RequestsController],
+  providers: [PlatformService, SeedService, AuthService, MailService, MeService, RequestsService],
 })
 export class AppModule {}

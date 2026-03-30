@@ -1,0 +1,327 @@
+import { fallbackPublicCards, fallbackRequestStates, type PublicCard, type RequestState, type UserRole } from '@/lib/site-data';
+import { getStoredAccessToken } from '@/lib/session';
+
+export type ContactMethod = {
+  id: string;
+  type: string;
+  value: string;
+  isPrimary: boolean;
+};
+
+export type AuthUser = {
+  id: string;
+  email: string | null;
+  role: UserRole;
+  displayName: string;
+  city: string;
+  basicSummary: string;
+  desiredDirection: string | null;
+  detailedProfileCompletedAt: string | null;
+  lastLoginAt: string | null;
+};
+
+export type MeProfile = {
+  user: AuthUser & {
+    detailedProfile: {
+      intro: string;
+      education: string;
+      experience: string;
+      projectDetail: string;
+    } | null;
+  };
+  card: {
+    id: string;
+    headline: string;
+    city: string;
+    basicSummary: string;
+    optionalDirection: string | null;
+    strengths: string[];
+  } | null;
+  contactMethods: ContactMethod[];
+  completion: {
+    hasBasicProfile: boolean;
+    hasDetailProfile: boolean;
+    hasPublicCard: boolean;
+  };
+};
+
+export type ViewerState = {
+  requestId: string;
+  status: string;
+  detailVisible: boolean;
+  contactVisible: boolean;
+  revealedDetail: PublicCard['detailPreview'] | null;
+  contactMethods: ContactMethod[];
+};
+
+export type PlatformCardDetail = PublicCard & {
+  viewerState: ViewerState | null;
+};
+
+export type RequestTargetCard = {
+  id: string;
+  headline: string;
+  city: string;
+  role: UserRole;
+  ownerName: string;
+};
+
+export type OutgoingRequest = {
+  id: string;
+  status: string;
+  rejectionReason: string | null;
+  createdAt: string;
+  targetCard: RequestTargetCard;
+  publisher: {
+    id: string;
+    displayName: string;
+    role: UserRole;
+    city: string;
+    basicSummary: string;
+    detailedProfile: PublicCard['detailPreview'] | null;
+    contactMethods: ContactMethod[];
+  };
+  actions: {
+    canExchangeContact: boolean;
+  };
+};
+
+export type IncomingRequest = {
+  id: string;
+  status: string;
+  rejectionReason: string | null;
+  createdAt: string;
+  targetCard: RequestTargetCard;
+  requester: {
+    id: string;
+    displayName: string;
+    role: UserRole;
+    city: string;
+    basicSummary: string;
+    desiredDirection: string | null;
+    detailedProfile: PublicCard['detailPreview'] | null;
+    contactMethods: ContactMethod[];
+  };
+  actions: {
+    canViewRequesterDetail: boolean;
+    canApprove: boolean;
+    canReject: boolean;
+    canExchangeContact: boolean;
+  };
+};
+
+export type RequestCenterResponse = {
+  incoming: IncomingRequest[];
+  outgoing: OutgoingRequest[];
+};
+
+export type PlatformOverview = {
+  roles: Array<{
+    key: UserRole;
+    label: string;
+  }>;
+  stats: {
+    totalCards: number;
+    expertCards: number;
+    developerCards: number;
+  };
+  requestStates: RequestState[];
+};
+
+function getDefaultApiBaseUrl() {
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:3010/api';
+    }
+
+    return '/api';
+  }
+
+  return 'http://localhost:3010/api';
+}
+
+function getApiBaseUrl() {
+  return process.env.NEXT_PUBLIC_API_BASE_URL || getDefaultApiBaseUrl();
+}
+
+type RequestOptions = {
+  body?: unknown;
+  method?: 'GET' | 'POST' | 'PUT';
+  token?: string | null;
+};
+
+async function requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const token = Object.prototype.hasOwnProperty.call(options, 'token') ? options.token : getStoredAccessToken();
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    method: options.method ?? 'GET',
+    headers: {
+      Accept: 'application/json',
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    ...(options.body ? { body: JSON.stringify(options.body) } : {}),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Request failed: ${response.status}`);
+  }
+
+  return (await response.json()) as T;
+}
+
+export async function fetchOverview() {
+  try {
+    return await requestJson<PlatformOverview>('/platform/overview');
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchCards(role?: UserRole) {
+  try {
+    const search = role ? `?role=${role}` : '';
+    return await requestJson<PublicCard[]>(`/platform/cards${search}`);
+  } catch {
+    if (role) {
+      return fallbackPublicCards.filter((card) => card.role === role);
+    }
+
+    return fallbackPublicCards;
+  }
+}
+
+export async function fetchCardById(id: string) {
+  try {
+    return await requestJson<PlatformCardDetail>(`/platform/cards/${id}`);
+  } catch {
+    const fallbackCard = fallbackPublicCards.find((card) => card.id === id) ?? null;
+
+    if (!fallbackCard) {
+      return null;
+    }
+
+    return {
+      ...fallbackCard,
+      viewerState: null,
+    };
+  }
+}
+
+export async function fetchRequestStates() {
+  try {
+    return await requestJson<RequestState[]>('/platform/request-states');
+  } catch {
+    return fallbackRequestStates;
+  }
+}
+
+export function extractErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    try {
+      const parsed = JSON.parse(error.message) as { message?: string | string[] };
+
+      if (Array.isArray(parsed.message)) {
+        return parsed.message.join('，');
+      }
+
+      return parsed.message || error.message;
+    } catch {
+      return error.message;
+    }
+  }
+
+  return '请求失败';
+}
+
+export function isUnauthorizedError(error: unknown) {
+  return extractErrorMessage(error).includes('请先登录') || extractErrorMessage(error).includes('登录态');
+}
+
+export async function sendLoginCode(email: string) {
+  return requestJson<{ ok: boolean; expiresInSeconds: number; delivery: 'smtp' | 'dev'; message: string; devCode?: string }>('/auth/send-code', {
+    method: 'POST',
+    body: { email },
+    token: null,
+  });
+}
+
+export async function verifyLoginCode(email: string, code: string) {
+  return requestJson<{ accessToken: string; user: AuthUser }>('/auth/verify-code', {
+    method: 'POST',
+    body: { email, code },
+    token: null,
+  });
+}
+
+export async function fetchMe() {
+  return requestJson<MeProfile>('/me');
+}
+
+export async function saveBasicProfile(body: {
+  role: UserRole;
+  displayName: string;
+  headline: string;
+  basicSummary: string;
+  city: string;
+  desiredDirection?: string;
+  strengths: string[];
+ }) {
+  return requestJson<MeProfile>('/me/basic', {
+    method: 'PUT',
+    body,
+  });
+}
+
+export async function saveDetailProfile(body: {
+  intro: string;
+  education: string;
+  experience: string;
+  projectDetail: string;
+  phone?: string;
+  wechat?: string;
+  qq?: string;
+  email?: string;
+  other?: string;
+ }) {
+  return requestJson<MeProfile>('/me/detail', {
+    method: 'PUT',
+    body,
+  });
+}
+
+export async function fetchMyRequests() {
+  return requestJson<RequestCenterResponse>('/requests');
+}
+
+export async function createDetailRequest(cardId: string) {
+  return requestJson<OutgoingRequest>('/requests', {
+    method: 'POST',
+    body: { cardId },
+  });
+}
+
+export async function viewRequesterDetail(requestId: string) {
+  return requestJson<IncomingRequest>(`/requests/${requestId}/view-requester-detail`, {
+    method: 'POST',
+  });
+}
+
+export async function approveDetailRequest(requestId: string) {
+  return requestJson<IncomingRequest>(`/requests/${requestId}/approve`, {
+    method: 'POST',
+  });
+}
+
+export async function rejectDetailRequest(requestId: string, reason: string) {
+  return requestJson<IncomingRequest>(`/requests/${requestId}/reject`, {
+    method: 'POST',
+    body: { reason },
+  });
+}
+
+export async function exchangeContact(requestId: string) {
+  return requestJson<IncomingRequest | OutgoingRequest>(`/requests/${requestId}/exchange-contact`, {
+    method: 'POST',
+  });
+}

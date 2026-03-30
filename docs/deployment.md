@@ -1,6 +1,6 @@
 # 部署说明（Ubuntu 24.04 + Nginx + Supervisor + PostgreSQL）
 
-本文档用于将本项目（前端 Taro H5 + 后端 NestJS）部署到你自己的 Ubuntu 24.04 服务器。
+本文档用于将本项目（前端 Next.js v16 静态导出 + 后端 NestJS v11）部署到你自己的 Ubuntu 24.04 服务器。
 
 - 服务器代码目录：`/var/www/www.cofounder.icu`
 - 进程管理：Supervisor（后端）
@@ -14,7 +14,8 @@
 
 - `/var/www/www.cofounder.icu/repo`
   - 通过 `git clone` 得到的仓库
-  - 包含 `client/` 与 `server/`
+  - 包含新的 `client/` 与 `server/`
+  - 仓库中也可能包含 `archive/`，用于保留旧版 Taro / 旧版服务代码
 - `/var/www/www.cofounder.icu/releases`
   - 每次发布一个独立目录（可选，如果你不做回滚，也可以只用 `current`）
 - `/var/www/www.cofounder.icu/current`
@@ -67,7 +68,7 @@
 
 因此，生产上你需要：
 
-1. 在 PostgreSQL 中创建数据库（例如 `cofounder`）
+1. 在 PostgreSQL 中创建数据库（服务器端数据库名称继续保持原名，例如 `cofounder`）
 2. 创建用户（例如 `cofounder`）并授权
 3. 在后端 `.env` 中配置上述 `DB_*`
 
@@ -246,50 +247,29 @@ sudo -u postgres psql
 
 .env 配置如下：
 
+# === 应用配置 ===
+NODE_ENV=production
+PORT=3010
+
 # === 数据库连接 ===
 DB_HOST=127.0.0.1
-# 通过 PgBouncer 端口
-DB_PORT=6432                
+DB_PORT=6432
 DB_USERNAME=cofounder
-DB_PASSWORD=pass #改一下
+DB_PASSWORD=pass # 改一下
 DB_DATABASE=cofounder
-# 在 PG/pgbouncer 里显示的应用名
-DB_APP_NAME=cofounder  
-
-# === TypeORM 连接池配置（extra 参数） ===
-# 最大连接数（不要超过 PgBouncer pool_size）
-PG_MAX_OPEN_CONNS=20     
-# 空闲连接数（TypeORM 内部维护）   
-PG_MAX_IDLE_CONNS=10        
-# 连接最大生命周期
-PG_CONN_MAX_LIFETIME_SECONDS=600  
-# 空闲多久关闭
-PG_CONN_MAX_IDLE_TIME_SECONDS=300 
-
-# === 事务重试（可选，防止高并发冲突） ===
-# 事务冲突重试次数
-USAGE_TX_RETRY_MAX=3        
-# 基础延迟 ms
-USAGE_TX_RETRY_BASE_MS=50   
-
-# === 其他 TypeORM 可用配置 ===
-# 生产环境千万不要 true
+DB_LOGGING=false
 TYPEORM_SYNCHRONIZE=false
-# 日志开关
-TYPEORM_LOGGING=false       
-# 启动时自动运行迁移
-TYPEORM_MIGRATIONS_RUN=true 
 
-# === SMTP配置 ===
-# 腾讯 邮件推送 或者 aoksend  待改成 cofounder.icu的
-MAIL_DRIVER=smtp
-MAIL_HOST=smtp.qcloudmail.com
+# === JWT 配置 ===
+JWT_SECRET=replace_with_real_secret
+JWT_EXPIRES_IN=7d
+
+# === SMTP 配置 ===
+MAIL_HOST=smtp.example.com
 MAIL_PORT=465
-MAIL_USERNAME=info@info.xixisys.com
-MAIL_PASSWORD=pass #改一下
-MAIL_ENCRYPTION=ssl
-MAIL_FROM_ADDRESS=info@info.xixisys.com
-MAIL_FROM_NAME="Cofounder i see you"
+MAIL_USER=hello@example.com
+MAIL_PASS=pass # 改一下
+MAIL_FROM="叩饭（Cofounder） <hello@example.com>"
 
 ## 5. 首次部署：构建与运行
 
@@ -300,17 +280,17 @@ cd server
 - 构建：`npm run build`
 - 运行：`npm run start:prod`（本质是 `node dist/main`）
 
-### 5.2 前端（Taro H5）
+### 5.2 前端（Next.js v16 静态导出）
 
 前端构建命令：
 
-- `npm run build:h5`
+- `npm run build`
 
 构建产物输出到：
 
 - `client/dist/`
 
-该静态目录建议由 Nginx 直接托管。
+说明：新的前端使用 Next.js `App Router`，但部署时采用静态导出方式，构建脚本会把导出产物整理到 `client/dist/`，继续由 Nginx 直接托管。
 
 ## 6. Nginx 与 Supervisor 配置
 

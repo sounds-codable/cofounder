@@ -1,78 +1,53 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post } from '@nestjs/common';
+import { AuthService } from '../auth/auth.service';
+import { CreateDetailRequestDto } from './dto/create-detail-request.dto';
+import { RejectDetailRequestDto } from './dto/reject-detail-request.dto';
 import { RequestsService } from './requests.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
-import { User, UserRole } from '../users/entities/user.entity';
-import { ApplyProjectDto, InviteDeveloperDto } from './dto/create-request.dto';
-import { RequestStatus } from './entities/request.entity';
 
 @Controller('requests')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class RequestsController {
-  constructor(private readonly requestsService: RequestsService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly requestsService: RequestsService,
+  ) {}
 
-  // 程序员申请项目
-  @Post('apply')
-  @Roles(UserRole.DEVELOPER)
-  async applyProject(@CurrentUser() user: User, @Body() dto: ApplyProjectDto) {
-    return this.requestsService.applyProject(user.id, dto);
+  @Get()
+  async listMine(@Headers('authorization') authorization?: string) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.requestsService.listForUser(user.id);
   }
 
-  // 项目方邀请程序员
-  @Post('invite')
-  @Roles(UserRole.PROJECT_OWNER)
-  async inviteDeveloper(
-    @CurrentUser() user: User,
-    @Body() dto: InviteDeveloperDto,
+  @Post()
+  async create(@Headers('authorization') authorization: string | undefined, @Body() body: CreateDetailRequestDto) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.requestsService.createRequest(user, body.cardId);
+  }
+
+  @Post(':id/view-requester-detail')
+  async viewRequesterDetail(@Headers('authorization') authorization: string | undefined, @Param('id') id: string) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.requestsService.viewRequesterDetail(user.id, id);
+  }
+
+  @Post(':id/approve')
+  async approve(@Headers('authorization') authorization: string | undefined, @Param('id') id: string) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.requestsService.approveRequest(user.id, id);
+  }
+
+  @Post(':id/reject')
+  async reject(
+    @Headers('authorization') authorization: string | undefined,
+    @Param('id') id: string,
+    @Body() body: RejectDetailRequestDto,
   ) {
-    return this.requestsService.inviteDeveloper(user.id, dto);
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.requestsService.rejectRequest(user.id, id, body.reason);
   }
 
-  // 接受请求
-  @Patch(':id/accept')
-  async acceptRequest(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.requestsService.acceptRequest(user.id, id);
-  }
-
-  // 拒绝请求
-  @Patch(':id/reject')
-  async rejectRequest(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.requestsService.rejectRequest(user.id, id);
-  }
-
-  // 获取收到的请求
-  @Get('received')
-  async getReceivedRequests(
-    @CurrentUser() user: User,
-    @Query('status') status?: RequestStatus,
-  ) {
-    return this.requestsService.getReceivedRequests(user.id, status);
-  }
-
-  // 获取发出的请求
-  @Get('sent')
-  async getSentRequests(
-    @CurrentUser() user: User,
-    @Query('status') status?: RequestStatus,
-  ) {
-    return this.requestsService.getSentRequests(user.id, status);
-  }
-
-  // 获取联系方式
-  @Get(':id/contact')
-  async getContactInfo(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.requestsService.getContactInfo(user.id, id);
+  @Post(':id/exchange-contact')
+  async exchangeContact(@Headers('authorization') authorization: string | undefined, @Param('id') id: string) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.requestsService.exchangeContact(user.id, id);
   }
 }
-

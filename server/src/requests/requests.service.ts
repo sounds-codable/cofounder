@@ -1,259 +1,286 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  BadRequestException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Request, RequestType, RequestStatus } from './entities/request.entity';
-import { Project, ProjectStatus } from '../projects/entities/project.entity';
-import { User, UserRole } from '../users/entities/user.entity';
-import { ApplyProjectDto, InviteDeveloperDto } from './dto/create-request.dto';
-import { ProjectsService } from '../projects/projects.service';
+import { ContactMethod } from '../contacts/contact-method.entity';
+import { DetailRequestStatus } from '../common/enums/detail-request-status.enum';
+import { Card } from '../platform/card.entity';
+import { DetailRequest } from '../platform/detail-request.entity';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class RequestsService {
   constructor(
-    @InjectRepository(Request)
-    private requestRepository: Repository<Request>,
-    @InjectRepository(Project)
-    private projectRepository: Repository<Project>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    private projectsService: ProjectsService,
+    @InjectRepository(DetailRequest)
+    private readonly detailRequestRepository: Repository<DetailRequest>,
+    @InjectRepository(Card)
+    private readonly cardRepository: Repository<Card>,
   ) {}
 
-  // 程序员申请项目
-  async applyProject(userId: string, dto: ApplyProjectDto): Promise<Request> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-
-    if (!user || user.role !== UserRole.DEVELOPER) {
-      throw new ForbiddenException('只有程序员才能申请项目');
-    }
-
-    if (!user.basicProfileCompleted) {
-      throw new ForbiddenException('请先完善基础资料');
-    }
-
-    const project = await this.projectRepository.findOne({
-      where: { id: dto.projectId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('项目不存在');
-    }
-
-    if (project.status !== ProjectStatus.OPEN) {
-      throw new BadRequestException('该项目已关闭招募');
-    }
-
-    // 检查是否已申请过
-    const existingRequest = await this.requestRepository.findOne({
-      where: {
-        senderId: userId,
-        projectId: dto.projectId,
-        type: RequestType.DEVELOPER_APPLY,
-      },
-    });
-
-    if (existingRequest) {
-      throw new BadRequestException('您已申请过该项目');
-    }
-
-    const request = this.requestRepository.create({
-      type: RequestType.DEVELOPER_APPLY,
-      senderId: userId,
-      receiverId: project.ownerId,
-      projectId: dto.projectId,
-      message: dto.message,
-    });
-
-    await this.requestRepository.save(request);
-
-    // 增加项目申请人数
-    await this.projectsService.incrementApplicationCount(dto.projectId);
-
-    return request;
-  }
-
-  // 项目方邀请程序员
-  async inviteDeveloper(userId: string, dto: InviteDeveloperDto): Promise<Request> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-
-    if (!user || user.role !== UserRole.PROJECT_OWNER) {
-      throw new ForbiddenException('只有项目方才能邀请程序员');
-    }
-
-    const project = await this.projectRepository.findOne({
-      where: { id: dto.projectId, ownerId: userId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('项目不存在或不属于您');
-    }
-
-    if (project.status !== ProjectStatus.OPEN) {
-      throw new BadRequestException('该项目已关闭招募');
-    }
-
-    const developer = await this.userRepository.findOne({
-      where: { id: dto.developerId, role: UserRole.DEVELOPER },
-    });
-
-    if (!developer) {
-      throw new NotFoundException('程序员不存在');
-    }
-
-    // 检查是否已邀请过
-    const existingRequest = await this.requestRepository.findOne({
-      where: {
-        senderId: userId,
-        receiverId: dto.developerId,
-        projectId: dto.projectId,
-        type: RequestType.OWNER_INVITE,
-      },
-    });
-
-    if (existingRequest) {
-      throw new BadRequestException('您已邀请过该程序员加入此项目');
-    }
-
-    const request = this.requestRepository.create({
-      type: RequestType.OWNER_INVITE,
-      senderId: userId,
-      receiverId: dto.developerId,
-      projectId: dto.projectId,
-      message: dto.message,
-    });
-
-    return this.requestRepository.save(request);
-  }
-
-  // 接受请求
-  async acceptRequest(userId: string, requestId: string): Promise<Request> {
-    const request = await this.requestRepository.findOne({
-      where: { id: requestId, receiverId: userId },
-      relations: ['project'],
-    });
-
-    if (!request) {
-      throw new NotFoundException('请求不存在');
-    }
-
-    if (request.status !== RequestStatus.PENDING) {
-      throw new BadRequestException('该请求已处理');
-    }
-
-    request.status = RequestStatus.ACCEPTED;
-    await this.requestRepository.save(request);
-
-    // 更新项目状态为已匹配
-    if (request.project) {
-      request.project.status = ProjectStatus.MATCHED;
-      await this.projectRepository.save(request.project);
-    }
-
-    return request;
-  }
-
-  // 拒绝请求
-  async rejectRequest(userId: string, requestId: string): Promise<Request> {
-    const request = await this.requestRepository.findOne({
-      where: { id: requestId, receiverId: userId },
-    });
-
-    if (!request) {
-      throw new NotFoundException('请求不存在');
-    }
-
-    if (request.status !== RequestStatus.PENDING) {
-      throw new BadRequestException('该请求已处理');
-    }
-
-    request.status = RequestStatus.REJECTED;
-    return this.requestRepository.save(request);
-  }
-
-  // 获取收到的请求
-  async getReceivedRequests(
-    userId: string,
-    status?: RequestStatus,
-  ): Promise<Request[]> {
-    const where: any = { receiverId: userId };
-    if (status) {
-      where.status = status;
-    }
-
-    return this.requestRepository.find({
-      where,
-      relations: ['sender', 'project'],
-      order: { createdAt: 'DESC' },
-    });
-  }
-
-  // 获取发出的请求
-  async getSentRequests(
-    userId: string,
-    status?: RequestStatus,
-  ): Promise<Request[]> {
-    const where: any = { senderId: userId };
-    if (status) {
-      where.status = status;
-    }
-
-    return this.requestRepository.find({
-      where,
-      relations: ['receiver', 'project'],
-      order: { createdAt: 'DESC' },
-    });
-  }
-
-  // 获取联系方式（需要双方都完善详细资料）
-  async getContactInfo(
-    userId: string,
-    requestId: string,
-  ): Promise<{ realName: string; phone: string; wechat: string; city: string } | null> {
-    const request = await this.requestRepository.findOne({
-      where: { id: requestId },
-      relations: ['sender', 'receiver'],
-    });
-
-    if (!request) {
-      throw new NotFoundException('请求不存在');
-    }
-
-    if (request.status !== RequestStatus.ACCEPTED) {
-      throw new ForbiddenException('请求尚未被接受');
-    }
-
-    // 确定要查看的是谁的联系方式
-    const isSender = request.senderId === userId;
-    const isReceiver = request.receiverId === userId;
-
-    if (!isSender && !isReceiver) {
-      throw new ForbiddenException('无权查看此请求');
-    }
-
-    const currentUser = isSender ? request.sender : request.receiver;
-    const targetUser = isSender ? request.receiver : request.sender;
-
-    // 检查当前用户是否已完善详细资料
-    if (!currentUser.detailProfileCompleted) {
-      throw new ForbiddenException('请先完善您的详细资料');
-    }
-
-    // 检查目标用户是否已完善详细资料
-    if (!targetUser.detailProfileCompleted) {
-      return null; // 对方尚未完善详细资料
-    }
+  async listForUser(userId: string) {
+    const [incoming, outgoing] = await Promise.all([
+      this.detailRequestRepository.find({
+        where: { publisher: { id: userId } },
+        relations: {
+          publisher: { contactMethods: true },
+          requester: { contactMethods: true },
+          targetCard: { owner: { contactMethods: true } },
+        },
+        order: { createdAt: 'DESC' },
+      }),
+      this.detailRequestRepository.find({
+        where: { requester: { id: userId } },
+        relations: {
+          publisher: { contactMethods: true },
+          requester: { contactMethods: true },
+          targetCard: { owner: { contactMethods: true } },
+        },
+        order: { createdAt: 'DESC' },
+      }),
+    ]);
 
     return {
-      realName: targetUser.realName,
-      phone: targetUser.phone,
-      wechat: targetUser.wechat,
-      city: targetUser.city,
+      incoming: incoming.map((request) => this.toIncomingRequestItem(request)),
+      outgoing: outgoing.map((request) => this.toOutgoingRequestItem(request)),
     };
   }
-}
 
+  async createRequest(user: User, cardId: string) {
+    let card = await this.cardRepository.findOne({
+      where: { slug: cardId },
+      relations: {
+        owner: true,
+      },
+    });
+
+    if (!card && this.isUuid(cardId)) {
+      card = await this.cardRepository.findOne({
+        where: { id: cardId },
+        relations: {
+          owner: true,
+        },
+      });
+    }
+
+    if (!card) {
+      throw new NotFoundException('目标卡片不存在');
+    }
+
+    if (card.owner.id === user.id) {
+      throw new BadRequestException('不能申请查看自己的卡片');
+    }
+
+    if (!user.detailedProfileCompletedAt || !user.detailedProfile) {
+      throw new BadRequestException('请先完善详细信息，再申请了解详情');
+    }
+
+    const existingRequest = await this.detailRequestRepository.findOne({
+      where: {
+        requester: { id: user.id },
+        targetCard: { id: card.id },
+      },
+      relations: {
+        publisher: { contactMethods: true },
+        requester: { contactMethods: true },
+        targetCard: { owner: { contactMethods: true } },
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+    if (existingRequest && existingRequest.status !== DetailRequestStatus.REJECTED) {
+      return this.toOutgoingRequestItem(existingRequest);
+    }
+
+    const nextRequest = this.detailRequestRepository.create({
+      publisher: card.owner,
+      requester: user,
+      targetCard: card,
+      status: DetailRequestStatus.PENDING_REQUEST,
+      rejectionReason: null,
+      publisherViewedRequesterDetailAt: null,
+      approvedAt: null,
+      contactExchangedAt: null,
+    });
+
+    const savedRequest = await this.detailRequestRepository.save(nextRequest);
+    const requestWithRelations = await this.detailRequestRepository.findOne({
+      where: { id: savedRequest.id },
+      relations: {
+        publisher: { contactMethods: true },
+        requester: { contactMethods: true },
+        targetCard: { owner: { contactMethods: true } },
+      },
+    });
+
+    return this.toOutgoingRequestItem(requestWithRelations!);
+  }
+
+  async viewRequesterDetail(userId: string, requestId: string) {
+    const request = await this.getIncomingRequestForPublisher(userId, requestId);
+
+    if (request.status === DetailRequestStatus.PENDING_REQUEST) {
+      request.status = DetailRequestStatus.PUBLISHER_VIEWED_DETAIL;
+      request.publisherViewedRequesterDetailAt = new Date();
+      await this.detailRequestRepository.save(request);
+    }
+
+    return this.toIncomingRequestItem(request);
+  }
+
+  async approveRequest(userId: string, requestId: string) {
+    const request = await this.getIncomingRequestForPublisher(userId, requestId);
+
+    if (request.status !== DetailRequestStatus.PUBLISHER_VIEWED_DETAIL) {
+      throw new BadRequestException('请先查看对方详细信息，再做同意动作');
+    }
+
+    request.status = DetailRequestStatus.APPROVED_DETAIL_VISIBLE;
+    request.approvedAt = new Date();
+    await this.detailRequestRepository.save(request);
+
+    return this.toIncomingRequestItem(request);
+  }
+
+  async rejectRequest(userId: string, requestId: string, reason: string) {
+    const request = await this.getIncomingRequestForPublisher(userId, requestId);
+
+    if (request.status !== DetailRequestStatus.PUBLISHER_VIEWED_DETAIL) {
+      throw new BadRequestException('请先查看对方详细信息，再做拒绝动作');
+    }
+
+    request.status = DetailRequestStatus.REJECTED;
+    request.rejectionReason = reason.trim();
+    await this.detailRequestRepository.save(request);
+
+    return this.toIncomingRequestItem(request);
+  }
+
+  async exchangeContact(userId: string, requestId: string) {
+    const request = await this.detailRequestRepository.findOne({
+      where: { id: requestId },
+      relations: {
+        publisher: { contactMethods: true },
+        requester: { contactMethods: true },
+        targetCard: { owner: { contactMethods: true } },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('请求不存在');
+    }
+
+    if (request.publisher.id !== userId && request.requester.id !== userId) {
+      throw new ForbiddenException('你无权操作该请求');
+    }
+
+    if (request.status !== DetailRequestStatus.APPROVED_DETAIL_VISIBLE && request.status !== DetailRequestStatus.CONTACT_EXCHANGED) {
+      throw new BadRequestException('当前状态下不能交换联系方式');
+    }
+
+    request.status = DetailRequestStatus.CONTACT_EXCHANGED;
+    request.contactExchangedAt = request.contactExchangedAt ?? new Date();
+    await this.detailRequestRepository.save(request);
+
+    return request.requester.id === userId ? this.toOutgoingRequestItem(request) : this.toIncomingRequestItem(request);
+  }
+
+  private async getIncomingRequestForPublisher(userId: string, requestId: string) {
+    const request = await this.detailRequestRepository.findOne({
+      where: { id: requestId },
+      relations: {
+        publisher: { contactMethods: true },
+        requester: { contactMethods: true },
+        targetCard: { owner: { contactMethods: true } },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('请求不存在');
+    }
+
+    if (request.publisher.id !== userId) {
+      throw new ForbiddenException('你无权处理该请求');
+    }
+
+    return request;
+  }
+
+  private toIncomingRequestItem(request: DetailRequest) {
+    const detailViewed = Boolean(request.publisherViewedRequesterDetailAt);
+    const approved = request.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE || request.status === DetailRequestStatus.CONTACT_EXCHANGED;
+    const contactVisible = request.status === DetailRequestStatus.CONTACT_EXCHANGED;
+
+    return {
+      id: request.id,
+      status: request.status,
+      rejectionReason: request.rejectionReason,
+      createdAt: request.createdAt,
+      targetCard: this.toTargetCard(request),
+      requester: {
+        id: request.requester.id,
+        displayName: request.requester.displayName,
+        role: request.requester.role,
+        city: request.requester.city,
+        basicSummary: request.requester.basicSummary,
+        desiredDirection: request.requester.desiredDirection,
+        detailedProfile: detailViewed || approved ? request.requester.detailedProfile : null,
+        contactMethods: contactVisible ? this.toContactMethods(request.requester.contactMethods) : [],
+      },
+      actions: {
+        canViewRequesterDetail: request.status === DetailRequestStatus.PENDING_REQUEST,
+        canApprove: request.status === DetailRequestStatus.PUBLISHER_VIEWED_DETAIL,
+        canReject: request.status === DetailRequestStatus.PUBLISHER_VIEWED_DETAIL,
+        canExchangeContact: request.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE,
+      },
+    };
+  }
+
+  private toOutgoingRequestItem(request: DetailRequest) {
+    const detailVisible = request.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE || request.status === DetailRequestStatus.CONTACT_EXCHANGED;
+    const contactVisible = request.status === DetailRequestStatus.CONTACT_EXCHANGED;
+
+    return {
+      id: request.id,
+      status: request.status,
+      rejectionReason: request.rejectionReason,
+      createdAt: request.createdAt,
+      targetCard: this.toTargetCard(request),
+      publisher: {
+        id: request.publisher.id,
+        displayName: request.publisher.displayName,
+        role: request.publisher.role,
+        city: request.publisher.city,
+        basicSummary: request.publisher.basicSummary,
+        detailedProfile: detailVisible ? request.publisher.detailedProfile : null,
+        contactMethods: contactVisible ? this.toContactMethods(request.publisher.contactMethods) : [],
+      },
+      actions: {
+        canExchangeContact: request.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE,
+      },
+    };
+  }
+
+  private toTargetCard(request: DetailRequest) {
+    return {
+      id: request.targetCard.slug,
+      headline: request.targetCard.headline,
+      city: request.targetCard.city,
+      role: request.targetCard.role,
+      ownerName: request.targetCard.owner.displayName,
+    };
+  }
+
+  private toContactMethods(contactMethods: ContactMethod[]) {
+    return contactMethods.map((item) => ({
+      id: item.id,
+      type: item.type,
+      value: item.value,
+      isPrimary: item.isPrimary,
+    }));
+  }
+
+  private isUuid(value: string) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  }
+}

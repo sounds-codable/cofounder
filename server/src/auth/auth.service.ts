@@ -1,146 +1,198 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
-import { JwtService } from '@nestjs/jwt';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { VerificationCode } from './entities/verification-code.entity';
-import { User, UserRole } from '../users/entities/user.entity';
-import { SendCodeDto } from './dto/send-code.dto';
-import { VerifyCodeDto } from './dto/verify-code.dto';
-import { MailService } from '../mail/mail.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { createHmac, randomInt } from 'node:crypto';
+import { Repository } from 'typeorm';
+import { MailService } from './mail.service';
+import { UserRole } from '../common/enums/user-role.enum';
+import { User } from '../users/user.entity';
+
+type AuthTokenPayload = {
+  exp: number;
+  sub: string;
+};
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(VerificationCode)
-    private verificationCodeRepository: Repository<VerificationCode>,
+    private readonly configService: ConfigService,
+    private readonly mailService: MailService,
     @InjectRepository(User)
-    private userRepository: Repository<User>,
-    private jwtService: JwtService,
-    private configService: ConfigService,
-    private mailService: MailService,
+    private readonly userRepository: Repository<User>,
   ) {}
 
-  // 生成6位数字验证码
-  private generateCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  }
-
-  // 发送验证码
-  async sendVerificationCode(dto: SendCodeDto): Promise<{ message: string }> {
-    const { email, role } = dto;
-
-    // 检查是否已注册且角色不同
-    const existingUser = await this.userRepository.findOne({ where: { email } });
-    if (existingUser && existingUser.role !== role) {
-      throw new BadRequestException(
-        `该邮箱已注册为${existingUser.role === UserRole.PROJECT_OWNER ? '项目方' : '程序员'}，无法切换身份`,
-      );
-    }
-
-    // 检查是否在1分钟内已发送过验证码
-    const recentCode = await this.verificationCodeRepository.findOne({
-      where: {
-        email,
-        createdAt: MoreThan(new Date(Date.now() - 60 * 1000)),
-      },
-    });
-
-    if (recentCode) {
-      throw new BadRequestException('验证码发送过于频繁，请1分钟后重试');
-    }
-
-    // 生成验证码
-    const code = this.generateCode();
-    const expiresMinutes = this.configService.get<number>('VERIFICATION_CODE_EXPIRES') || 10;
-    const expiresAt = new Date(Date.now() + expiresMinutes * 60 * 1000);
-
-    // 保存验证码
-    const verificationCode = this.verificationCodeRepository.create({
-      email,
-      code,
-      expiresAt,
-    });
-    await this.verificationCodeRepository.save(verificationCode);
-
-    // 发送邮件
-    await this.mailService.sendVerificationCode(email, code);
-
-    return { message: '验证码已发送，请查收邮件' };
-  }
-
-  // 验证码登录/注册
-  async verifyAndLogin(dto: VerifyCodeDto): Promise<{
-    access_token: string;
-    user: Partial<User>;
-    isNewUser: boolean;
-  }> {
-    const { email, code, role } = dto;
-
-    // 查找有效的验证码
-    const verificationCode = await this.verificationCodeRepository.findOne({
-      where: {
-        email,
-        code,
-        used: false,
-        expiresAt: MoreThan(new Date()),
-      },
-    });
-
-    if (!verificationCode) {
-      throw new UnauthorizedException('验证码无效或已过期');
-    }
-
-    // 标记验证码已使用
-    verificationCode.used = true;
-    await this.verificationCodeRepository.save(verificationCode);
-
-    // 查找或创建用户
-    let user = await this.userRepository.findOne({ where: { email } });
-    let isNewUser = false;
+  async sendLoginCode(email: string) {
+    const normalizedEmail = this.normalizeEmail(email);
+    let user = await this.userRepository.findOne({ where: { email: normalizedEmail } });
 
     if (!user) {
-      // 新用户注册
       user = this.userRepository.create({
-        email,
-        role,
+        email: normalizedEmail,
+        role: UserRole.DEVELOPER,
+        displayName: normalizedEmail.split('@')[0] || '新用户',
+        city: '待填写',
+        basicSummary: '待补充基础信息',
+        desiredDirection: null,
+        detailedProfile: null,
+        detailedProfileCompletedAt: null,
+        loginCode: null,
+        loginCodeExpiresAt: null,
+        lastLoginAt: null,
       });
-      await this.userRepository.save(user);
-      isNewUser = true;
-    } else {
-      // 检查角色是否匹配
-      if (user.role !== role) {
-        throw new BadRequestException(
-          `该邮箱已注册为${user.role === UserRole.PROJECT_OWNER ? '项目方' : '程序员'}，无法切换身份`,
-        );
-      }
     }
 
-    // 更新最后活跃时间
-    user.lastActiveAt = new Date();
+    const code = String(randomInt(100000, 1000000));
+    user.loginCode = code;
+    user.loginCodeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await this.userRepository.save(user);
 
-    // 生成JWT
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    const access_token = this.jwtService.sign(payload);
-
-    // 返回用户信息（隐藏敏感字段）
-    const { realName, phone, wechat, ...safeUser } = user;
+    const mailResult = await this.mailService.sendLoginCodeEmail(normalizedEmail, code);
+    const isDevelopment = this.configService.get<string>('NODE_ENV', 'development') !== 'production';
 
     return {
-      access_token,
-      user: safeUser,
-      isNewUser,
+      ok: true,
+      expiresInSeconds: 600,
+      delivery: mailResult.delivered ? 'smtp' : 'dev',
+      message: mailResult.delivered ? '验证码邮件已发送，请留意邮箱。' : '验证码已生成，当前使用开发环境调试模式。',
+      devCode: !mailResult.delivered && isDevelopment ? code : undefined,
     };
   }
 
-  // 验证JWT Token
-  async validateUser(userId: string): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new UnauthorizedException('用户不存在');
+  async verifyLoginCode(email: string, code: string) {
+    const normalizedEmail = this.normalizeEmail(email);
+    const user = await this.userRepository.findOne({ where: { email: normalizedEmail } });
+
+    if (!user || !user.loginCode || !user.loginCodeExpiresAt) {
+      throw new UnauthorizedException('验证码不存在或已失效');
     }
+
+    if (user.loginCode !== code) {
+      throw new UnauthorizedException('验证码错误');
+    }
+
+    if (user.loginCodeExpiresAt.getTime() < Date.now()) {
+      throw new UnauthorizedException('验证码已过期');
+    }
+
+    user.loginCode = null;
+    user.loginCodeExpiresAt = null;
+    user.lastLoginAt = new Date();
+    await this.userRepository.save(user);
+
+    return {
+      accessToken: this.signToken({
+        sub: user.id,
+        exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
+      }),
+      user: this.toAuthUser(user),
+    };
+  }
+
+  async getRequiredUserFromAuthorizationHeader(authorization?: string | null) {
+    const user = await this.getOptionalUserFromAuthorizationHeader(authorization);
+
+    if (!user) {
+      throw new UnauthorizedException('请先登录');
+    }
+
     return user;
   }
-}
 
+  async getOptionalUserFromAuthorizationHeader(authorization?: string | null) {
+    if (!authorization) {
+      return null;
+    }
+
+    const token = this.extractBearerToken(authorization);
+
+    if (!token) {
+      return null;
+    }
+
+    const payload = this.verifyToken(token);
+    return this.userRepository.findOne({
+      where: { id: payload.sub },
+      relations: {
+        cards: true,
+        contactMethods: true,
+      },
+    });
+  }
+
+  toAuthUser(user: User) {
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      displayName: user.displayName,
+      city: user.city,
+      basicSummary: user.basicSummary,
+      desiredDirection: user.desiredDirection,
+      detailedProfileCompletedAt: user.detailedProfileCompletedAt,
+      lastLoginAt: user.lastLoginAt,
+    };
+  }
+
+  private normalizeEmail(email: string) {
+    return email.trim().toLowerCase();
+  }
+
+  private extractBearerToken(authorization: string) {
+    const [scheme, token] = authorization.split(' ');
+
+    if (scheme !== 'Bearer' || !token) {
+      return null;
+    }
+
+    return token;
+  }
+
+  private signToken(payload: AuthTokenPayload) {
+    const encodedPayload = this.base64UrlEncode(JSON.stringify(payload));
+    const signature = this.createSignature(encodedPayload);
+
+    return `${encodedPayload}.${signature}`;
+  }
+
+  private verifyToken(token: string) {
+    const [encodedPayload, signature] = token.split('.');
+
+    if (!encodedPayload || !signature) {
+      throw new UnauthorizedException('登录态无效');
+    }
+
+    if (this.createSignature(encodedPayload) !== signature) {
+      throw new UnauthorizedException('登录态校验失败');
+    }
+
+    let payload: AuthTokenPayload;
+
+    try {
+      payload = JSON.parse(this.base64UrlDecode(encodedPayload)) as AuthTokenPayload;
+    } catch {
+      throw new BadRequestException('登录态解析失败');
+    }
+
+    if (!payload.sub || !payload.exp || payload.exp < Math.floor(Date.now() / 1000)) {
+      throw new UnauthorizedException('登录态已过期');
+    }
+
+    return payload;
+  }
+
+  private createSignature(content: string) {
+    return createHmac('sha256', this.getAuthSecret()).update(content).digest('base64url');
+  }
+
+  private getAuthSecret() {
+    return this.configService.get<string>('JWT_SECRET', 'cofounder-dev-secret');
+  }
+
+  private base64UrlEncode(value: string) {
+    return Buffer.from(value, 'utf8').toString('base64url');
+  }
+
+  private base64UrlDecode(value: string) {
+    return Buffer.from(value, 'base64url').toString('utf8');
+  }
+}
