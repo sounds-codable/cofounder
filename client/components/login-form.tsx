@@ -18,7 +18,7 @@ export function LoginForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
-  const resolvedNextPath = useMemo(() => searchParams.get('next') || '/requests', [searchParams]);
+  const resolvedNextPath = useMemo(() => searchParams.get('next') || '/projects', [searchParams]);
 
   useEffect(() => {
     if (cooldownSeconds <= 0) {
@@ -87,8 +87,8 @@ export function LoginForm() {
           <button className="primary-button" onClick={() => router.push(resolvedNextPath)} type="button">
             继续前往目标页面
           </button>
-          <button className="ghost-button" onClick={() => router.push('/onboarding/basic')} type="button">
-            继续完善基础信息
+          <button className="ghost-button" onClick={() => router.push('/dashboard')} type="button">
+            进入控制台
           </button>
         </div>
       </section>

@@ -11,7 +11,6 @@ const navItems = [
   { href: '/projects', label: '项目方' },
   { href: '/developers', label: '程序员' },
   { href: '/requests', label: '请求中心' },
-  { href: '/onboarding/basic', label: '录入资料' },
 ];
 
 export function SiteHeader() {
@@ -24,7 +23,7 @@ export function SiteHeader() {
     startTransition(() => {
       clearStoredAccessToken();
 
-      if (pathname.startsWith('/requests') || pathname.startsWith('/onboarding')) {
+      if (pathname.startsWith('/requests') || pathname.startsWith('/onboarding') || pathname.startsWith('/dashboard')) {
         router.replace('/');
       }
 
@@ -52,7 +51,7 @@ export function SiteHeader() {
         <div className="header-actions">
           {authenticated && profile ? (
             <>
-              <Link className="ghost-button" href="/requests">
+              <Link className="ghost-button" href="/dashboard">
                 {profile.user.displayName}
               </Link>
               <button className="icon-button" onClick={handleLogout} type="button">
@@ -64,9 +63,6 @@ export function SiteHeader() {
               登录
             </Link>
           )}
-          <Link className="primary-button" href={authenticated ? '/onboarding/detail' : '/login?next=/onboarding/detail'}>
-            填写详细信息
-          </Link>
         </div>
       </div>
     </header>

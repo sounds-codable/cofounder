@@ -1,18 +1,22 @@
-export function SiteFooter() {
+type SiteFooterProps = {
+  className?: string;
+  contentClassName?: string;
+};
+
+export function SiteFooter({ className, contentClassName }: SiteFooterProps) {
+  const footerClassName = className ? `site-footer ${className}` : 'site-footer';
+  const innerClassName = contentClassName ? `footer-grid ${contentClassName}` : 'site-shell footer-grid';
+
   return (
-    <footer className="site-footer">
-      <div className="site-shell footer-grid">
-        <div>
+    <footer className={footerClassName}>
+      <div className={innerClassName}>
+        <div className="footer-brand-block">
           <h3>叩饭 Cofounder</h3>
-          <p>行业专家与程序员先通过公开基础信息建立连接，再决定是否继续深入了解。</p>
+          <p>让真实项目与真实能力先被看见，再让真正匹配的合作自然发生。</p>
         </div>
-        <div>
-          <h4>当前入口</h4>
-          <p>项目方列表、程序员列表、请求中心、资料填写。</p>
-        </div>
-        <div>
-          <h4>© 2026</h4>
-          <p>叩饭（Cofounder）</p>
+        <div className="footer-meta-block">
+          <h4> 2026 叩饭（Cofounder）</h4>
+          <p>行业专家 × 程序员，公开基础信息、按需授权、再交换联系方式。</p>
         </div>
       </div>
     </footer>

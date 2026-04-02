@@ -91,8 +91,8 @@ function toggleRecord(record: Record<string, true>, cardId: string) {
   return nextRecord;
 }
 
-export function useCardEngagement(cardId: string) {
-  const state = useSyncExternalStore(
+export function useCardEngagementState() {
+  return useSyncExternalStore(
     (listener) => {
       ensureInitialized();
       listeners.add(listener);
@@ -104,6 +104,10 @@ export function useCardEngagement(cardId: string) {
     readState,
     getDefaultState,
   );
+}
+
+export function useCardEngagement(cardId: string) {
+  const state = useCardEngagementState();
 
   return {
     liked: Boolean(state.likes[cardId]),

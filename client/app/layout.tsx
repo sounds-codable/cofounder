@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
- import type { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import './globals.css';
-import { SiteFooter } from '@/components/site-footer';
-import { SiteHeader } from '@/components/site-header';
+import { AppShell } from '@/components/app-shell';
 
 export const metadata: Metadata = {
   title: '叩饭 Cofounder',
@@ -13,9 +12,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="zh-CN">
       <body>
-        <SiteHeader />
-        <main>{children}</main>
-        <SiteFooter />
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

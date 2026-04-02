@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
 import { InfoDisclosure } from '@/components/info-disclosure';
 import { extractErrorMessage, saveBasicProfile } from '@/lib/platform-api';
@@ -8,6 +8,7 @@ import { useAuthState } from '@/lib/use-auth';
 
 export function BasicProfileForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { authenticated, loading, profile, refresh } = useAuthState();
   const [role, setRole] = useState<'expert' | 'developer'>('expert');
   const [displayName, setDisplayName] = useState('');
@@ -18,6 +19,14 @@ export function BasicProfileForm() {
   const [strengths, setStrengths] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const roleParam = searchParams.get('role');
+
+    if (!profile && (roleParam === 'expert' || roleParam === 'developer')) {
+      setRole(roleParam);
+    }
+  }, [profile, searchParams]);
 
   useEffect(() => {
     if (!profile) {
@@ -69,7 +78,13 @@ export function BasicProfileForm() {
           <h1>请先登录，再录入基础信息。</h1>
           <p>登录后你的资料和请求记录才能被稳定保存。</p>
         </div>
-        <button className="primary-button" onClick={() => router.push('/login?next=/onboarding/basic')} type="button">
+        <button
+          className="primary-button"
+          onClick={() =>
+            router.push(`/login?next=${encodeURIComponent(`/onboarding/basic${role ? `?role=${role}` : ''}`)}`)
+          }
+          type="button"
+        >
           去登录
         </button>
       </section>
