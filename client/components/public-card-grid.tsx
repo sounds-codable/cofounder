@@ -2,42 +2,89 @@
 
 import Link from 'next/link';
 import { CardEngagementActions } from '@/components/card-engagement-actions';
-import { InfoDisclosure } from '@/components/info-disclosure';
 import { PublicCard, roleLabels } from '@/lib/site-data';
 
 type PublicCardGridProps = {
   cards: PublicCard[];
+  activeCities?: string[];
+  activeTags?: string[];
+  onCityFilter?: (city: string) => void;
+  onTagFilter?: (tag: string) => void;
+  subjectLabel?: '项目' | '程序员';
 };
 
-export function PublicCardGrid({ cards }: PublicCardGridProps) {
+function formatPublishedAt(createdAt?: string) {
+  if (!createdAt) {
+    return '发布时间未知';
+  }
+
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return '发布时间未知';
+  }
+
+  return `发布于 ${date.toLocaleDateString('zh-CN')}`;
+}
+
+export function PublicCardGrid({
+  cards,
+  activeCities = [],
+  activeTags = [],
+  onCityFilter,
+  onTagFilter,
+  subjectLabel = '项目',
+}: PublicCardGridProps) {
+  const activeCitySet = new Set(activeCities);
+  const activeTagSet = new Set(activeTags);
+
   return (
     <div className="card-grid">
       {cards.map((card) => (
         <article className="listing-card" key={card.id}>
-          <div className="card-meta-row">
-            <span className="pill pill-role">{roleLabels[card.role]}</span>
-            <span className="pill">{card.city}</span>
+          <div className="card-head">
+            <div className="card-meta-row">
+              <span className="pill pill-role">{roleLabels[card.role]}</span>
+              <button
+                aria-label={`点击可查看更多${card.city}的${subjectLabel}`}
+                className={`pill filter-pill-button ${activeCitySet.has(card.city) ? 'is-active' : ''}`}
+                data-tooltip={`点击可查看更多「${card.city}」的${subjectLabel}`}
+                title={`点击可查看更多「${card.city}」的${subjectLabel}`}
+                type="button"
+                onClick={() => onCityFilter?.(card.city)}
+              >
+                {card.city}
+              </button>
+              <span className="pill card-published-at">{formatPublishedAt(card.createdAt)}</span>
+            </div>
           </div>
+          <p className="card-id">编号：{card.id}</p>
           <h3>{card.headline}</h3>
           <p>{card.basicSummary}</p>
           <div className="tag-row">
             {card.strengths.map((strength) => (
-              <span className="tag" key={strength}>
+              <button
+                aria-label={`点击可查看更多${strength}相关${subjectLabel}`}
+                className={`tag filter-tag-button ${activeTagSet.has(strength) ? 'is-active' : ''}`}
+                data-tooltip={`点击可查看更多「${strength}」相关${subjectLabel}`}
+                key={strength}
+                title={`点击可查看更多「${strength}」相关${subjectLabel}`}
+                type="button"
+                onClick={() => onTagFilter?.(strength)}
+              >
                 {strength}
-              </span>
+              </button>
             ))}
           </div>
           {card.optionalDirection ? <p className="optional-copy">偏好方向：{card.optionalDirection}</p> : null}
-          <div className="card-action-row">
-            <CardEngagementActions cardId={card.id} />
-            <Link className="primary-button" href={`/cards/${card.id}`}>
-              查看公开信息
+          <div className="card-engagement-row">
+            <div className="card-engagement-icons">
+              <CardEngagementActions cardId={card.id} />
+            </div>
+            <Link className="card-detail-link card-detail-link-inline" href={`/cards/${card.id}`}>
+              查看详情
             </Link>
           </div>
-          <InfoDisclosure title="申请说明" compact>
-            <p>进入卡片后，你可以再决定是否申请了解详情。</p>
-            <p>联系方式不会在这一步直接展示。</p>
-          </InfoDisclosure>
         </article>
       ))}
     </div>

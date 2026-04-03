@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCardEngagement } from '@/lib/card-engagement';
 import { useAuthState } from '@/lib/use-auth';
 
@@ -10,25 +10,46 @@ type CardEngagementActionsProps = {
 
 export function CardEngagementActions({ cardId }: CardEngagementActionsProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { authenticated } = useAuthState();
   const { favorited, liked, toggleFavorite, toggleLike } = useCardEngagement(cardId);
 
   function ensureLogin(action: () => void) {
     if (!authenticated) {
-      router.push(`/login?next=/cards/${cardId}`);
+      const nextPath = pathname || `/cards/${cardId}`;
+      router.push(`/login?next=${encodeURIComponent(nextPath)}`);
       return;
     }
 
     action();
   }
 
+  const favoriteTitle = authenticated ? (favorited ? '取消收藏' : '收藏') : '登录后可收藏';
+  const likeTitle = authenticated ? (liked ? '取消点赞' : '点赞') : '登录后可点赞';
+
   return (
     <>
-      <button className={`icon-button ${favorited ? 'is-active' : ''}`} type="button" onClick={() => ensureLogin(toggleFavorite)}>
-        {favorited ? '已收藏' : '收藏'}
+      <button
+        aria-label={favoriteTitle}
+        className={`icon-button icon-only ${favorited ? 'is-active' : ''}`}
+        title={favoriteTitle}
+        type="button"
+        onClick={() => ensureLogin(toggleFavorite)}
+      >
+        <span aria-hidden="true" className="icon-symbol">
+          {favorited ? '★' : '☆'}
+        </span>
       </button>
-      <button className={`icon-button ${liked ? 'is-active' : ''}`} type="button" onClick={() => ensureLogin(toggleLike)}>
-        {liked ? '已点赞' : '点赞'}
+      <button
+        aria-label={likeTitle}
+        className={`icon-button icon-only ${liked ? 'is-active' : ''}`}
+        title={likeTitle}
+        type="button"
+        onClick={() => ensureLogin(toggleLike)}
+      >
+        <span aria-hidden="true" className="icon-symbol">
+          {liked ? '♥' : '♡'}
+        </span>
       </button>
     </>
   );

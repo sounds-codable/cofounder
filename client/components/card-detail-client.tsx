@@ -20,6 +20,20 @@ const viewerStatusLabels: Record<string, string> = {
   rejected: '已拒绝',
 };
 
+function formatPublishedAt(createdAt?: string) {
+  if (!createdAt) {
+    return '发布时间未知';
+  }
+
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return '发布时间未知';
+  }
+
+  return `发布于 ${date.toLocaleDateString('zh-CN')}`;
+}
+
 export function CardDetailClient({ id }: CardDetailClientProps) {
   const { authenticated, profile } = useAuthState();
   const fallbackCard = useMemo(() => fallbackPublicCards.find((item) => item.id === id) ?? null, [id]);
@@ -101,15 +115,24 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
 
   const detailVisible = Boolean(card.viewerState?.detailVisible && card.viewerState.revealedDetail);
   const statusLabel = card.viewerState ? viewerStatusLabels[card.viewerState.status] || card.viewerState.status : null;
+  const backToListHref = card.role === 'expert' ? '/projects' : '/developers';
+  const backToListLabel = card.role === 'expert' ? '返回项目列表' : '返回程序员列表';
 
   return (
     <div className="site-shell page-section page-stack">
       {message ? <p className="status-text">{message}</p> : null}
 
+      <div className="detail-back-nav">
+        <Link className="filter-back-link" href={backToListHref}>
+          ← {backToListLabel}
+        </Link>
+      </div>
+
       <section className="detail-hero">
         <div className="card-meta-row">
           <span className="pill pill-role">{roleLabels[card.role]}</span>
           <span className="pill">{card.city}</span>
+          <span className="pill card-published-at">{formatPublishedAt(card.createdAt)}</span>
         </div>
         <h1>{card.headline}</h1>
         <p>{card.basicSummary}</p>
@@ -121,30 +144,24 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
           ))}
         </div>
         <div className="cta-panel">
-          <div>
-            <strong>下一步</strong>
-            <p>如果你想继续深入了解，可以在这里发起申请。</p>
-            <InfoDisclosure title="申请前说明" compact>
-              <p>这是一个授权动作，不是立即私聊。</p>
-              <p>先开放详细信息，联系方式需要后续单独交换。</p>
-            </InfoDisclosure>
-          </div>
-          <div className="hero-actions">
-            <CardEngagementActions cardId={id} />
+          <div className="detail-action-row">
+            <div className="card-engagement-icons">
+              <CardEngagementActions cardId={id} />
+            </div>
             {!authenticated ? (
-              <Link className="primary-button hero-primary" href={`/login?next=/cards/${id}`}>
+              <Link className="card-detail-link card-detail-link-inline" href={`/login?next=/cards/${id}`}>
                 登录后申请了解详情
               </Link>
             ) : profile?.user.role !== 'developer' || card.role !== 'expert' ? (
-              <span className="pill">当前仅支持程序员向项目方申请了解详情</span>
+              <span className="pill card-detail-link-inline">当前仅支持程序员向项目方申请了解详情</span>
             ) : !profile?.completion.hasDetailProfile ? (
-              <Link className="primary-button hero-primary" href="/onboarding/detail">
+              <Link className="card-detail-link card-detail-link-inline" href="/onboarding/detail">
                 先完善详细信息
               </Link>
             ) : card.viewerState ? (
-              <span className="pill pill-role">当前状态：{statusLabel}</span>
+              <span className="pill pill-role card-detail-link-inline">当前状态：{statusLabel}</span>
             ) : (
-              <button className="primary-button hero-primary" disabled={submittingRequest} type="button" onClick={() => void handleCreateRequest()}>
+              <button className="card-detail-link card-detail-link-inline" disabled={submittingRequest} type="button" onClick={() => void handleCreateRequest()}>
                 {submittingRequest ? '发送中…' : '申请了解详情'}
               </button>
             )}
@@ -152,47 +169,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         </div>
       </section>
 
-      <section className="detail-grid">
-        <article className="detail-card">
-          <h2>当前公开信息</h2>
-          <ul className="detail-list">
-            <li>基础描述：{card.headline}</li>
-            <li>所在城市：{card.city}</li>
-            {card.optionalDirection ? <li>偏好方向：{card.optionalDirection}</li> : null}
-          </ul>
-        </article>
-        <article className="detail-card masked-card">
-          <h2>{detailVisible ? '已解锁的详细信息' : '更完整的信息'}</h2>
-          {detailVisible && card.viewerState?.revealedDetail ? (
-            <div className="revealed-section">
-              <div className="detail-preview-box">
-                <strong>个人简介</strong>
-                <p>{card.viewerState.revealedDetail.intro}</p>
-              </div>
-              <div className="detail-preview-box">
-                <strong>教育背景</strong>
-                <p>{card.viewerState.revealedDetail.education}</p>
-              </div>
-              <div className="detail-preview-box">
-                <strong>工作背景</strong>
-                <p>{card.viewerState.revealedDetail.experience}</p>
-              </div>
-              <div className="detail-preview-box">
-                <strong>{card.role === 'expert' ? '项目详情' : '产品 / 项目介绍'}</strong>
-                <p>{card.viewerState.revealedDetail.projectDetail}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="revealed-section">
-              <p>对方同意后，你才能在这里看到更完整的背景信息。</p>
-              <InfoDisclosure title="会在后续步骤看到什么" compact>
-                <p>你会先看到对方的详细背景信息。</p>
-                <p>联系方式不会在这一步直接出现。</p>
-              </InfoDisclosure>
-            </div>
-          )}
-        </article>
-      </section>
+      
 
       {card.viewerState?.contactVisible && card.viewerState.contactMethods.length > 0 ? (
         <section className="detail-card">

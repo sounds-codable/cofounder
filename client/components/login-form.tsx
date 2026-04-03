@@ -99,8 +99,6 @@ export function LoginForm() {
     <section className="form-shell">
       <div className="section-heading left">
         <span>登录 / 注册</span>
-        <h1>登录后，你就可以继续收藏、点赞和处理请求。</h1>
-        <p>这里使用邮箱验证码登录。</p>
       </div>
       <form className="stack-form" onSubmit={handleSubmit}>
         <label>
