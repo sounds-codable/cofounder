@@ -135,6 +135,8 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
               <Link className="primary-button hero-primary" href={`/login?next=/cards/${id}`}>
                 登录后申请了解详情
               </Link>
+            ) : profile?.user.role !== 'developer' || card.role !== 'expert' ? (
+              <span className="pill">当前仅支持程序员向项目方申请了解详情</span>
             ) : !profile?.completion.hasDetailProfile ? (
               <Link className="primary-button hero-primary" href="/onboarding/detail">
                 先完善详细信息

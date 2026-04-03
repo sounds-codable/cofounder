@@ -63,7 +63,7 @@ export function RequestCenterClient() {
     };
   }, [authenticated]);
 
-  async function handleIncomingAction(requestId: string, action: 'view' | 'approve' | 'reject' | 'exchange') {
+  async function handleIncomingAction(requestId: string, action: 'view' | 'approve' | 'reject') {
     setBusyRequestId(requestId);
     setMessage(null);
 
@@ -85,10 +85,6 @@ export function RequestCenterClient() {
         }
 
         await rejectDetailRequest(requestId, reason);
-      }
-
-      if (action === 'exchange') {
-        await exchangeContact(requestId);
       }
 
       await loadData();
@@ -195,7 +191,7 @@ function isContactVisible(status: string) {
 
 type IncomingRequestCardProps = {
   busy: boolean;
-  onAction: (requestId: string, action: 'view' | 'approve' | 'reject' | 'exchange') => Promise<void>;
+  onAction: (requestId: string, action: 'view' | 'approve' | 'reject') => Promise<void>;
   request: IncomingRequest;
 };
 
@@ -251,11 +247,6 @@ function IncomingRequestCard({ busy, onAction, request }: IncomingRequestCardPro
             <p>请在认真看完资料后，再决定是否继续。</p>
             <p>如果同意，对方先看到你的详细信息，不会立刻看到联系方式。</p>
           </>
-        ) : request.actions.canExchangeContact ? (
-          <>
-            <p>双方已经进入下一步，可以继续交换联系方式。</p>
-            <p>完成后才会真正互相看到联系方式。</p>
-          </>
         ) : request.status === 'rejected' ? (
           <p>这条请求已经结束。</p>
         ) : (
@@ -276,11 +267,6 @@ function IncomingRequestCard({ busy, onAction, request }: IncomingRequestCardPro
         {request.actions.canReject ? (
           <button className="ghost-button" disabled={busy} onClick={() => void onAction(request.id, 'reject')} type="button">
             拒绝
-          </button>
-        ) : null}
-        {request.actions.canExchangeContact ? (
-          <button className="primary-button" disabled={busy} onClick={() => void onAction(request.id, 'exchange')} type="button">
-            交换联系方式
           </button>
         ) : null}
       </div>

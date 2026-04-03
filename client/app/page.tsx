@@ -3,90 +3,87 @@
 import Link from 'next/link';
 
 const rolePanels = [
-   {
-     eyebrow: '给项目方 / 行业专家',
-     title: '把真实项目公开出来，先找到愿意一起做事的人',
-     items: ['直接发布项目卡片，让程序员先看到你在解决什么问题。', '先公开必要信息，再在有意向后逐步开放更完整的背景和联系方式。'],
-     note: '不是先找人聊，而是先让对的人找到你。',
-   },
-   {
-     eyebrow: '给程序员',
-     title: '先登记简要信息，让项目方更快判断你是否合适',
-     items: ['先把技术栈、做过的项目、偏好方向和所在城市放到公开卡片里。', '当项目方主动来找你时，再进入后续授权与深入沟通。'],
-     note: '先被看见，再决定是否继续深入合作。',
-   },
- ];
+  {
+    eyebrow: '给项目方 / 专业人士',
+    title: '两件事会很快发生',
+    items: ['AI 替代工作是必然，而且速度会超出多数人的预期。', '职场中年危机一直存在，年轻人会持续冲击传统岗位。'],
+    note: '现在最稳妥的做法，不是观望，而是尽快把行业经验做成细分应用。',
+  },
+  {
+    eyebrow: '给程序员',
+    title: '现实已经很明确',
+    items: ['大量程序员已经被优化，更多人正在路上。', '大多数人只有遇到通用需求，而通用需求会被大厂快速覆盖。'],
+    note: '更容易成功的方向，是和垂直领域专家一起做小而深的应用。',
+  },
+];
 
 const launchCards = [
-   {
-     eyebrow: 'WHY',
-     title: '为什么不是继续等机会',
-     description: 'AI 正在压缩大量通用岗位，单靠简历海投或熟人介绍，越来越难拿到真正合适的合作机会。',
-   },
-   {
-     eyebrow: 'HOW',
-     title: '我们怎么让合作更快发生',
-     description: '项目方发项目，程序员登记能力与方向。双方先看公开基础信息，再在有意向后推进授权、了解详情和交换联系方式。',
-   },
-   {
-     eyebrow: 'RESULT',
-     title: '你会得到什么',
-     description: '项目方更快找到愿意落地的人，程序员更快接触真实业务场景，而不是停留在模糊想法和泛泛社交。',
-   },
- ];
-
-const flowSteps = [
-   {
-     step: '01',
-     title: '先发布公开卡片',
-     description: '项目方发布项目，程序员登记简要信息，先建立可被搜索和判断的公开资料。',
-   },
-   {
-     step: '02',
-     title: '有意向再深入了解',
-     description: '双方先从公开信息判断方向是否匹配，再进入后续授权流程。',
-   },
-   {
-     step: '03',
-     title: '确认合作后再交换联系方式',
-     description: '把沟通成本放在真正有兴趣的人身上，减少无效打扰。',
-   },
- ];
+  {
+    eyebrow: 'WHY',
+    title: '为什么必须是「程序员 × 专家」',
+    description: '只有专家，想法落不了地；只有程序员，产品容易偏方向。两个人一起，才是最快且最稳的起点。',
+  },
+  {
+    eyebrow: 'HOW',
+    title: '我们怎么让双方真正合作',
+    description: '专家发布场景与资源，程序员发布技术与节奏。双向匹配后先做 MVP，边做边验证，边合作边迭代。',
+  },
+  {
+    eyebrow: 'WHAT',
+    title: '你会得到什么',
+    description: '专家拿到可落地产品，程序员拿到真实业务场景。一起把「点子」变成「可验证的产品」。',
+  },
+];
 
 export default function HomePage() {
   return (
     <div className="launch-home">
+      <div className="launch-grid-overlay" />
+      <div className="launch-noise-overlay" />
       <div className="launch-glow launch-glow-1" />
       <div className="launch-glow launch-glow-2" />
+      <div className="launch-glow launch-glow-3" />
 
       <section className="launch-hero site-shell">
-        <div className="launch-brand-row">
-          <span className="launch-brand">叩饭 · Cofounder</span>
-          <span className="launch-status">产品已上线</span>
-        </div>
-        <h1 className="launch-headline">AI 时代，不要把项目和能力继续埋在简历里。</h1>
-        <p className="launch-subline">项目方现在可以直接发布项目，程序员可以先登记简要信息，让真正匹配的人更快彼此找到。</p>
-        <div className="launch-primary-actions">
-          <Link className="primary-button hero-primary" href="/login?next=/onboarding/basic%3Frole%3Dexpert">
-            项目方发布项目
-          </Link>
-          <Link className="ghost-button hero-primary launch-ghost" href="/login?next=/onboarding/basic%3Frole%3Ddeveloper">
-            程序员登记信息
-          </Link>
-        </div>
-        <div className="launch-secondary-actions">
-          <Link className="launch-text-link" href="/projects">
-            先浏览项目方公开卡片
-          </Link>
-          <Link className="launch-text-link" href="/developers">
-            先浏览程序员公开卡片
-          </Link>
+        <div className="launch-hero-shell">
+          <div className="launch-hero-copy launch-reveal">
+            <span className="launch-kicker launch-kicker-primary">ICU · I SEE YOU</span>
+            <h1 className="launch-headline">AI 时代，不做旁观者。</h1>
+            <p className="launch-subline">先做一个 MVP，给自己留住主动权，而不是等被替代。</p>
+            <div className="launch-primary-actions">
+              <Link className="primary-button hero-primary" href="/login?next=/onboarding/basic%3Frole%3Dexpert">
+                项目方发布项目
+              </Link>
+              <Link className="ghost-button hero-primary launch-ghost" href="/login?next=/onboarding/basic%3Frole%3Ddeveloper">
+                程序员登记信息
+              </Link>
+            </div>
+            <div className="launch-secondary-actions">
+              <Link className="launch-text-link" href="/projects">
+                瞧瞧项目库
+              </Link>
+              <Link className="launch-text-link" href="/developers">
+                瞅瞅程序员
+              </Link>
+            </div>
+          </div>
+          <div className="launch-hero-orbit" aria-hidden="true">
+            <span className="launch-orbit launch-orbit-1" />
+            <span className="launch-orbit launch-orbit-2" />
+            <span className="launch-orbit launch-orbit-3" />
+            <span className="launch-orbit-dot launch-orbit-dot-1" />
+            <span className="launch-orbit-dot launch-orbit-dot-2" />
+            <span className="launch-orbit-dot launch-orbit-dot-3" />
+            <div className="launch-orbit-chip launch-orbit-chip-1">专家场景</div>
+            <div className="launch-orbit-chip launch-orbit-chip-2">程序员能力</div>
+            <div className="launch-orbit-chip launch-orbit-chip-3">MVP 验证</div>
+          </div>
         </div>
       </section>
 
       <section className="launch-role-grid site-shell">
         {rolePanels.map((panel) => (
-          <article className="launch-panel" key={panel.eyebrow}>
+          <article className="launch-panel launch-reveal" key={panel.eyebrow}>
             <span className="launch-kicker">{panel.eyebrow}</span>
             <h2>{panel.title}</h2>
             <div className="launch-panel-list">
@@ -101,7 +98,7 @@ export default function HomePage() {
 
       <section className="launch-card-grid site-shell">
         {launchCards.map((card) => (
-          <article className="launch-card" key={card.eyebrow}>
+          <article className="launch-card launch-reveal" key={card.eyebrow}>
             <span className="launch-kicker">{card.eyebrow}</span>
             <h2>{card.title}</h2>
             <p>{card.description}</p>
@@ -109,35 +106,44 @@ export default function HomePage() {
         ))}
       </section>
 
-      <section className="launch-flow site-shell">
+      <section className="launch-flow site-shell launch-reveal">
         <div className="launch-flow-heading">
           <span className="launch-kicker">FLOW</span>
-          <h2>从公开信息开始，先匹配，再深入。</h2>
-          <p>不再是 waitlist，也不是先加联系方式，而是让合作判断先发生。</p>
+          <h2>建立联系，只走 3 步。</h2>
+          <p>先看基础信息，再按阶段授权，让双方在更了解彼此后再决定是否联系。</p>
         </div>
         <div className="launch-flow-grid">
-          {flowSteps.map((item) => (
-            <article className="launch-flow-card" key={item.step}>
-              <span className="launch-step">{item.step}</span>
-              <h3>{item.title}</h3>
-              <p>{item.description}</p>
-            </article>
-          ))}
+          <article className="launch-flow-card">
+            <span className="launch-step">01</span>
+            <h3>项目方先发项目简介</h3>
+            <p>公开基础信息后，程序员先判断是否值得申请了解详情。</p>
+          </article>
+          <article className="launch-flow-card">
+            <span className="launch-step">02</span>
+            <h3>项目方先做决定</h3>
+            <p>程序员申请后，项目方先看程序员详细信息，再决定是否开放项目详情。</p>
+          </article>
+          <article className="launch-flow-card">
+            <span className="launch-step">03</span>
+            <h3>程序员再做决定</h3>
+            <p>程序员看到项目详情后，再决定是否交换联系方式并继续深入沟通。</p>
+          </article>
         </div>
       </section>
 
-      <section className="launch-cta site-shell">
+      <section className="launch-cta site-shell launch-reveal">
         <div>
-          <span className="launch-kicker">CTA</span>
-          <h2>现在就把你的项目或能力放出来。</h2>
-          <p>项目方先发项目，程序员先登记简要信息。越早进入真实匹配，越早拿到有效合作机会。</p>
+          <span className="launch-kicker">Now or Never</span>
+          <h2>别再等风向，直接开始做。</h2>
+          <br/>
+          <p>让真实项目与真实能力先碰撞，再把点子变成结果。现在就进入你的第一步。</p>
         </div>
         <div className="launch-cta-actions">
           <Link className="primary-button hero-primary" href="/login?next=/onboarding/basic%3Frole%3Dexpert">
-            立即开始
+            项目方发布项目
           </Link>
-          <Link className="ghost-button hero-primary launch-ghost" href="/login?next=/requests">
-            查看我的请求
+          <Link className="ghost-button hero-primary launch-ghost" href="/login?next=/onboarding/basic%3Frole%3Ddeveloper">
+            程序员登记信息
           </Link>
         </div>
       </section>

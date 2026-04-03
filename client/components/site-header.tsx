@@ -4,16 +4,21 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { clearStoredAccessToken } from '@/lib/session';
+import type { LogoVariant } from '@/lib/platform-api';
 import { useAuthState } from '@/lib/use-auth';
 
 const navItems = [
-  { href: '/', label: '首页' },
-  { href: '/projects', label: '项目方' },
+  { href: '/projects', label: '项目库' },
   { href: '/developers', label: '程序员' },
-  { href: '/requests', label: '请求中心' },
+  { href: '/public-welfare', label: '公益' },
+  { href: '/origin', label: '缘起' },
 ];
 
-export function SiteHeader() {
+type SiteHeaderProps = {
+  logoVariant?: LogoVariant;
+};
+
+export function SiteHeader({ logoVariant = 'overlap' }: SiteHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
@@ -35,7 +40,11 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="site-shell header-inner">
         <Link className="brand" href="/">
-          <span className="brand-mark">叩</span>
+          <span aria-hidden="true" className={`brand-mark brand-mark-${logoVariant}`}>
+            <span className="brand-mark-core" />
+            <span className="brand-mark-core brand-mark-core-alt" />
+            <span className="brand-mark-dot" />
+          </span>
           <div>
             <strong>叩饭 Cofounder</strong>
             <span>行业专家 × 程序员，先做 MVP 再谈更远</span>

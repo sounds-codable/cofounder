@@ -10,14 +10,9 @@ export function SiteFooter({ className, contentClassName }: SiteFooterProps) {
   return (
     <footer className={footerClassName}>
       <div className={innerClassName}>
-        <div className="footer-brand-block">
-          <h3>叩饭 Cofounder</h3>
-          <p>让真实项目与真实能力先被看见，再让真正匹配的合作自然发生。</p>
-        </div>
-        <div className="footer-meta-block">
-          <h4> 2026 叩饭（Cofounder）</h4>
-          <p>行业专家 × 程序员，公开基础信息、按需授权、再交换联系方式。</p>
-        </div>
+        <p className="footer-single-line">@2026 叩饭（Cofounder）｜让真实项目与真实能力先被看见，再让真正匹配的合作自然发生。</p>
+        <p className="footer-meta-line">浙ICP XXX</p>
+        <p className="footer-meta-line">浙公网安备 XXX号</p>
       </div>
     </footer>
   );

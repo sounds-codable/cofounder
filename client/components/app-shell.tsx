@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, type ReactNode, useEffect, useState, useTransition } from 'react';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
+import { fetchOverview, type LogoVariant } from '@/lib/platform-api';
 import { clearStoredAccessToken } from '@/lib/session';
 import { useAuthState } from '@/lib/use-auth';
 
@@ -112,13 +113,32 @@ function getRoleLabel(role: 'expert' | 'developer') {
 function AppShellContent({ children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [logoVariant, setLogoVariant] = useState<LogoVariant>('overlap');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [desktopViewport, setDesktopViewport] = useState(false);
   const [pending, startTransition] = useTransition();
   const { authenticated, profile } = useAuthState();
 
   const showDashboardShell = authenticated && pathname !== '/login' && pathname !== '/' && isDashboardRoute(pathname);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLogoVariant() {
+      const overview = await fetchOverview();
+
+      if (!cancelled && overview?.logoVariant) {
+        setLogoVariant(overview.logoVariant);
+      }
+    }
+
+    void loadLogoVariant();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 981px)');
@@ -191,7 +211,7 @@ function AppShellContent({ children }: AppShellProps) {
   if (!showDashboardShell) {
     return (
       <>
-        <SiteHeader />
+        <SiteHeader logoVariant={logoVariant} />
         <main>{children}</main>
         <SiteFooter />
       </>
@@ -205,7 +225,11 @@ function AppShellContent({ children }: AppShellProps) {
           <div className="dashboard-sidebar-inner">
             <div className="dashboard-brand-block">
               <Link className="dashboard-brand" href="/dashboard">
-                <span className="brand-mark">叩</span>
+                <span aria-hidden="true" className={`brand-mark brand-mark-${logoVariant}`}>
+                  <span className="brand-mark-core" />
+                  <span className="brand-mark-core brand-mark-core-alt" />
+                  <span className="brand-mark-dot" />
+                </span>
                 <div className="dashboard-brand-text">
                   <strong>叩饭 Cofounder</strong>
                   <span className="dashboard-brand-copy">协作后台</span>
@@ -236,7 +260,14 @@ function AppShellContent({ children }: AppShellProps) {
                       const active = item.match === 'prefix' ? pathname.startsWith(item.href) : pathname === item.href;
 
                       return (
-                        <Link className={`dashboard-nav-link${active ? ' is-active' : ''}`} href={item.href} key={item.href} onClick={() => setSidebarOpen(false)}>
+                        <Link
+                          className={`dashboard-nav-link${active ? ' is-active' : ''}`}
+                          data-tooltip={item.label}
+                          href={item.href}
+                          key={item.href}
+                          onClick={() => setSidebarOpen(false)}
+                          title={item.label}
+                        >
                           <span aria-hidden="true" className="dashboard-nav-link-icon">
                             {item.icon}
                           </span>
@@ -265,8 +296,13 @@ function AppShellContent({ children }: AppShellProps) {
         <div className="dashboard-content-shell">
           <div className="dashboard-topbar">
             <div className="dashboard-topbar-left">
-              <button className="icon-button dashboard-sidebar-toggle" onClick={handleSidebarToggle} type="button">
-                {desktopViewport ? (sidebarExpanded ? '收起导航' : '展开导航') : '菜单'}
+              <button
+                aria-label={desktopViewport ? (sidebarExpanded ? '收起导航' : '展开导航') : '打开导航菜单'}
+                className="icon-button dashboard-sidebar-toggle"
+                onClick={handleSidebarToggle}
+                type="button"
+              >
+                {desktopViewport ? (sidebarExpanded ? '◀' : '▶') : '☰'}
               </button>
               <div className="dashboard-topbar-copy">
                 <span>{getPageDescription(pathname)}</span>

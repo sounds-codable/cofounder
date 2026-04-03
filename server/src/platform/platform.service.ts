@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DetailRequestStatus } from '../common/enums/detail-request-status.enum';
@@ -6,9 +7,12 @@ import { DetailRequest } from './detail-request.entity';
 import { UserRole } from '../common/enums/user-role.enum';
 import { Card } from './card.entity';
 
+type LogoVariant = 'overlap' | 'spark' | 'bridge' | 'orbit';
+
 @Injectable()
 export class PlatformService {
   constructor(
+    private readonly configService: ConfigService,
     @InjectRepository(Card)
     private readonly cardRepository: Repository<Card>,
     @InjectRepository(DetailRequest)
@@ -35,7 +39,19 @@ export class PlatformService {
         developerCards: cards.filter((card) => card.role === UserRole.DEVELOPER).length,
       },
       requestStates: this.getRequestStates(),
+      logoVariant: this.getLogoVariant(),
     };
+  }
+
+  private getLogoVariant(): LogoVariant {
+    const configuredVariant = this.configService.get<string>('LOGO_VARIANT', 'overlap');
+    const allowedVariants: LogoVariant[] = ['overlap', 'spark', 'bridge', 'orbit'];
+
+    if (allowedVariants.includes(configuredVariant as LogoVariant)) {
+      return configuredVariant as LogoVariant;
+    }
+
+    return 'overlap';
   }
 
   async listCards(role?: UserRole) {

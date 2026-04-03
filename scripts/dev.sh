@@ -6,7 +6,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 FRONTEND_PORT=3000
 BACKEND_PORT=3010
-MODE="${1:-auto}" # auto | split | single
+MODE="${1:-single}" # single | split | auto
 
 log() {
   echo "[$(date '+%F %T')] $*"
@@ -72,25 +72,8 @@ start_single_terminal() {
 }
 
 start_split_terminal() {
-  if ! command -v osascript >/dev/null 2>&1; then
-    return 1
-  fi
-
-  log "双终端模式：分别启动前端和后端"
-
-  local frontend_cmd
-  local backend_cmd
-
-  frontend_cmd="cd \"$PROJECT_ROOT\" && npm run dev --prefix client"
-  backend_cmd="cd \"$PROJECT_ROOT\" && npm run start:dev --prefix server"
-
-  osascript <<EOF
-  tell application "Terminal"
-    activate
-    do script "$frontend_cmd"
-    do script "$backend_cmd"
-  end tell
-EOF
+  log "当前脚本不再拉起 mac Terminal，已切换为同终端分流日志模式"
+  start_single_terminal
 }
 
 main() {
@@ -99,16 +82,13 @@ main() {
 
   case "$MODE" in
     split)
-      start_split_terminal || start_single_terminal
+      start_split_terminal
       ;;
     single)
       start_single_terminal
       ;;
     auto)
-      if ! start_split_terminal; then
-        log "无法打开双终端，自动降级为单终端模式"
-        start_single_terminal
-      fi
+      start_single_terminal
       ;;
     *)
       echo "Usage: $0 [auto|split|single]" >&2

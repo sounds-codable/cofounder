@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ContactMethod } from '../contacts/contact-method.entity';
 import { DetailRequestStatus } from '../common/enums/detail-request-status.enum';
+import { UserRole } from '../common/enums/user-role.enum';
 import { Card } from '../platform/card.entity';
 import { DetailRequest } from '../platform/detail-request.entity';
 import { User } from '../users/user.entity';
@@ -63,6 +64,14 @@ export class RequestsService {
 
     if (!card) {
       throw new NotFoundException('目标卡片不存在');
+    }
+
+    if (user.role !== UserRole.DEVELOPER) {
+      throw new BadRequestException('当前仅支持程序员发起了解详情请求');
+    }
+
+    if (card.role !== UserRole.EXPERT) {
+      throw new BadRequestException('当前仅支持向项目方卡片发起了解详情请求');
     }
 
     if (card.owner.id === user.id) {
@@ -170,8 +179,8 @@ export class RequestsService {
       throw new NotFoundException('请求不存在');
     }
 
-    if (request.publisher.id !== userId && request.requester.id !== userId) {
-      throw new ForbiddenException('你无权操作该请求');
+    if (request.requester.id !== userId) {
+      throw new ForbiddenException('只有请求发起方可以发起联系方式交换');
     }
 
     if (request.status !== DetailRequestStatus.APPROVED_DETAIL_VISIBLE && request.status !== DetailRequestStatus.CONTACT_EXCHANGED) {
@@ -231,7 +240,7 @@ export class RequestsService {
         canViewRequesterDetail: request.status === DetailRequestStatus.PENDING_REQUEST,
         canApprove: request.status === DetailRequestStatus.PUBLISHER_VIEWED_DETAIL,
         canReject: request.status === DetailRequestStatus.PUBLISHER_VIEWED_DETAIL,
-        canExchangeContact: request.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE,
+        canExchangeContact: false,
       },
     };
   }

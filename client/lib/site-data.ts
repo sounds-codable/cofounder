@@ -93,20 +93,16 @@ export const staticCardSlugs = fallbackPublicCards.map((card) => card.id);
 
 export const flowSteps = [
   {
-    title: '先公开最少信息',
-    description: '未登录用户也能看到基础信息，先形成真实供需流动。',
+    title: '项目方先发项目简介',
+    description: '公开基础信息，程序员先判断是否值得申请了解详情。',
   },
   {
-    title: '有意向再补详细信息',
-    description: '详细信息只填写一次，只在你需要深入沟通时才补全。',
+    title: '项目方先做决定',
+    description: '项目方先看程序员详细信息，再决定是否开放项目详情。',
   },
   {
-    title: '发布者先看打码信息',
-    description: '让发布者知道你是否认真填写，但不会直接暴露正文与联系方式。',
-  },
-  {
-    title: '双向授权后再交换联系方式',
-    description: '先开放详细信息，再单独触发联系方式交换，避免过早泄露。',
+    title: '程序员再决定是否交换联系方式',
+    description: '程序员看到项目详情后，再决定是否互看联系方式并继续沟通。',
   },
 ];
 

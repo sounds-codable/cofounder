@@ -45,6 +45,13 @@ export type MeProfile = {
   };
 };
 
+export type PublicWelfareMessageResult = {
+  id: string;
+  createdAt: string;
+};
+
+export type LogoVariant = 'overlap' | 'spark' | 'bridge' | 'orbit';
+
 export type ViewerState = {
   requestId: string;
   status: string;
@@ -126,6 +133,7 @@ export type PlatformOverview = {
     developerCards: number;
   };
   requestStates: RequestState[];
+  logoVariant: LogoVariant;
 };
 
 function getDefaultApiBaseUrl() {
@@ -323,5 +331,17 @@ export async function rejectDetailRequest(requestId: string, reason: string) {
 export async function exchangeContact(requestId: string) {
   return requestJson<IncomingRequest | OutgoingRequest>(`/requests/${requestId}/exchange-contact`, {
     method: 'POST',
+  });
+}
+
+export async function submitPublicWelfareMessage(body: {
+  name?: string;
+  contact: string;
+  message: string;
+}) {
+  return requestJson<PublicWelfareMessageResult>('/public-welfare/messages', {
+    method: 'POST',
+    body,
+    token: null,
   });
 }

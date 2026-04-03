@@ -13,6 +13,9 @@ import { DetailRequest } from './platform/detail-request.entity';
 import { PlatformController } from './platform/platform.controller';
 import { PlatformService } from './platform/platform.service';
 import { SeedService } from './platform/seed.service';
+import { PublicWelfareController } from './public-welfare/public-welfare.controller';
+import { PublicWelfareMessage } from './public-welfare/public-welfare-message.entity';
+import { PublicWelfareService } from './public-welfare/public-welfare.service';
 import { RequestsController } from './requests/requests.controller';
 import { RequestsService } from './requests/requests.service';
 import { User } from './users/user.entity';
@@ -37,9 +40,9 @@ import { User } from './users/user.entity';
         logging: configService.get<string>('DB_LOGGING', 'false') === 'true',
       }),
     }),
-    TypeOrmModule.forFeature([User, ContactMethod, Card, DetailRequest]),
+    TypeOrmModule.forFeature([User, ContactMethod, Card, DetailRequest, PublicWelfareMessage]),
   ],
-  controllers: [HealthController, PlatformController, AuthController, MeController, RequestsController],
-  providers: [PlatformService, SeedService, AuthService, MailService, MeService, RequestsService],
+  controllers: [HealthController, PlatformController, AuthController, MeController, RequestsController, PublicWelfareController],
+  providers: [PlatformService, SeedService, AuthService, MailService, MeService, RequestsService, PublicWelfareService],
 })
 export class AppModule {}
