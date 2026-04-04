@@ -10,6 +10,7 @@ export function BasicProfileForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { authenticated, loading, profile, refresh } = useAuthState();
+  const [mounted, setMounted] = useState(false);
   const [role, setRole] = useState<'expert' | 'developer'>('expert');
   const [displayName, setDisplayName] = useState('');
   const [headline, setHeadline] = useState('');
@@ -19,6 +20,10 @@ export function BasicProfileForm() {
   const [strengths, setStrengths] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const roleParam = searchParams.get('role');
@@ -89,6 +94,10 @@ export function BasicProfileForm() {
         </button>
       </section>
     );
+  }
+
+  if (!mounted) {
+    return null;
   }
 
   return (

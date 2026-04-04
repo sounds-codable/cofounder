@@ -61,7 +61,7 @@ export class PlatformService {
       query.andWhere('card.role = :role', { role });
     }
 
-    const cards = await query.orderBy('card.createdAt', 'DESC').getMany();
+    const cards = await query.orderBy('card.updatedAt', 'DESC').getMany();
 
     return cards.map((card) => this.toPublicCard(card));
   }
@@ -182,6 +182,7 @@ export class PlatformService {
     return {
       id: card.slug,
       role: card.role,
+      updatedAt: card.updatedAt.toISOString(),
       ownerName: card.owner.displayName,
       headline: card.headline,
       city: card.city,

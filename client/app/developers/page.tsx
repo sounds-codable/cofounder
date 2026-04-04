@@ -17,12 +17,12 @@ function parseFilters(value: string | null) {
   return Array.from(new Set(value.split(',').map((item) => item.trim()).filter(Boolean)));
 }
 
-function toTimestamp(createdAt?: string) {
-  if (!createdAt) {
+function toTimestamp(updatedAt?: string) {
+  if (!updatedAt) {
     return 0;
   }
 
-  const timestamp = new Date(createdAt).getTime();
+  const timestamp = new Date(updatedAt).getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
@@ -55,7 +55,7 @@ function DevelopersPageContent() {
     };
   }, []);
 
-  const sortedCards = useMemo(() => [...cards].sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt)), [cards]);
+  const sortedCards = useMemo(() => [...cards].sort((a, b) => toTimestamp(b.updatedAt) - toTimestamp(a.updatedAt)), [cards]);
 
   function updateFilters(nextCities: string[], nextTags: string[]) {
     const next = new URLSearchParams(searchParams.toString());

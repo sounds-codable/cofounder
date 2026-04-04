@@ -13,12 +13,12 @@ type PublicCardGridProps = {
   subjectLabel?: '项目' | '程序员';
 };
 
-function formatPublishedAt(createdAt?: string) {
-  if (!createdAt) {
+function formatPublishedAt(updatedAt?: string) {
+  if (!updatedAt) {
     return '发布时间未知';
   }
 
-  const date = new Date(createdAt);
+  const date = new Date(updatedAt);
 
   if (Number.isNaN(date.getTime())) {
     return '发布时间未知';
@@ -55,9 +55,9 @@ export function PublicCardGrid({
               >
                 {card.city}
               </button>
-              <span className="pill card-published-at">{formatPublishedAt(card.createdAt)}</span>
             </div>
           </div>
+          <p className="card-id">{formatPublishedAt(card.updatedAt)}</p>
           <p className="card-id">编号：{card.id}</p>
           <h3>{card.headline}</h3>
           <p>{card.basicSummary}</p>

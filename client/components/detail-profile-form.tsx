@@ -9,6 +9,7 @@ import { useAuthState } from '@/lib/use-auth';
 export function DetailProfileForm() {
   const router = useRouter();
   const { authenticated, loading, profile, refresh } = useAuthState();
+  const [mounted, setMounted] = useState(false);
   const [intro, setIntro] = useState('');
   const [education, setEducation] = useState('');
   const [experience, setExperience] = useState('');
@@ -20,6 +21,10 @@ export function DetailProfileForm() {
   const [other, setOther] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!profile) {
@@ -67,6 +72,10 @@ export function DetailProfileForm() {
         </button>
       </section>
     );
+  }
+
+  if (!mounted) {
+    return null;
   }
 
   return (

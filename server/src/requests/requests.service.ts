@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ContactMethod } from '../contacts/contact-method.entity';
 import { DetailRequestStatus } from '../common/enums/detail-request-status.enum';
-import { UserRole } from '../common/enums/user-role.enum';
 import { Card } from '../platform/card.entity';
 import { DetailRequest } from '../platform/detail-request.entity';
 import { User } from '../users/user.entity';
@@ -64,14 +63,6 @@ export class RequestsService {
 
     if (!card) {
       throw new NotFoundException('目标卡片不存在');
-    }
-
-    if (user.role !== UserRole.DEVELOPER) {
-      throw new BadRequestException('当前仅支持程序员发起了解详情请求');
-    }
-
-    if (card.role !== UserRole.EXPERT) {
-      throw new BadRequestException('当前仅支持向项目方卡片发起了解详情请求');
     }
 
     if (card.owner.id === user.id) {
