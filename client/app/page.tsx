@@ -91,7 +91,7 @@ const deferredSectionStyle: CSSProperties = {
 export default function HomePage() {
   return (
     <div className="relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 opacity-95">
+      <div className="pointer-events-none absolute inset-0 opacity-95 max-md:hidden">
         <div className="home-fx-orb home-fx-orb--wide absolute -left-[28vw] top-[-10vh] h-[56vh] w-[56vh] rounded-full bg-[radial-gradient(circle,rgba(120,144,255,0.4)_0%,rgba(120,144,255,0)_72%)] [animation:driftOrbit_22s_ease-in-out_infinite] motion-reduce:[animation:none]" />
         <div className="home-fx-orb absolute -right-[20vw] top-[18vh] h-[52vh] w-[52vh] rounded-full bg-[radial-gradient(circle,rgba(86,223,201,0.34)_0%,rgba(86,223,201,0)_72%)] [animation:driftOrbit_18s_ease-in-out_infinite_reverse] motion-reduce:[animation:none]" />
         <div className="home-fx-orb home-fx-orb--wide absolute bottom-[-28vh] left-1/2 h-[64vh] w-[64vh] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(162,120,255,0.26)_0%,rgba(162,120,255,0)_75%)] [animation:floatY_15s_ease-in-out_infinite] motion-reduce:[animation:none]" />
@@ -99,7 +99,7 @@ export default function HomePage() {
 
       <section className="relative flex min-h-[calc(100vh-84px)] items-center">
         <div className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-10 md:grid-cols-[1.05fr_0.95fr] md:gap-7 md:px-6 md:py-14">
-          <div className="rounded-[30px] border border-white/70 bg-white/72 p-1.5 shadow-[0_30px_80px_rgba(73,101,163,0.17)] backdrop-blur-[3px] max-md:backdrop-blur-0 [animation:fadeRise_var(--motion-slow)_var(--motion-ease)_both]">
+          <div className="rounded-[30px] border border-white/70 bg-white/72 p-1.5 shadow-[0_30px_80px_rgba(73,101,163,0.17)] max-md:shadow-[0_12px_28px_rgba(73,101,163,0.12)] backdrop-blur-[3px] max-md:backdrop-blur-0 [animation:fadeRise_var(--motion-slow)_var(--motion-ease)_both] max-md:[animation:none]">
             <Card className="h-full border-border/60 bg-gradient-to-br from-card/96 via-card/92 to-background/86 shadow-none">
               <CardHeader className="space-y-5 md:space-y-6">
                 <span className="inline-flex w-fit rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs font-medium tracking-wide text-secondary-foreground">ICU · I SEE YOU</span>
@@ -123,11 +123,29 @@ export default function HomePage() {
                     瞅瞅程序员
                   </Link>
                 </div>
+                <div className="rounded-xl border border-border/60 bg-white/88 p-2.5 md:hidden">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="inline-flex items-center gap-1.5 text-foreground">
+                      <BriefcaseBusiness className="size-3.5 text-primary" />
+                      场景
+                    </span>
+                    <ArrowRight className="size-3.5 text-primary/70" />
+                    <span className="inline-flex items-center gap-1.5 text-foreground">
+                      <Cpu className="size-3.5 text-primary" />
+                      MVP
+                    </span>
+                    <ArrowRight className="size-3.5 text-primary/70" />
+                    <span className="inline-flex items-center gap-1.5 text-foreground">
+                      <Code2 className="size-3.5 text-primary" />
+                      迭代
+                    </span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          <Card className="relative overflow-hidden border-border/70 bg-white/88 [animation:fadeRise_var(--motion-slow)_var(--motion-ease)_both] [animation-delay:0.12s]">
+          <Card className="relative overflow-hidden border-border/70 bg-white/88 max-md:hidden [animation:fadeRise_var(--motion-slow)_var(--motion-ease)_both] [animation-delay:0.12s]">
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(150deg,rgba(124,141,255,0.13)_0%,transparent_50%,rgba(87,217,197,0.18)_100%)]" />
             <div className="home-fx-orb absolute -left-24 top-12 h-60 w-60 rounded-full bg-[radial-gradient(circle,rgba(91,210,255,0.26)_0%,rgba(91,210,255,0)_72%)] [animation:driftOrbit_20s_ease-in-out_infinite] motion-reduce:[animation:none]" />
             <CardHeader className="relative pb-2">
