@@ -3,6 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { CardEngagementActions } from '@/components/card-engagement-actions';
+import { buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import {
   createDetailRequest,
   extractErrorMessage,
@@ -254,25 +259,33 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
 
   if (loading && !card) {
     return (
-      <div className="site-shell page-section page-stack">
-        <section className="detail-card">
-          <h1>正在加载资料…</h1>
-          <p>请稍候。</p>
-        </section>
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-6 md:py-8">
+        <Card className="border-border/70 bg-card/80">
+          <CardHeader>
+            <CardTitle>正在加载资料…</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">请稍候。</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (!card) {
     return (
-      <div className="site-shell page-section page-stack">
-        <section className="detail-card">
-          <h1>未找到该卡片</h1>
-          <p>这张公开卡片暂时不可查看。</p>
-          <Link className="primary-button" href="/projects">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-6 md:py-8">
+        <Card className="border-border/70 bg-card/80">
+          <CardHeader>
+            <CardTitle>未找到该卡片</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">这张公开卡片暂时不可查看。</p>
+            <Link className={buttonVariants()} href="/projects">
             返回公开列表
           </Link>
-        </section>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -291,44 +304,45 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   const collapsedPreviewRows = previewRows.slice(0, 2);
 
   return (
-    <div className="site-shell page-section page-stack">
-      {message ? <p className="status-text">{message}</p> : null}
+    <div className="relative mx-auto w-full max-w-6xl space-y-6 overflow-hidden px-4 py-6 md:px-6 md:py-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_10%_0%,rgba(124,141,255,0.16),transparent_48%),radial-gradient(circle_at_90%_18%,rgba(87,217,197,0.14),transparent_46%)]" />
+      {message ? <p className="rounded-lg border border-border/70 bg-background/76 px-3 py-2 text-sm text-muted-foreground backdrop-blur-sm">{message}</p> : null}
 
-      <div className="detail-back-nav">
-        <Link className="filter-back-link" href={backToListHref}>
+      <div className="rounded-xl border border-border/60 bg-background/80 px-3 py-2 backdrop-blur-sm">
+        <Link className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-0')} href={backToListHref}>
           ← {backToListLabel}
         </Link>
       </div>
 
-      <section className="detail-hero">
-        <div className="card-meta-row">
-          <span className="pill pill-role">{roleLabels[card.role]}</span>
-          <span className="pill">{card.city}</span>
+      <section className="relative space-y-4 rounded-2xl border border-border/70 bg-card/84 p-6 shadow-[0_16px_38px_rgba(79,108,163,0.14)] backdrop-blur-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex rounded-full bg-secondary px-2.5 py-1 text-xs text-secondary-foreground">{roleLabels[card.role]}</span>
+          <span className="inline-flex rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground">{card.city}</span>
         </div>
-        <h1>{card.headline}</h1>
-        <p className="card-id">{formatPublishedAt(card.updatedAt)}</p>
-        <p className="card-id">编号：{card.id}</p>
-        <p>{card.basicSummary}</p>
-        <div className="tag-row">
+        <h1 className="text-2xl font-semibold leading-tight text-foreground md:text-3xl">{card.headline}</h1>
+        <p className="text-xs text-muted-foreground">{formatPublishedAt(card.updatedAt)}</p>
+        <p className="text-xs text-muted-foreground">编号：{card.id}</p>
+        <p className="text-sm leading-7 text-muted-foreground">{card.basicSummary}</p>
+        <div className="flex flex-wrap gap-2">
           {card.strengths.map((strength) => (
-            <span className="tag" key={strength}>
+            <span className="inline-flex rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground" key={strength}>
               {strength}
             </span>
           ))}
         </div>
-        <div className="cta-panel">
-          <div className="detail-action-row">
-            <div className="card-engagement-icons">
+        <div className="rounded-xl border border-border/60 bg-background/74 p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
               <CardEngagementActions cardId={id} />
             </div>
             {!authenticated ? (
-              <Link className="card-detail-link card-detail-link-inline" href={`/login?next=/cards/${id}`}>
+              <Link className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'ml-auto')} href={`/login?next=/cards/${id}`}>
                 询问更多信息
               </Link>
             ) : card.viewerState ? (
-              <span className="pill pill-role card-detail-link-inline">当前状态：{statusLabel}</span>
+              <span className="ml-auto inline-flex rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground">当前状态：{statusLabel}</span>
             ) : (
-              <button className="card-detail-link card-detail-link-inline" disabled={submittingRequest || savingDetail} type="button" onClick={openRequestModal}>
+              <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'ml-auto')} disabled={submittingRequest || savingDetail} type="button" onClick={openRequestModal}>
                 {submittingRequest ? '发送中…' : '询问更多信息'}
               </button>
             )}
@@ -337,12 +351,12 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
       </section>
 
       {requestModalOpen ? (
-        <div className="request-modal-wrap" role="dialog" aria-modal="true" aria-label="询问更多信息">
-          <button className="request-modal-backdrop" onClick={() => setRequestModalOpen(false)} type="button" aria-label="关闭弹框" />
-          <section className="request-modal-card">
-            <h2>询问更多信息</h2>
-            <div className="request-modal-note-row">
-              <p className="request-modal-note">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="询问更多信息">
+          <button className="absolute inset-0 bg-foreground/30" onClick={() => setRequestModalOpen(false)} type="button" aria-label="关闭弹框" />
+          <section className="relative z-10 w-full max-w-2xl space-y-4 rounded-2xl border border-border/70 bg-card/96 p-5 shadow-[0_18px_42px_rgba(79,108,163,0.24)] backdrop-blur-md">
+            <h2 className="text-xl font-semibold text-foreground">询问更多信息</h2>
+            <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
+              <p className="rounded-lg border border-border/70 bg-background/70 px-3 py-2 text-sm text-muted-foreground">
                 提示：向对方询问更多信息，需要先提供详细信息给对方。<br />
                 对方看过你的详细信息后，会决定是否提供更多信息。
               </p>
@@ -360,39 +374,39 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
             </div>
 
             {hasDetailProfile ? (
-              <div className="request-modal-stack">
-                <p>以下信息将会被提交给对方：</p>
-                <div className="request-modal-preview">
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">以下信息将会被提交给对方：</p>
+                <div className="grid gap-2">
                   {(showAllDetail ? previewRows : collapsedPreviewRows).map(([label, value]) => (
-                    <div className="request-modal-preview-item" key={label}>
-                      <strong>{label}</strong>
-                      <p>{showAllDetail ? value : truncateText(value)}</p>
+                    <div className="rounded-lg border border-border/60 bg-background/70 p-3" key={label}>
+                      <strong className="text-sm text-foreground">{label}</strong>
+                      <p className="mt-1 text-sm text-muted-foreground">{showAllDetail ? value : truncateText(value)}</p>
                     </div>
                   ))}
                 </div>
                 {!showAllDetail ? (
-                  <button className="ghost-button" type="button" onClick={() => setShowAllDetail(true)}>
+                  <button className={buttonVariants({ variant: 'outline' })} type="button" onClick={() => setShowAllDetail(true)}>
                     展开查看全部信息
                   </button>
                 ) : null}
-                {modalMessage ? <p className="request-modal-error-text">{modalMessage}</p> : null}
-                <div className="request-modal-actions">
-                  <button className="primary-button" disabled={submittingRequest} type="button" onClick={() => void handleCreateRequest()}>
+                {modalMessage ? <p className="text-sm text-destructive">{modalMessage}</p> : null}
+                <div className="flex flex-wrap gap-2">
+                  <button className={buttonVariants()} disabled={submittingRequest} type="button" onClick={() => void handleCreateRequest()}>
                     {submittingRequest ? '发送中…' : '确认发送'}
                   </button>
-                  <button className="ghost-button" disabled={submittingRequest} type="button" onClick={() => setRequestModalOpen(false)}>
+                  <button className={buttonVariants({ variant: 'outline' })} disabled={submittingRequest} type="button" onClick={() => setRequestModalOpen(false)}>
                     取消申请
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="request-modal-stack">
-                <p>还没有录入详细信息，请先录入详细信息。</p>
-                <form className="stack-form request-modal-form" onSubmit={(event) => event.preventDefault()}>
-                  <label className={fieldErrors.intro ? 'request-form-label request-form-label-error' : 'request-form-label'}>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">还没有录入详细信息，请先录入详细信息。</p>
+                <form className="space-y-3" onSubmit={(event) => event.preventDefault()}>
+                  <label className="grid gap-1 text-sm text-foreground">
                     个人简介
-                    <textarea
-                      className={fieldErrors.intro ? 'request-form-control-error' : undefined}
+                    <Textarea
+                      className={cn(fieldErrors.intro ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
                       name="intro"
                       onChange={(event) => {
                         setIntro(event.target.value);
@@ -402,12 +416,12 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                       placeholder="介绍你的背景和协作方式"
                       value={intro}
                     />
-                    {fieldErrors.intro ? <span className="request-field-error-text">{fieldErrors.intro}</span> : null}
+                    {fieldErrors.intro ? <span className="text-xs text-destructive">{fieldErrors.intro}</span> : null}
                   </label>
-                  <label className={fieldErrors.education ? 'request-form-label request-form-label-error' : 'request-form-label'}>
+                  <label className="grid gap-1 text-sm text-foreground">
                     教育背景
-                    <textarea
-                      className={fieldErrors.education ? 'request-form-control-error' : undefined}
+                    <Textarea
+                      className={cn(fieldErrors.education ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
                       name="education"
                       onChange={(event) => {
                         setEducation(event.target.value);
@@ -417,12 +431,12 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                       placeholder="学校、专业"
                       value={education}
                     />
-                    {fieldErrors.education ? <span className="request-field-error-text">{fieldErrors.education}</span> : null}
+                    {fieldErrors.education ? <span className="text-xs text-destructive">{fieldErrors.education}</span> : null}
                   </label>
-                  <label className={fieldErrors.experience ? 'request-form-label request-form-label-error' : 'request-form-label'}>
+                  <label className="grid gap-1 text-sm text-foreground">
                     工作背景
-                    <textarea
-                      className={fieldErrors.experience ? 'request-form-control-error' : undefined}
+                    <Textarea
+                      className={cn(fieldErrors.experience ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
                       name="experience"
                       onChange={(event) => {
                         setExperience(event.target.value);
@@ -432,12 +446,12 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                       placeholder="做过哪些业务和职责"
                       value={experience}
                     />
-                    {fieldErrors.experience ? <span className="request-field-error-text">{fieldErrors.experience}</span> : null}
+                    {fieldErrors.experience ? <span className="text-xs text-destructive">{fieldErrors.experience}</span> : null}
                   </label>
-                  <label className={fieldErrors.projectDetail ? 'request-form-label request-form-label-error' : 'request-form-label'}>
+                  <label className="grid gap-1 text-sm text-foreground">
                     项目详情 / 做过的产品介绍
-                    <textarea
-                      className={fieldErrors.projectDetail ? 'request-form-control-error' : undefined}
+                    <Textarea
+                      className={cn(fieldErrors.projectDetail ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
                       name="projectDetail"
                       onChange={(event) => {
                         setProjectDetail(event.target.value);
@@ -447,37 +461,37 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                       placeholder="补充项目细节、成果或能力证明"
                       value={projectDetail}
                     />
-                    {fieldErrors.projectDetail ? <span className="request-field-error-text">{fieldErrors.projectDetail}</span> : null}
+                    {fieldErrors.projectDetail ? <span className="text-xs text-destructive">{fieldErrors.projectDetail}</span> : null}
                   </label>
-                  <div className="role-columns contact-grid">
-                    <label>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="grid gap-1 text-sm text-foreground">
                       电话
-                      <input name="phone" onChange={(event) => setPhone(event.target.value)} placeholder="选填" type="text" value={phone} />
+                      <Input name="phone" onChange={(event) => setPhone(event.target.value)} placeholder="选填" type="text" value={phone} />
                     </label>
-                    <label>
+                    <label className="grid gap-1 text-sm text-foreground">
                       微信
-                      <input name="wechat" onChange={(event) => setWechat(event.target.value)} placeholder="选填" type="text" value={wechat} />
+                      <Input name="wechat" onChange={(event) => setWechat(event.target.value)} placeholder="选填" type="text" value={wechat} />
                     </label>
-                    <label>
+                    <label className="grid gap-1 text-sm text-foreground">
                       QQ
-                      <input name="qq" onChange={(event) => setQq(event.target.value)} placeholder="选填" type="text" value={qq} />
+                      <Input name="qq" onChange={(event) => setQq(event.target.value)} placeholder="选填" type="text" value={qq} />
                     </label>
-                    <label>
+                    <label className="grid gap-1 text-sm text-foreground">
                       邮箱
-                      <input name="email" onChange={(event) => setEmail(event.target.value)} placeholder="选填" type="email" value={email} />
+                      <Input name="email" onChange={(event) => setEmail(event.target.value)} placeholder="选填" type="email" value={email} />
                     </label>
                   </div>
-                  <label>
+                  <label className="grid gap-1 text-sm text-foreground">
                     其他联系方式
-                    <input name="other" onChange={(event) => setOther(event.target.value)} placeholder="选填，例如 Telegram / 飞书" type="text" value={other} />
+                    <Input name="other" onChange={(event) => setOther(event.target.value)} placeholder="选填，例如 Telegram / 飞书" type="text" value={other} />
                   </label>
                 </form>
-                {modalMessage ? <p className="status-text">{modalMessage}</p> : null}
-                <div className="request-modal-actions">
-                  <button className="primary-button" disabled={savingDetail || submittingRequest} type="button" onClick={() => void handleSaveDetailAndCreateRequest()}>
+                {modalMessage ? <p className="text-sm text-destructive">{modalMessage}</p> : null}
+                <div className="flex flex-wrap gap-2">
+                  <button className={buttonVariants()} disabled={savingDetail || submittingRequest} type="button" onClick={() => void handleSaveDetailAndCreateRequest()}>
                     {savingDetail || submittingRequest ? '提交中…' : '保存并确认发送'}
                   </button>
-                  <button className="ghost-button" disabled={savingDetail || submittingRequest} type="button" onClick={() => setRequestModalOpen(false)}>
+                  <button className={buttonVariants({ variant: 'outline' })} disabled={savingDetail || submittingRequest} type="button" onClick={() => setRequestModalOpen(false)}>
                     取消申请
                   </button>
                 </div>
@@ -488,13 +502,13 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
       ) : null}
 
       {card.viewerState?.contactVisible && card.viewerState.contactMethods.length > 0 ? (
-        <section className="detail-card">
-          <h2>已可见联系方式</h2>
-          <div className="contact-list">
+        <section className="space-y-3 rounded-2xl border border-border/70 bg-card/84 p-5 shadow-[0_14px_34px_rgba(79,108,163,0.12)]">
+          <h2 className="text-xl font-semibold text-foreground">已可见联系方式</h2>
+          <div className="grid gap-2">
             {card.viewerState.contactMethods.map((contact: ContactMethod) => (
-              <div className="contact-item" key={contact.id}>
-                <strong>{contact.type}</strong>
-                <p>{contact.value}</p>
+              <div className="rounded-lg border border-border/60 bg-background/74 px-3 py-2" key={contact.id}>
+                <strong className="text-sm text-foreground">{contact.type}</strong>
+                <p className="text-sm text-muted-foreground">{contact.value}</p>
               </div>
             ))}
           </div>

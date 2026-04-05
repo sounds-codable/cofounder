@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { fetchOverview, type LogoVariant } from '@/lib/platform-api';
 
 const logoVariants: Array<{ key: LogoVariant; title: string; description: string }> = [
@@ -32,29 +34,31 @@ export default function LogoLabPage() {
   }, []);
 
   return (
-    <section className="site-shell logo-lab">
-      <div className="logo-lab-head">
-        <span className="launch-kicker">Logo Lab</span>
-        <h1>Logo 主题预览</h1>
+    <section className="mx-auto w-full max-w-6xl space-y-5 px-4 py-6 md:px-6 md:py-8">
+      <div className="space-y-3">
+        <span className="inline-flex w-fit rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground">Logo Lab</span>
+        <h1 className="text-3xl font-semibold leading-tight md:text-4xl">Logo 主题预览</h1>
         <p>
           当前生效主题：<strong>{activeVariant}</strong>。在 <code>server/.env</code> 修改 <code>LOGO_VARIANT</code> 并重启后端，即可全站切换。
         </p>
       </div>
 
-      <div className="logo-lab-grid">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {logoVariants.map((variant) => (
-          <article className={`logo-lab-card${activeVariant === variant.key ? ' is-active' : ''}`} key={variant.key}>
-            <div className="logo-lab-mark-wrap">
+          <Card className={cn('border-border/70 bg-card/88', activeVariant === variant.key ? 'border-primary/60 ring-1 ring-primary/40' : '')} key={variant.key}>
+            <CardHeader className="items-center text-center">
               <span aria-hidden="true" className={`brand-mark brand-mark-${variant.key}`}>
                 <span className="brand-mark-core" />
                 <span className="brand-mark-core brand-mark-core-alt" />
                 <span className="brand-mark-dot" />
               </span>
-            </div>
-            <h2>{variant.title}</h2>
-            <p>{variant.description}</p>
-            <code>LOGO_VARIANT={variant.key}</code>
-          </article>
+              <CardTitle>{variant.title}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-center text-sm text-muted-foreground">
+              <p>{variant.description}</p>
+              <code className="text-xs text-foreground">LOGO_VARIANT={variant.key}</code>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </section>

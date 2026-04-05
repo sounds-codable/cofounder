@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { PublicCardGrid } from '@/components/public-card-grid';
+import { buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { useCardEngagementState } from '@/lib/card-engagement';
 import { fetchCards } from '@/lib/platform-api';
 import { fallbackPublicCards } from '@/lib/site-data';
@@ -133,43 +136,49 @@ function DevelopersPageContent() {
   const hasScopedView = view !== 'all';
 
   return (
-    <div className="site-shell page-section page-stack">
+    <div className="relative mx-auto w-full max-w-6xl space-y-5 overflow-hidden px-4 py-6 md:px-6 md:py-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_0%_0%,rgba(124,141,255,0.16),transparent_45%),radial-gradient(circle_at_100%_20%,rgba(87,217,197,0.14),transparent_45%)]" />
+      <section className="relative rounded-2xl border border-border/70 bg-card/85 p-5 shadow-[0_18px_44px_rgba(73,101,163,0.14)] backdrop-blur-sm">
+        <span className="inline-flex rounded-full bg-secondary/80 px-3 py-1 text-xs text-secondary-foreground">程序员库</span>
+        <h1 className="mt-3 text-2xl font-semibold leading-tight text-foreground md:text-3xl">技术能力先对齐，再推进下一步沟通。</h1>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">先看公开基础信息，再通过城市和标签筛选更匹配的协作者。</p>
+      </section>
       {authenticated ? (
-        <div className="section-action-row">
-          <Link className="primary-button" href={addDeveloperHref}>
+        <div className="relative flex flex-wrap gap-2">
+          <Link className={buttonVariants()} href={addDeveloperHref}>
             登记程序员
           </Link>
-          <Link className="ghost-button" href="/developers?view=favorited">
+          <Link className={buttonVariants({ variant: 'outline' })} href="/developers?view=favorited">
             我收藏的程序员
           </Link>
-          <Link className="ghost-button" href="/developers?view=liked">
+          <Link className={buttonVariants({ variant: 'outline' })} href="/developers?view=liked">
             我点赞的程序员
           </Link>
         </div>
       ) : null}
       {hasFilters || hasScopedView ? (
-        <div className="filter-nav-bar">
-          <Link className="filter-back-link" href="/developers">
+        <div className="rounded-xl border border-border/60 bg-background/80 px-3 py-2 backdrop-blur-sm">
+          <Link className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-0')} href="/developers">
             ← 返回查看全部程序员
           </Link>
         </div>
       ) : null}
       {hasFilters || hasScopedView ? (
-        <div className="filter-summary" role="status">
-          <span className="filter-summary-label">筛选状态：</span>
-          {hasScopedView ? <span className="filter-chip is-static">视图：{view === 'favorited' ? '我收藏的程序员' : '我点赞的程序员'}</span> : null}
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-background/80 px-3 py-2 backdrop-blur-sm" role="status">
+          <span className="text-sm text-muted-foreground">筛选状态：</span>
+          {hasScopedView ? <span className="inline-flex rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground">视图：{view === 'favorited' ? '我收藏的程序员' : '我点赞的程序员'}</span> : null}
           {activeCities.map((city) => (
-            <button className="filter-chip" key={`city-${city}`} type="button" onClick={() => removeCityFilter(city)}>
+            <button className="inline-flex rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent" key={`city-${city}`} type="button" onClick={() => removeCityFilter(city)}>
               城市「{city}」×
             </button>
           ))}
           {activeTags.map((tag) => (
-            <button className="filter-chip" key={`tag-${tag}`} type="button" onClick={() => removeTagFilter(tag)}>
+            <button className="inline-flex rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent" key={`tag-${tag}`} type="button" onClick={() => removeTagFilter(tag)}>
               标签「{tag}」×
             </button>
           ))}
           {hasFilters ? (
-            <button className="filter-clear-button" type="button" onClick={() => updateFilters([], [])}>
+            <button className={buttonVariants({ variant: 'ghost', size: 'sm' })} type="button" onClick={() => updateFilters([], [])}>
               清空筛选
             </button>
           ) : null}
@@ -178,7 +187,14 @@ function DevelopersPageContent() {
       {visibleCards.length > 0 ? (
         <PublicCardGrid cards={visibleCards} activeCities={activeCities} activeTags={activeTags} onCityFilter={addCityFilter} onTagFilter={addTagFilter} subjectLabel="程序员" />
       ) : (
-        <section className="detail-card empty-state-card"><h2>当前还没有内容</h2><p>你可以先登记程序员信息，或者在公开列表里收藏、点赞感兴趣的程序员。</p></section>
+        <Card className="border-border/70 bg-card/82 shadow-[0_14px_36px_rgba(73,101,163,0.14)]">
+          <CardHeader>
+            <CardTitle>当前还没有内容</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">你可以先登记程序员信息，或者在公开列表里收藏、点赞感兴趣的程序员。</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

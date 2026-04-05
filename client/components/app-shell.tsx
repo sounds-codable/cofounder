@@ -5,6 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, type ReactNode, useEffect, useRef, useState, useTransition } from 'react';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { fetchOverview, type LogoVariant } from '@/lib/platform-api';
 import { clearStoredAccessToken } from '@/lib/session';
 import { useAuthState } from '@/lib/use-auth';
@@ -285,65 +287,72 @@ function AppShellContent({ children }: AppShellProps) {
   }
 
   return (
-    <div className={`dashboard-shell${sidebarExpanded ? ' is-sidebar-expanded' : ''}`}>
-      <div className="dashboard-frame">
-        <div className="dashboard-global-brand">
-          <Link className="dashboard-brand dashboard-global-brand-link" href="/dashboard">
+    <div className={cn('relative min-h-screen bg-background', sidebarExpanded ? 'is-sidebar-expanded' : undefined)}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_8%_0%,rgba(124,141,255,0.16),transparent_46%),radial-gradient(circle_at_92%_8%,rgba(87,217,197,0.14),transparent_44%)]" />
+      <div className="relative mx-auto grid min-h-screen w-full max-w-[1400px] grid-cols-1 gap-4 px-3 py-3 lg:grid-cols-[260px_minmax(0,1fr)] lg:px-4 lg:py-4">
+        <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/88 px-4 py-3 shadow-[0_14px_34px_rgba(79,108,163,0.12)] backdrop-blur-sm lg:col-span-2">
+          <Link className="inline-flex items-center gap-3" href="/dashboard">
             <span aria-hidden="true" className={`brand-mark brand-mark-${logoVariant}`}>
               <span className="brand-mark-core" />
               <span className="brand-mark-core brand-mark-core-alt" />
               <span className="brand-mark-dot" />
             </span>
-            <div className="dashboard-brand-text">
-              <strong>叩饭 Cofounder</strong>
-              <span className="dashboard-brand-copy">协作后台</span>
+            <div className="grid gap-0.5">
+              <strong className="text-sm font-semibold text-foreground md:text-base">叩饭 Cofounder</strong>
+              <span className="text-xs text-muted-foreground">协作后台</span>
             </div>
           </Link>
           {profile ? (
-            <div className="dashboard-global-actions">
-              <div className="dashboard-user-menu" ref={userMenuRef}>
-                <button aria-label="打开用户菜单" className="icon-button dashboard-avatar-button" onClick={() => setUserMenuOpen((current) => !current)} type="button">
+            <div className="relative" ref={userMenuRef}>
+                <button
+                  aria-label="打开用户菜单"
+                  className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'rounded-full')}
+                  onClick={() => setUserMenuOpen((current) => !current)}
+                  type="button"
+                >
                   <svg aria-hidden="true" viewBox="0 0 24 24">
                     <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
                     <path d="M6 19c1.1-2.9 3.1-4.3 6-4.3s4.9 1.4 6 4.3" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
                   </svg>
                 </button>
                 {userMenuOpen ? (
-                  <div className="dashboard-user-popover">
-                    <p>{profile.user.email}</p>
-                    <button className="ghost-button" onClick={handleLogout} type="button">
+                  <div className="absolute right-0 top-12 z-50 grid min-w-56 gap-3 rounded-xl border border-border/70 bg-card/96 p-3 shadow-[0_14px_32px_rgba(79,108,163,0.2)] backdrop-blur-sm">
+                    <p className="text-xs text-muted-foreground">{profile.user.email}</p>
+                    <button className={buttonVariants({ variant: 'outline' })} onClick={handleLogout} type="button">
                       {pending ? '退出中…' : '退出登录'}
                     </button>
                   </div>
                 ) : null}
-              </div>
             </div>
           ) : null}
         </div>
 
-        <aside className={`dashboard-sidebar${sidebarOpen ? ' is-open' : ''}`}>
-          <div className="dashboard-sidebar-inner">
-            <nav className="dashboard-nav" aria-label="后台导航">
+        <aside className={cn('rounded-2xl border border-border/70 bg-card/68 shadow-[0_14px_34px_rgba(79,108,163,0.12)] backdrop-blur-sm', sidebarOpen ? 'is-open' : undefined)}>
+          <div className="flex h-full flex-col justify-between p-4">
+            <nav className="space-y-5" aria-label="后台导航">
               {dashboardNavGroups.map((group) => (
-                <div className="dashboard-nav-group" key={group.title}>
-                  <p className="dashboard-nav-title">{group.title}</p>
-                  <div className="dashboard-nav-links">
+                <div className="space-y-2" key={group.title}>
+                  <p className="px-2 text-xs font-semibold tracking-wide text-muted-foreground">{group.title}</p>
+                  <div className="space-y-1">
                     {group.items.map((item) => {
                       const active = item.match === 'prefix' ? pathname.startsWith(item.href) : pathname === item.href;
 
                       return (
                         <Link
-                          className={`dashboard-nav-link${active ? ' is-active' : ''}`}
+                          className={cn(
+                            'flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-all duration-[var(--motion-normal)] ease-[var(--motion-ease)]',
+                            active ? 'bg-secondary text-secondary-foreground shadow-[0_8px_20px_rgba(124,141,255,0.18)]' : 'text-muted-foreground hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground'
+                          )}
                           data-tooltip={item.label}
                           href={item.href}
                           key={item.href}
                           onClick={() => setSidebarOpen(false)}
                           title={item.label}
                         >
-                          <span aria-hidden="true" className="dashboard-nav-link-icon">
+                          <span aria-hidden="true" className="inline-flex size-4 items-center justify-center">
                             <DashboardNavIcon icon={item.icon} />
                           </span>
-                          <span className="dashboard-nav-link-label">{item.label}</span>
+                          <span>{item.label}</span>
                         </Link>
                       );
                     })}
@@ -352,10 +361,10 @@ function AppShellContent({ children }: AppShellProps) {
               ))}
             </nav>
 
-            <div className="dashboard-sidebar-bottom">
+            <div className="pt-4">
               <button
                 aria-label={desktopViewport ? (sidebarExpanded ? '收起侧边导航' : '展开侧边导航') : '收起导航菜单'}
-                className="icon-button dashboard-toggle-button dashboard-bottom-toggle"
+                className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'rounded-full')}
                 data-tooltip={desktopViewport ? (sidebarExpanded ? '收起导航' : '展开导航') : '收起导航'}
                 title={desktopViewport ? (sidebarExpanded ? '收起导航' : '展开导航') : '收起导航'}
                 onClick={handleSidebarCollapse}
@@ -367,20 +376,16 @@ function AppShellContent({ children }: AppShellProps) {
           </div>
         </aside>
 
-        {sidebarOpen ? <button aria-label="关闭侧边导航" className="dashboard-overlay" onClick={() => setSidebarOpen(false)} type="button" /> : null}
+        {sidebarOpen ? <button aria-label="关闭侧边导航" className="fixed inset-0 z-30 bg-foreground/20 lg:hidden" onClick={() => setSidebarOpen(false)} type="button" /> : null}
 
-        <div className="dashboard-content-shell">
-          <div className="dashboard-topbar">
-            <div className="dashboard-topbar-left">
-              <div className="dashboard-topbar-copy">
-                <h1>{getPageTitle(pathname)}</h1>
-              </div>
-            </div>
+        <div className="min-w-0 rounded-2xl border border-border/70 bg-background/76 shadow-[0_16px_36px_rgba(79,108,163,0.1)] backdrop-blur-sm">
+          <div className="border-b border-border/60 px-5 py-4">
+            <h1 className="text-xl font-semibold text-foreground">{getPageTitle(pathname)}</h1>
           </div>
-          <main className="dashboard-main">{children}</main>
+          <main className="px-4 py-5 md:px-6">{children}</main>
         </div>
       </div>
-      <SiteFooter className="dashboard-footer" contentClassName="dashboard-footer-content" />
+      <SiteFooter className="mt-auto" contentClassName="max-w-[1400px]" />
     </div>
   );
 }
