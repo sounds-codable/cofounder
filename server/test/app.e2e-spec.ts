@@ -115,6 +115,13 @@ describe('Cofounder App (e2e)', () => {
         education: '浙江大学 / 管理学',
         experience: '做过线下渠道、采购协同与运营管理。',
         projectDetail: '希望先验证库存协同与采购预测。',
+      })
+      .expect(200);
+
+    await request(getHttpServer(app))
+      .put('/api/me/contacts')
+      .set('Authorization', `Bearer ${expertSession.accessToken}`)
+      .send({
         phone: '13800000000',
         wechat: 'expert-e2e-wechat',
         email: 'expert-e2e@example.com',
@@ -153,6 +160,33 @@ describe('Cofounder App (e2e)', () => {
 
     expect(cardAfterApprove.body.viewerState.detailVisible).toBe(true);
     expect(cardAfterApprove.body.viewerState.contactVisible).toBe(false);
+
+    const reviewingMarked = await request(getHttpServer(app))
+      .post(`/api/requests/${requestId}/mark-exchange-reviewing`)
+      .set('Authorization', `Bearer ${developerSession.accessToken}`)
+      .expect(201);
+
+    expect(reviewingMarked.body.status).toBe('approved_detail_visible');
+    expect(reviewingMarked.body.exchangeReviewingAt).toBeTruthy();
+
+    const requesterDeclined = await request(getHttpServer(app))
+      .post(`/api/requests/${requestId}/decline-contact`)
+      .set('Authorization', `Bearer ${developerSession.accessToken}`)
+      .send({ reason: '我现在暂时不推进，后续有需要再联系。' })
+      .expect(201);
+
+    expect(requesterDeclined.body.status).toBe('requester_declined_contact');
+    expect(requesterDeclined.body.requesterDeclinedContactAt).toBeTruthy();
+
+    await request(getHttpServer(app))
+      .put('/api/me/contacts')
+      .set('Authorization', `Bearer ${developerSession.accessToken}`)
+      .send({
+        phone: '13900000000',
+        wechat: 'dev-e2e-wechat',
+        email: 'developer-e2e@example.com',
+      })
+      .expect(200);
 
     const exchangedRequest = await request(getHttpServer(app))
       .post(`/api/requests/${requestId}/exchange-contact`)

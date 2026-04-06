@@ -4,7 +4,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { createHmac, randomInt } from 'node:crypto';
 import { Repository } from 'typeorm';
 import { MailService } from './mail.service';
-import { UserRole } from '../common/enums/user-role.enum';
 import { User } from '../users/user.entity';
 
 type AuthTokenPayload = {
@@ -28,11 +27,7 @@ export class AuthService {
     if (!user) {
       user = this.userRepository.create({
         email: normalizedEmail,
-        role: UserRole.DEVELOPER,
         displayName: normalizedEmail.split('@')[0] || '新用户',
-        city: '待填写',
-        basicSummary: '待补充基础信息',
-        desiredDirection: null,
         detailedProfile: null,
         detailedProfileCompletedAt: null,
         loginCode: null,
@@ -123,11 +118,7 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email,
-      role: user.role,
       displayName: user.displayName,
-      city: user.city,
-      basicSummary: user.basicSummary,
-      desiredDirection: user.desiredDirection,
       detailedProfileCompletedAt: user.detailedProfileCompletedAt,
       lastLoginAt: user.lastLoginAt,
     };

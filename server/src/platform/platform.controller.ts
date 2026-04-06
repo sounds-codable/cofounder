@@ -20,6 +20,12 @@ export class PlatformController {
     return this.platformService.listCards(role);
   }
 
+  @Get('tags')
+  listTagSuggestions(@Query('query') query?: string, @Query('limit') limit?: string) {
+    const parsedLimit = Number(limit ?? 8);
+    return this.platformService.listTagSuggestions(query, Number.isFinite(parsedLimit) ? parsedLimit : 8);
+  }
+
   @Get('cards/:id')
   async getCardById(@Param('id') id: string, @Headers('authorization') authorization?: string) {
     const user = await this.authService.getOptionalUserFromAuthorizationHeader(authorization);

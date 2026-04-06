@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { ArrowRight, BriefcaseBusiness, CheckCircle2, Code2, Cpu, Handshake, Rocket, ShieldCheck, Sparkles, Workflow } from 'lucide-react';
+import { MvpTerm } from '@/components/mvp-term';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -88,13 +89,28 @@ const deferredSectionStyle: CSSProperties = {
   containIntrinsicSize: '1px 1100px',
 };
 
+function renderTextWithMvp(text: string) {
+  const parts = text.split('MVP');
+
+  if (parts.length <= 1) {
+    return text;
+  }
+
+  return parts.map((part, index) => (
+    <span key={`${part}-${index}`}>
+      {part}
+      {index < parts.length - 1 ? <MvpTerm className="text-sm leading-7" /> : null}
+    </span>
+  ));
+}
+
 export default function HomePage() {
   return (
     <div className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 opacity-95 max-md:hidden">
-        <div className="home-fx-orb home-fx-orb--wide absolute -left-[28vw] top-[-10vh] h-[56vh] w-[56vh] rounded-full bg-[radial-gradient(circle,rgba(120,144,255,0.4)_0%,rgba(120,144,255,0)_72%)] [animation:driftOrbit_22s_ease-in-out_infinite] motion-reduce:[animation:none]" />
+        <div className="home-fx-orb home-fx-orb--wide absolute -left-[28vw] top-[-10vh] h-[56vh] w-[56vh] rounded-full bg-[radial-gradient(circle,rgba(19,191,168,0.34)_0%,rgba(19,191,168,0)_72%)] [animation:driftOrbit_22s_ease-in-out_infinite] motion-reduce:[animation:none]" />
         <div className="home-fx-orb absolute -right-[20vw] top-[18vh] h-[52vh] w-[52vh] rounded-full bg-[radial-gradient(circle,rgba(86,223,201,0.34)_0%,rgba(86,223,201,0)_72%)] [animation:driftOrbit_18s_ease-in-out_infinite_reverse] motion-reduce:[animation:none]" />
-        <div className="home-fx-orb home-fx-orb--wide absolute bottom-[-28vh] left-1/2 h-[64vh] w-[64vh] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(162,120,255,0.26)_0%,rgba(162,120,255,0)_75%)] [animation:floatY_15s_ease-in-out_infinite] motion-reduce:[animation:none]" />
+        <div className="home-fx-orb home-fx-orb--wide absolute bottom-[-28vh] left-1/2 h-[64vh] w-[64vh] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(76,200,255,0.26)_0%,rgba(76,200,255,0)_75%)] [animation:floatY_15s_ease-in-out_infinite] motion-reduce:[animation:none]" />
       </div>
 
       <section className="relative flex min-h-[calc(100vh-84px)] items-center">
@@ -104,14 +120,16 @@ export default function HomePage() {
               <CardHeader className="space-y-5 md:space-y-6">
                 <span className="inline-flex w-fit rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs font-medium tracking-wide text-secondary-foreground">ICU · I SEE YOU</span>
                 <CardTitle className="text-4xl leading-[1.04] md:text-6xl">AI 时代，<br />不做旁观者。</CardTitle>
-                <p className="max-w-xl text-base leading-7 text-muted-foreground md:text-lg">先做一个 MVP，给自己留住主动权，而不是等被替代。</p>
+                <div className="max-w-xl text-base leading-7 text-muted-foreground md:text-lg">
+                  先做一个 <MvpTerm className="text-base md:text-lg" />，给自己留住主动权，而不是等被替代。
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex flex-wrap gap-2.5">
-                  <Link className={cn(buttonVariants({ size: 'lg' }), 'w-full sm:w-auto')} href="/login?next=/onboarding/basic%3Frole%3Dexpert">
+                  <Link className={cn(buttonVariants({ size: 'lg' }), 'w-full sm:w-auto')} href="/login?next=/onboarding/profile">
                     项目方发布项目
                   </Link>
-                  <Link className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'w-full sm:w-auto')} href="/login?next=/onboarding/basic%3Frole%3Ddeveloper">
+                  <Link className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'w-full sm:w-auto')} href="/login?next=/onboarding/profile">
                     程序员登记信息
                   </Link>
                 </div>
@@ -132,7 +150,7 @@ export default function HomePage() {
                     <ArrowRight className="size-3.5 text-primary/70" />
                     <span className="inline-flex items-center gap-1.5 text-foreground">
                       <Cpu className="size-3.5 text-primary" />
-                      MVP
+                      <MvpTerm className="text-xs" />
                     </span>
                     <ArrowRight className="size-3.5 text-primary/70" />
                     <span className="inline-flex items-center gap-1.5 text-foreground">
@@ -146,7 +164,7 @@ export default function HomePage() {
           </div>
 
           <Card className="relative overflow-hidden border-border/70 bg-white/88 max-md:hidden [animation:fadeRise_var(--motion-slow)_var(--motion-ease)_both] [animation-delay:0.12s]">
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(150deg,rgba(124,141,255,0.13)_0%,transparent_50%,rgba(87,217,197,0.18)_100%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(150deg,rgba(19,191,168,0.13)_0%,transparent_50%,rgba(76,200,255,0.18)_100%)]" />
             <div className="home-fx-orb absolute -left-24 top-12 h-60 w-60 rounded-full bg-[radial-gradient(circle,rgba(91,210,255,0.26)_0%,rgba(91,210,255,0)_72%)] [animation:driftOrbit_20s_ease-in-out_infinite] motion-reduce:[animation:none]" />
             <CardHeader className="relative pb-2">
               <CardTitle className="text-xl">协作焦点</CardTitle>
@@ -164,10 +182,10 @@ export default function HomePage() {
                   <div className="flex items-center justify-center">
                     <ArrowRight className="size-5 text-primary/80" />
                   </div>
-                  <div className="rounded-xl border border-primary/30 bg-gradient-to-r from-primary/16 via-white/96 to-cyan-200/26 p-3 shadow-[0_12px_30px_rgba(110,132,221,0.18)]">
+                  <div className="rounded-xl border border-primary/30 bg-gradient-to-r from-primary/16 via-white/96 to-cyan-200/26 p-3 shadow-[0_12px_30px_rgba(55,152,255,0.18)]">
                     <div className="flex items-center gap-2 text-sm font-semibold">
                       <Cpu className="size-4 text-primary" />
-                      联合做 MVP 验证
+                      联合做 <MvpTerm className="text-sm font-semibold" /> 验证
                     </div>
                   </div>
                   <div className="flex items-center justify-center">
@@ -181,7 +199,9 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              <p className="text-xs leading-6 text-muted-foreground">先把“行业场景”和“技术能力”连接，再落到可验证的 MVP，这张图就是你接下来要走的主线。</p>
+              <div className="text-xs leading-6 text-muted-foreground">
+                先把“行业场景”和“技术能力”连接，再落到可验证的 <MvpTerm className="text-xs" />，这张图就是你接下来要走的主线。
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -222,7 +242,7 @@ export default function HomePage() {
 
       <section className="relative flex min-h-[92vh] items-center py-8 md:py-12" style={deferredSectionStyle}>
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(196,230,255,0.2)_40%,rgba(203,214,255,0.15)_100%)]" />
-        <div className="home-fx-sweep home-fx-sweep--wide absolute -left-[18vw] top-[18vh] h-[34vh] w-[60vw] rotate-[-12deg] bg-[linear-gradient(90deg,transparent_0%,rgba(124,141,255,0.2)_48%,transparent_100%)] [animation:sweepX_8s_linear_infinite] motion-reduce:[animation:none]" />
+        <div className="home-fx-sweep home-fx-sweep--wide absolute -left-[18vw] top-[18vh] h-[34vh] w-[60vw] rotate-[-12deg] bg-[linear-gradient(90deg,transparent_0%,rgba(19,191,168,0.2)_48%,transparent_100%)] [animation:sweepX_8s_linear_infinite] motion-reduce:[animation:none]" />
         <div className="relative mx-auto grid w-full max-w-6xl gap-4 px-4 md:grid-cols-3 md:px-6">
           {launchCards.map((card, index) => {
             const Icon = card.icon;
@@ -240,7 +260,7 @@ export default function HomePage() {
                   <CardTitle className="text-xl leading-tight">{card.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm leading-7 text-muted-foreground">{card.description}</p>
+                  <div className="text-sm leading-7 text-muted-foreground">{renderTextWithMvp(card.description)}</div>
                 </CardContent>
               </Card>
             );
@@ -283,7 +303,7 @@ export default function HomePage() {
       </section>
 
       <section className="relative flex min-h-[76vh] items-center pb-14 pt-8 md:pt-12" style={deferredSectionStyle}>
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_8%,rgba(124,141,255,0.22),transparent_55%),radial-gradient(circle_at_90%_90%,rgba(87,217,197,0.26),transparent_48%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_8%,rgba(19,191,168,0.22),transparent_55%),radial-gradient(circle_at_90%_90%,rgba(76,200,255,0.26),transparent_48%)]" />
         <div className="relative mx-auto w-full max-w-6xl px-4 md:px-6 [animation:fadeRise_var(--motion-slow)_var(--motion-ease)_both]">
           <Card className="border-border/70 bg-gradient-to-r from-white/90 via-card/95 to-white/92 shadow-[0_20px_54px_rgba(73,101,163,0.15)]">
             <CardHeader className="space-y-3">
@@ -295,10 +315,10 @@ export default function HomePage() {
               <p className="text-sm text-muted-foreground md:text-base">让真实项目与真实能力先碰撞，再把点子变成结果。现在就进入你的第一步。</p>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-3">
-              <Link className={buttonVariants({ size: 'lg' })} href="/login?next=/onboarding/basic%3Frole%3Dexpert">
+              <Link className={buttonVariants({ size: 'lg' })} href="/login?next=/onboarding/profile">
                 项目方发布项目
               </Link>
-              <Link className={buttonVariants({ variant: 'outline', size: 'lg' })} href="/login?next=/onboarding/basic%3Frole%3Ddeveloper">
+              <Link className={buttonVariants({ variant: 'outline', size: 'lg' })} href="/login?next=/onboarding/profile">
                 程序员登记信息
               </Link>
             </CardContent>

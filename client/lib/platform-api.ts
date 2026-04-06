@@ -11,11 +11,7 @@ export type ContactMethod = {
 export type AuthUser = {
   id: string;
   email: string | null;
-  role: UserRole;
   displayName: string;
-  city: string;
-  basicSummary: string;
-  desiredDirection: string | null;
   detailedProfileCompletedAt: string | null;
   lastLoginAt: string | null;
 };
@@ -31,6 +27,7 @@ export type MeProfile = {
   };
   card: {
     id: string;
+    role: UserRole;
     headline: string;
     city: string;
     basicSummary: string;
@@ -78,13 +75,16 @@ export type OutgoingRequest = {
   status: string;
   rejectionReason: string | null;
   createdAt: string;
+  publisherViewedRequesterDetailAt?: string | null;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  contactExchangedAt?: string | null;
+  exchangeReviewingAt?: string | null;
+  requesterDeclinedContactAt?: string | null;
   targetCard: RequestTargetCard;
   publisher: {
     id: string;
     displayName: string;
-    role: UserRole;
-    city: string;
-    basicSummary: string;
     detailedProfile: PublicCard['detailPreview'] | null;
     contactMethods: ContactMethod[];
   };
@@ -98,14 +98,16 @@ export type IncomingRequest = {
   status: string;
   rejectionReason: string | null;
   createdAt: string;
+  publisherViewedRequesterDetailAt?: string | null;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  contactExchangedAt?: string | null;
+  exchangeReviewingAt?: string | null;
+  requesterDeclinedContactAt?: string | null;
   targetCard: RequestTargetCard;
   requester: {
     id: string;
     displayName: string;
-    role: UserRole;
-    city: string;
-    basicSummary: string;
-    desiredDirection: string | null;
     detailedProfile: PublicCard['detailPreview'] | null;
     contactMethods: ContactMethod[];
   };
@@ -134,6 +136,11 @@ export type PlatformOverview = {
   };
   requestStates: RequestState[];
   logoVariant: LogoVariant;
+};
+
+export type TagSuggestion = {
+  name: string;
+  usageCount: number;
 };
 
 function getDefaultApiBaseUrl() {
@@ -196,6 +203,23 @@ export async function fetchCards(role?: UserRole) {
     }
 
     return fallbackPublicCards;
+  }
+}
+
+export async function fetchTagSuggestions(query: string, limit = 8) {
+  const searchParams = new URLSearchParams();
+
+  if (query.trim()) {
+    searchParams.set('query', query.trim());
+  }
+
+  searchParams.set('limit', String(limit));
+
+  try {
+    const suffix = searchParams.toString();
+    return await requestJson<TagSuggestion[]>(`/platform/tags${suffix ? `?${suffix}` : ''}`);
+  } catch {
+    return [];
   }
 }
 
@@ -268,7 +292,6 @@ export async function fetchMe() {
 
 export async function saveBasicProfile(body: {
   role: UserRole;
-  displayName: string;
   headline: string;
   basicSummary: string;
   city: string;
@@ -286,15 +309,30 @@ export async function saveDetailProfile(body: {
   education: string;
   experience: string;
   projectDetail: string;
+}) {
+  return requestJson<MeProfile>('/me/detail', {
+    method: 'PUT',
+    body,
+  });
+}
+
+export async function saveContactMethods(body: {
   phone?: string;
   wechat?: string;
   qq?: string;
   email?: string;
   other?: string;
- }) {
-  return requestJson<MeProfile>('/me/detail', {
+}) {
+  return requestJson<MeProfile>('/me/contacts', {
     method: 'PUT',
     body,
+  });
+}
+
+export async function saveDisplayName(displayName: string) {
+  return requestJson<MeProfile>('/me/display-name', {
+    method: 'PUT',
+    body: { displayName },
   });
 }
 
@@ -331,6 +369,19 @@ export async function rejectDetailRequest(requestId: string, reason: string) {
 export async function exchangeContact(requestId: string) {
   return requestJson<IncomingRequest | OutgoingRequest>(`/requests/${requestId}/exchange-contact`, {
     method: 'POST',
+  });
+}
+
+export async function markExchangeReviewing(requestId: string) {
+  return requestJson<OutgoingRequest>(`/requests/${requestId}/mark-exchange-reviewing`, {
+    method: 'POST',
+  });
+}
+
+export async function declineContact(requestId: string, reason: string) {
+  return requestJson<OutgoingRequest>(`/requests/${requestId}/decline-contact`, {
+    method: 'POST',
+    body: { reason },
   });
 }
 

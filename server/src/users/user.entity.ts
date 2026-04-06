@@ -1,6 +1,5 @@
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { ContactMethod } from '../contacts/contact-method.entity';
-import { UserRole } from '../common/enums/user-role.enum';
 import { Card } from '../platform/card.entity';
 import { DetailRequest } from '../platform/detail-request.entity';
 
@@ -12,20 +11,8 @@ export class User {
   @Column({ type: 'varchar', length: 160, unique: true, nullable: true })
   email!: string | null;
 
-  @Column({ type: 'enum', enum: UserRole })
-  role!: UserRole;
-
   @Column({ type: 'varchar', length: 120 })
   displayName!: string;
-
-  @Column({ type: 'varchar', length: 120 })
-  city!: string;
-
-  @Column({ type: 'text' })
-  basicSummary!: string;
-
-  @Column({ type: 'text', nullable: true })
-  desiredDirection!: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
   detailedProfile!: Record<string, string> | null;

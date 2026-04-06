@@ -13,7 +13,7 @@ import { useAuthState } from '@/lib/use-auth';
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { authenticated, loading, profile } = useAuthState();
+  const { authenticated, loading } = useAuthState();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sending, setSending] = useState(false);
@@ -36,6 +36,15 @@ export function LoginForm() {
       window.clearTimeout(timer);
     };
   }, [cooldownSeconds]);
+
+  useEffect(() => {
+    if (loading || !authenticated) {
+      return;
+    }
+
+    router.replace(resolvedNextPath);
+    router.refresh();
+  }, [authenticated, loading, resolvedNextPath, router]);
 
   async function handleSendCode() {
     setSending(true);
@@ -61,7 +70,7 @@ export function LoginForm() {
     try {
       const result = await verifyLoginCode(email, code);
       setStoredAccessToken(result.accessToken);
-      router.push(resolvedNextPath);
+      router.replace(resolvedNextPath);
       router.refresh();
     } catch (error) {
       setMessage(extractErrorMessage(error));
@@ -70,36 +79,8 @@ export function LoginForm() {
     }
   }
 
-  if (!loading && authenticated && profile) {
-    return (
-      <section className="mx-auto w-full max-w-3xl px-4 py-6 md:px-6 md:py-8">
-        <Card className="border-border/70 bg-card/80">
-          <CardHeader className="space-y-3">
-            <p className="inline-flex w-fit rounded-full bg-secondary px-3 py-1 text-xs font-semibold tracking-wide text-secondary-foreground">当前已登录</p>
-            <CardTitle className="text-2xl leading-tight">你已经以 {profile.user.displayName} 身份登录。</CardTitle>
-            <p className="text-sm text-muted-foreground">你可以继续完善资料、处理请求，或直接返回目标页面。</p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="rounded-xl border border-border/70 bg-muted/35 p-4">
-              <strong className="text-foreground">{profile.user.email || '未绑定邮箱'}</strong>
-              <p className="mt-1 text-sm text-muted-foreground">
-            当前角色：{profile.user.role === 'expert' ? '项目方 / 行业专家' : '程序员'}
-            {' · '}
-            城市：{profile.user.city}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={() => router.push(resolvedNextPath)} type="button">
-            继续前往目标页面
-              </Button>
-              <Button variant="outline" onClick={() => router.push('/dashboard')} type="button">
-            进入控制台
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-    );
+  if (!loading && authenticated) {
+    return null;
   }
 
   return (
@@ -107,7 +88,7 @@ export function LoginForm() {
       <Card className="border-border/70 bg-card/80">
         <CardHeader className="space-y-3">
           <p className="inline-flex w-fit rounded-full bg-secondary px-3 py-1 text-xs font-semibold tracking-wide text-secondary-foreground">登录 / 注册</p>
-          <CardTitle className="text-2xl">邮箱验证码登录</CardTitle>
+          <CardTitle className="text-2xl">登录或注册</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>

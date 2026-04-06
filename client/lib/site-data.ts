@@ -4,6 +4,7 @@ export type PublicCard = {
   id: string;
   role: UserRole;
   updatedAt?: string;
+  ownerId?: string;
   ownerName?: string;
   headline: string;
   city: string;

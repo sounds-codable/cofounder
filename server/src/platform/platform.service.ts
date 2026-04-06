@@ -6,6 +6,7 @@ import { DetailRequestStatus } from '../common/enums/detail-request-status.enum'
 import { DetailRequest } from './detail-request.entity';
 import { UserRole } from '../common/enums/user-role.enum';
 import { Card } from './card.entity';
+import { Tag } from './tag.entity';
 
 type LogoVariant = 'overlap' | 'spark' | 'bridge' | 'orbit';
 
@@ -17,6 +18,8 @@ export class PlatformService {
     private readonly cardRepository: Repository<Card>,
     @InjectRepository(DetailRequest)
     private readonly detailRequestRepository: Repository<DetailRequest>,
+    @InjectRepository(Tag)
+    private readonly tagRepository: Repository<Tag>,
   ) {}
 
   async getOverview() {
@@ -64,6 +67,23 @@ export class PlatformService {
     const cards = await query.orderBy('card.updatedAt', 'DESC').getMany();
 
     return cards.map((card) => this.toPublicCard(card));
+  }
+
+  async listTagSuggestions(rawQuery?: string, limit = 8) {
+    const normalizedLimit = Math.min(Math.max(Number.isFinite(limit) ? limit : 8, 1), 20);
+    const query = rawQuery?.trim().toLowerCase() || '';
+    const queryBuilder = this.tagRepository.createQueryBuilder('tag');
+
+    if (query) {
+      queryBuilder.where('tag.normalizedName LIKE :query', { query: `${query}%` });
+    }
+
+    const tags = await queryBuilder.orderBy('tag.usageCount', 'DESC').addOrderBy('tag.updatedAt', 'DESC').limit(normalizedLimit).getMany();
+
+    return tags.map((tag) => ({
+      name: tag.name,
+      usageCount: tag.usageCount,
+    }));
   }
 
   async getCardById(id: string, viewerUserId?: string | null) {
@@ -123,7 +143,10 @@ export class PlatformService {
       },
     });
 
-    const detailVisible = request?.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE || request?.status === DetailRequestStatus.CONTACT_EXCHANGED;
+    const detailVisible =
+      request?.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE ||
+      request?.status === DetailRequestStatus.CONTACT_EXCHANGED ||
+      request?.status === DetailRequestStatus.REQUESTER_DECLINED_CONTACT;
     const contactVisible = request?.status === DetailRequestStatus.CONTACT_EXCHANGED;
 
     return {
@@ -171,6 +194,11 @@ export class PlatformService {
         description: '双方已经通过第二步动作完成联系方式互通。',
       },
       {
+        key: DetailRequestStatus.REQUESTER_DECLINED_CONTACT,
+        label: '请求方不想联系',
+        description: '请求方查看后决定暂不交换联系方式。',
+      },
+      {
         key: DetailRequestStatus.REJECTED,
         label: '已拒绝',
         description: '发布者拒绝本次请求，并给出了拒绝理由。',
@@ -183,6 +211,7 @@ export class PlatformService {
       id: card.slug,
       role: card.role,
       updatedAt: card.updatedAt.toISOString(),
+      ownerId: card.owner.id,
       ownerName: card.owner.displayName,
       headline: card.headline,
       city: card.city,

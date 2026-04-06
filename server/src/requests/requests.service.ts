@@ -100,7 +100,10 @@ export class RequestsService {
       rejectionReason: null,
       publisherViewedRequesterDetailAt: null,
       approvedAt: null,
+      rejectedAt: null,
       contactExchangedAt: null,
+      exchangeReviewingAt: null,
+      requesterDeclinedContactAt: null,
     });
 
     const savedRequest = await this.detailRequestRepository.save(nextRequest);
@@ -131,7 +134,7 @@ export class RequestsService {
   async approveRequest(userId: string, requestId: string) {
     const request = await this.getIncomingRequestForPublisher(userId, requestId);
 
-    if (request.status !== DetailRequestStatus.PUBLISHER_VIEWED_DETAIL) {
+    if (request.status !== DetailRequestStatus.PUBLISHER_VIEWED_DETAIL && request.status !== DetailRequestStatus.REJECTED) {
       throw new BadRequestException('请先查看对方详细信息，再做同意动作');
     }
 
@@ -151,6 +154,7 @@ export class RequestsService {
 
     request.status = DetailRequestStatus.REJECTED;
     request.rejectionReason = reason.trim();
+    request.rejectedAt = new Date();
     await this.detailRequestRepository.save(request);
 
     return this.toIncomingRequestItem(request);
@@ -174,8 +178,16 @@ export class RequestsService {
       throw new ForbiddenException('只有请求发起方可以发起联系方式交换');
     }
 
-    if (request.status !== DetailRequestStatus.APPROVED_DETAIL_VISIBLE && request.status !== DetailRequestStatus.CONTACT_EXCHANGED) {
+    if (
+      request.status !== DetailRequestStatus.APPROVED_DETAIL_VISIBLE &&
+      request.status !== DetailRequestStatus.CONTACT_EXCHANGED &&
+      request.status !== DetailRequestStatus.REQUESTER_DECLINED_CONTACT
+    ) {
       throw new BadRequestException('当前状态下不能交换联系方式');
+    }
+
+    if (request.requester.contactMethods.length === 0) {
+      throw new BadRequestException('请先补充至少一种联系方式，再发起交换');
     }
 
     request.status = DetailRequestStatus.CONTACT_EXCHANGED;
@@ -183,6 +195,72 @@ export class RequestsService {
     await this.detailRequestRepository.save(request);
 
     return request.requester.id === userId ? this.toOutgoingRequestItem(request) : this.toIncomingRequestItem(request);
+  }
+
+  async markExchangeReviewing(userId: string, requestId: string) {
+    const request = await this.detailRequestRepository.findOne({
+      where: { id: requestId },
+      relations: {
+        publisher: { contactMethods: true },
+        requester: { contactMethods: true },
+        targetCard: { owner: { contactMethods: true } },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('请求不存在');
+    }
+
+    if (request.requester.id !== userId) {
+      throw new ForbiddenException('只有请求发起方可以执行该操作');
+    }
+
+    if (
+      request.status !== DetailRequestStatus.APPROVED_DETAIL_VISIBLE &&
+      request.status !== DetailRequestStatus.REQUESTER_DECLINED_CONTACT &&
+      request.status !== DetailRequestStatus.CONTACT_EXCHANGED
+    ) {
+      throw new BadRequestException('当前状态下不能标记该动作');
+    }
+
+    request.exchangeReviewingAt = request.exchangeReviewingAt ?? new Date();
+    await this.detailRequestRepository.save(request);
+
+    return this.toOutgoingRequestItem(request);
+  }
+
+  async declineContactByRequester(userId: string, requestId: string, reason: string) {
+    const request = await this.detailRequestRepository.findOne({
+      where: { id: requestId },
+      relations: {
+        publisher: { contactMethods: true },
+        requester: { contactMethods: true },
+        targetCard: { owner: { contactMethods: true } },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('请求不存在');
+    }
+
+    if (request.requester.id !== userId) {
+      throw new ForbiddenException('只有请求发起方可以执行该操作');
+    }
+
+    if (
+      request.status !== DetailRequestStatus.APPROVED_DETAIL_VISIBLE &&
+      request.status !== DetailRequestStatus.REQUESTER_DECLINED_CONTACT
+    ) {
+      throw new BadRequestException('当前状态下不能执行不想联系');
+    }
+
+    request.status = DetailRequestStatus.REQUESTER_DECLINED_CONTACT;
+    request.rejectionReason = reason.trim();
+    request.exchangeReviewingAt = request.exchangeReviewingAt ?? new Date();
+    request.requesterDeclinedContactAt = request.requesterDeclinedContactAt ?? new Date();
+    await this.detailRequestRepository.save(request);
+
+    return this.toOutgoingRequestItem(request);
   }
 
   private async getIncomingRequestForPublisher(userId: string, requestId: string) {
@@ -208,7 +286,10 @@ export class RequestsService {
 
   private toIncomingRequestItem(request: DetailRequest) {
     const detailViewed = Boolean(request.publisherViewedRequesterDetailAt);
-    const approved = request.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE || request.status === DetailRequestStatus.CONTACT_EXCHANGED;
+    const approved =
+      request.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE ||
+      request.status === DetailRequestStatus.CONTACT_EXCHANGED ||
+      request.status === DetailRequestStatus.REQUESTER_DECLINED_CONTACT;
     const contactVisible = request.status === DetailRequestStatus.CONTACT_EXCHANGED;
 
     return {
@@ -216,14 +297,16 @@ export class RequestsService {
       status: request.status,
       rejectionReason: request.rejectionReason,
       createdAt: request.createdAt,
+      publisherViewedRequesterDetailAt: request.publisherViewedRequesterDetailAt,
+      approvedAt: request.approvedAt,
+      rejectedAt: request.rejectedAt,
+      contactExchangedAt: request.contactExchangedAt,
+      exchangeReviewingAt: request.exchangeReviewingAt,
+      requesterDeclinedContactAt: request.requesterDeclinedContactAt,
       targetCard: this.toTargetCard(request),
       requester: {
         id: request.requester.id,
         displayName: request.requester.displayName,
-        role: request.requester.role,
-        city: request.requester.city,
-        basicSummary: request.requester.basicSummary,
-        desiredDirection: request.requester.desiredDirection,
         detailedProfile: detailViewed || approved ? request.requester.detailedProfile : null,
         contactMethods: contactVisible ? this.toContactMethods(request.requester.contactMethods) : [],
       },
@@ -237,7 +320,10 @@ export class RequestsService {
   }
 
   private toOutgoingRequestItem(request: DetailRequest) {
-    const detailVisible = request.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE || request.status === DetailRequestStatus.CONTACT_EXCHANGED;
+    const detailVisible =
+      request.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE ||
+      request.status === DetailRequestStatus.CONTACT_EXCHANGED ||
+      request.status === DetailRequestStatus.REQUESTER_DECLINED_CONTACT;
     const contactVisible = request.status === DetailRequestStatus.CONTACT_EXCHANGED;
 
     return {
@@ -245,18 +331,23 @@ export class RequestsService {
       status: request.status,
       rejectionReason: request.rejectionReason,
       createdAt: request.createdAt,
+      publisherViewedRequesterDetailAt: request.publisherViewedRequesterDetailAt,
+      approvedAt: request.approvedAt,
+      rejectedAt: request.rejectedAt,
+      contactExchangedAt: request.contactExchangedAt,
+      exchangeReviewingAt: request.exchangeReviewingAt,
+      requesterDeclinedContactAt: request.requesterDeclinedContactAt,
       targetCard: this.toTargetCard(request),
       publisher: {
         id: request.publisher.id,
         displayName: request.publisher.displayName,
-        role: request.publisher.role,
-        city: request.publisher.city,
-        basicSummary: request.publisher.basicSummary,
         detailedProfile: detailVisible ? request.publisher.detailedProfile : null,
         contactMethods: contactVisible ? this.toContactMethods(request.publisher.contactMethods) : [],
       },
       actions: {
-        canExchangeContact: request.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE,
+        canExchangeContact:
+          request.status === DetailRequestStatus.APPROVED_DETAIL_VISIBLE ||
+          request.status === DetailRequestStatus.REQUESTER_DECLINED_CONTACT,
       },
     };
   }

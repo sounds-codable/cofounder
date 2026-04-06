@@ -5,9 +5,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, type ReactNode, useEffect, useRef, useState, useTransition } from 'react';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
+import { SmartTooltip } from '@/components/smart-tooltip';
 import { buttonVariants } from '@/components/ui/button';
+import { extractErrorMessage, fetchOverview, saveDisplayName, type LogoVariant } from '@/lib/platform-api';
 import { cn } from '@/lib/utils';
-import { fetchOverview, type LogoVariant } from '@/lib/platform-api';
 import { clearStoredAccessToken } from '@/lib/session';
 import { useAuthState } from '@/lib/use-auth';
 
@@ -43,7 +44,7 @@ const dashboardNavGroups: DashboardNavGroup[] = [
   {
     title: '账号',
     items: [
-      { href: '/onboarding/basic', label: '我的资料', icon: 'profile', match: 'prefix' },
+      { href: '/onboarding/profile', label: '我的资料', icon: 'profile', match: 'prefix' },
     ],
   },
 ];
@@ -89,6 +90,32 @@ function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['
     <svg aria-hidden="true" viewBox="0 0 24 24">
       <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
       <path d="M6 19c1.1-2.9 3.1-4.3 6-4.3s4.9 1.4 6 4.3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DashboardPinIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M8 4h8M10 4v5l-3 3h10l-3-3V4M12 12v8" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function DashboardKebabIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="6" cy="12" r="1.8" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+      <circle cx="18" cy="12" r="1.8" fill="currentColor" />
+    </svg>
+  );
+}
+
+function DashboardCloseIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
     </svg>
   );
 }
@@ -143,7 +170,7 @@ function getPageTitle(pathname: string) {
   }
 
   if (pathname.startsWith('/cards')) {
-    return '卡片详情';
+    return '详情';
   }
 
   return '控制台';
@@ -157,9 +184,14 @@ function AppShellContent({ children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [editingDisplayName, setEditingDisplayName] = useState(false);
+  const [displayNameDraft, setDisplayNameDraft] = useState('');
+  const [savingDisplayName, setSavingDisplayName] = useState(false);
+  const [displayNameMessage, setDisplayNameMessage] = useState<string | null>(null);
   const [desktopViewport, setDesktopViewport] = useState(false);
   const [pending, startTransition] = useTransition();
-  const { authenticated, profile } = useAuthState();
+  const { authenticated, profile, refresh } = useAuthState();
+  const sidebarCollapsedOnDesktop = desktopViewport && !sidebarExpanded;
 
   const showDashboardShell = authenticated && pathname !== '/login' && pathname !== '/' && isDashboardRoute(pathname);
 
@@ -206,10 +238,6 @@ function AppShellContent({ children }: AppShellProps) {
   }, []);
 
   useEffect(() => {
-    if (!sidebarOpen) {
-      return;
-    }
-
     const timeoutId = window.setTimeout(() => {
       setSidebarOpen(false);
     }, 0);
@@ -217,7 +245,7 @@ function AppShellContent({ children }: AppShellProps) {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [pathname, sidebarOpen]);
+  }, [pathname]);
 
   useEffect(() => {
     if (!sidebarOpen) {
@@ -231,6 +259,10 @@ function AppShellContent({ children }: AppShellProps) {
       document.body.style.overflow = previousOverflow;
     };
   }, [sidebarOpen]);
+
+  useEffect(() => {
+    setDisplayNameDraft(profile?.user.displayName || '');
+  }, [profile?.user.displayName]);
 
   useEffect(() => {
     if (!userMenuOpen) {
@@ -276,6 +308,28 @@ function AppShellContent({ children }: AppShellProps) {
     setSidebarOpen(false);
   }
 
+  async function handleSaveDisplayName() {
+    const nextName = displayNameDraft.trim();
+
+    if (nextName.length < 2) {
+      setDisplayNameMessage('昵称至少需要 2 个字符。');
+      return;
+    }
+
+    setSavingDisplayName(true);
+    setDisplayNameMessage(null);
+
+    try {
+      await saveDisplayName(nextName);
+      await refresh();
+      setEditingDisplayName(false);
+    } catch (error) {
+      setDisplayNameMessage(extractErrorMessage(error));
+    } finally {
+      setSavingDisplayName(false);
+    }
+  }
+
   if (!showDashboardShell) {
     return (
       <>
@@ -288,9 +342,14 @@ function AppShellContent({ children }: AppShellProps) {
 
   return (
     <div className={cn('relative min-h-screen bg-background', sidebarExpanded ? 'is-sidebar-expanded' : undefined)}>
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_8%_0%,rgba(124,141,255,0.16),transparent_46%),radial-gradient(circle_at_92%_8%,rgba(87,217,197,0.14),transparent_44%)]" />
-      <div className="relative mx-auto grid min-h-screen w-full max-w-[1400px] grid-cols-1 gap-4 px-3 py-3 lg:grid-cols-[260px_minmax(0,1fr)] lg:px-4 lg:py-4">
-        <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/88 px-4 py-3 shadow-[0_14px_34px_rgba(79,108,163,0.12)] backdrop-blur-sm lg:col-span-2">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_8%_0%,rgba(19,191,168,0.16),transparent_46%),radial-gradient(circle_at_92%_8%,rgba(76,200,255,0.14),transparent_44%)]" />
+      <div
+        className={cn(
+          'relative mx-auto grid min-h-screen w-full max-w-[1400px] grid-cols-1 gap-4 px-3 py-3 lg:px-4 lg:py-4',
+          sidebarExpanded ? 'lg:grid-cols-[260px_minmax(0,1fr)]' : 'lg:grid-cols-[92px_minmax(0,1fr)]'
+        )}
+      >
+        <div className="relative z-40 flex items-center justify-between overflow-visible rounded-2xl border border-border/70 bg-background/88 px-4 py-3 shadow-[0_14px_34px_rgba(79,108,163,0.12)] backdrop-blur-sm lg:col-span-2">
           <Link className="inline-flex items-center gap-3" href="/dashboard">
             <span aria-hidden="true" className={`brand-mark brand-mark-${logoVariant}`}>
               <span className="brand-mark-core" />
@@ -302,58 +361,172 @@ function AppShellContent({ children }: AppShellProps) {
               <span className="text-xs text-muted-foreground">协作后台</span>
             </div>
           </Link>
-          {profile ? (
-            <div className="relative" ref={userMenuRef}>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              aria-label="打开导航菜单"
+              aria-expanded={!desktopViewport && sidebarOpen}
+              aria-controls="dashboard-mobile-nav"
+              title="打开导航菜单"
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'icon' }),
+                'relative rounded-full transition-all duration-[var(--motion-normal)] ease-[var(--motion-ease)] lg:hidden',
+                !desktopViewport && sidebarOpen ? 'border-secondary/70 bg-secondary/15 text-secondary-foreground shadow-[0_10px_24px_rgba(19,191,168,0.22)]' : undefined
+              )}
+              onClick={handleSidebarToggle}
+              type="button"
+            >
+              <DashboardKebabIcon />
+              {!desktopViewport && sidebarOpen ? <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-rose-500" /> : null}
+            </button>
+            {profile ? (
+              <div className="relative" ref={userMenuRef}>
                 <button
                   aria-label="打开用户菜单"
-                  className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'rounded-full')}
+                  title="打开用户菜单"
+                  className="inline-grid size-11 place-items-center rounded-full border border-border/70 bg-background text-muted-foreground transition-colors hover:text-foreground"
                   onClick={() => setUserMenuOpen((current) => !current)}
                   type="button"
                 >
-                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" className="size-6" viewBox="0 0 24 24">
                     <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
                     <path d="M6 19c1.1-2.9 3.1-4.3 6-4.3s4.9 1.4 6 4.3" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
                   </svg>
                 </button>
                 {userMenuOpen ? (
-                  <div className="absolute right-0 top-12 z-50 grid min-w-56 gap-3 rounded-xl border border-border/70 bg-card/96 p-3 shadow-[0_14px_32px_rgba(79,108,163,0.2)] backdrop-blur-sm">
-                    <p className="text-xs text-muted-foreground">{profile.user.email}</p>
-                    <button className={buttonVariants({ variant: 'outline' })} onClick={handleLogout} type="button">
-                      {pending ? '退出中…' : '退出登录'}
-                    </button>
+                  <div className="absolute right-0 top-12 z-50 grid min-w-64 gap-3 rounded-xl border border-border/70 bg-card/96 p-3 shadow-[0_14px_32px_rgba(79,108,163,0.2)] backdrop-blur-sm">
+                    <div className="flex items-center gap-3 rounded-md border border-border/70 bg-background/72 px-3 py-2">
+                      <span className="inline-grid size-11 shrink-0 place-items-center rounded-full border border-border/70 bg-background text-muted-foreground">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" className="size-6">
+                          <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                          <path d="M6 19c1.1-2.9 3.1-4.3 6-4.3s4.9 1.4 6 4.3" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                        </svg>
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="truncate text-sm font-medium text-foreground">{profile.user.displayName || '已登录用户'}</p>
+                          <button
+                            aria-label="修改昵称"
+                            className="inline-flex size-6 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition-colors hover:text-foreground"
+                            title="修改昵称"
+                            type="button"
+                            onClick={() => {
+                              setEditingDisplayName((current) => !current);
+                              setDisplayNameMessage(null);
+                            }}
+                          >
+                            <svg aria-hidden="true" className="size-3.5" viewBox="0 0 24 24">
+                              <path d="M4 16.5V20h3.5l10-10-3.5-3.5-10 10z" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                              <path d="M13.5 6.5l3.5 3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                            </svg>
+                          </button>
+                        </div>
+                        <p className="truncate text-xs text-muted-foreground">{profile.user.email || '未绑定邮箱'}</p>
+                      </div>
+                    </div>
+                    {editingDisplayName ? (
+                      <div className="space-y-2 rounded-md border border-border/70 bg-background/72 px-3 py-2">
+                        <label className="grid gap-1 text-xs text-muted-foreground">
+                          新昵称
+                          <input
+                            className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            maxLength={120}
+                            value={displayNameDraft}
+                            onChange={(event) => setDisplayNameDraft(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') {
+                                event.preventDefault();
+                                void handleSaveDisplayName();
+                              }
+                            }}
+                          />
+                        </label>
+                        <div className="flex gap-2">
+                          <button className={cn(buttonVariants({ size: 'sm' }), 'h-8')} disabled={savingDisplayName} type="button" onClick={() => void handleSaveDisplayName()}>
+                            {savingDisplayName ? '保存中…' : '保存'}
+                          </button>
+                          <button
+                            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8')}
+                            disabled={savingDisplayName}
+                            type="button"
+                            onClick={() => {
+                              setEditingDisplayName(false);
+                              setDisplayNameDraft(profile.user.displayName || '');
+                              setDisplayNameMessage(null);
+                            }}
+                          >
+                            取消
+                          </button>
+                        </div>
+                        {displayNameMessage ? <p className="text-xs text-destructive">{displayNameMessage}</p> : null}
+                      </div>
+                    ) : null}
+                    <div className="overflow-hidden rounded-xl border border-border/70 bg-background/82">
+                      <button className="inline-flex h-10 w-full items-center justify-center text-sm font-medium text-foreground transition-colors hover:bg-accent/70" onClick={handleLogout} type="button">
+                        {pending ? '退出中…' : '退出登录'}
+                      </button>
+                    </div>
                   </div>
                 ) : null}
-            </div>
-          ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
 
-        <aside className={cn('rounded-2xl border border-border/70 bg-card/68 shadow-[0_14px_34px_rgba(79,108,163,0.12)] backdrop-blur-sm', sidebarOpen ? 'is-open' : undefined)}>
+        <aside
+          id="dashboard-mobile-nav"
+          className={cn(
+            'rounded-2xl border border-border/70 bg-card/68 shadow-[0_14px_34px_rgba(79,108,163,0.12)] backdrop-blur-sm lg:relative lg:z-20',
+            'max-lg:fixed max-lg:inset-y-3 max-lg:left-3 max-lg:z-40 max-lg:w-[min(320px,calc(100vw-24px))] max-lg:overflow-y-auto max-lg:transition-transform max-lg:duration-200',
+            desktopViewport || sidebarOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-[120%]'
+          )}
+        >
           <div className="flex h-full flex-col justify-between p-4">
+            <div className="mb-3 flex items-center justify-between lg:hidden">
+              <p className="text-sm font-semibold text-foreground">导航菜单</p>
+              <button
+                aria-label="收起导航菜单"
+                title="收起导航菜单"
+                className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'rounded-full')}
+                onClick={() => setSidebarOpen(false)}
+                type="button"
+              >
+                <DashboardCloseIcon />
+              </button>
+            </div>
             <nav className="space-y-5" aria-label="后台导航">
               {dashboardNavGroups.map((group) => (
                 <div className="space-y-2" key={group.title}>
-                  <p className="px-2 text-xs font-semibold tracking-wide text-muted-foreground">{group.title}</p>
+                  <p className={cn('px-2 text-xs font-semibold tracking-wide text-muted-foreground', sidebarCollapsedOnDesktop ? 'lg:sr-only' : undefined)}>{group.title}</p>
                   <div className="space-y-1">
                     {group.items.map((item) => {
                       const active = item.match === 'prefix' ? pathname.startsWith(item.href) : pathname === item.href;
-
-                      return (
+                      const navLink = (
                         <Link
+                          aria-label={item.label}
                           className={cn(
                             'flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-all duration-[var(--motion-normal)] ease-[var(--motion-ease)]',
-                            active ? 'bg-secondary text-secondary-foreground shadow-[0_8px_20px_rgba(124,141,255,0.18)]' : 'text-muted-foreground hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground'
+                            active ? 'bg-secondary text-secondary-foreground shadow-[0_8px_20px_rgba(19,191,168,0.18)]' : 'text-muted-foreground hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground',
+                            sidebarCollapsedOnDesktop ? 'lg:justify-center lg:px-0' : undefined
                           )}
-                          data-tooltip={item.label}
                           href={item.href}
                           key={item.href}
                           onClick={() => setSidebarOpen(false)}
-                          title={item.label}
                         >
                           <span aria-hidden="true" className="inline-flex size-4 items-center justify-center">
                             <DashboardNavIcon icon={item.icon} />
                           </span>
-                          <span>{item.label}</span>
+                          <span className={cn(sidebarCollapsedOnDesktop ? 'lg:w-0 lg:overflow-hidden lg:opacity-0' : undefined)}>{item.label}</span>
                         </Link>
+                      );
+
+                      return (
+                        sidebarCollapsedOnDesktop ? (
+                          <SmartTooltip content={item.label} key={item.href} placement="right">
+                            {navLink}
+                          </SmartTooltip>
+                        ) : (
+                          navLink
+                        )
                       );
                     })}
                   </div>
@@ -362,21 +535,63 @@ function AppShellContent({ children }: AppShellProps) {
             </nav>
 
             <div className="pt-4">
-              <button
-                aria-label={desktopViewport ? (sidebarExpanded ? '收起侧边导航' : '展开侧边导航') : '收起导航菜单'}
-                className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'rounded-full')}
-                data-tooltip={desktopViewport ? (sidebarExpanded ? '收起导航' : '展开导航') : '收起导航'}
-                title={desktopViewport ? (sidebarExpanded ? '收起导航' : '展开导航') : '收起导航'}
-                onClick={handleSidebarCollapse}
-                type="button"
-              >
-                <DashboardToggleIcon expanded={sidebarExpanded} mobile={!desktopViewport} />
-              </button>
+              {(() => {
+                const toggleButton = (
+                  <button
+                    aria-label={desktopViewport ? (sidebarExpanded ? '收起侧边导航' : '展开侧边导航') : '收起导航菜单'}
+                    className={cn(
+                      buttonVariants({ variant: desktopViewport ? 'outline' : 'outline', size: desktopViewport ? 'default' : 'icon' }),
+                      desktopViewport
+                        ? cn(
+                          'h-10 w-full rounded-xl border-border/70 bg-background/86 text-sm text-foreground shadow-[0_10px_24px_rgba(79,108,163,0.14)] hover:-translate-y-0.5 hover:border-secondary/70 hover:bg-accent/60',
+                            sidebarCollapsedOnDesktop ? 'justify-center px-2' : 'justify-between px-3'
+                          )
+                        : 'rounded-full'
+                    )}
+                    onClick={handleSidebarCollapse}
+                    type="button"
+                  >
+                    {desktopViewport ? (
+                      sidebarCollapsedOnDesktop ? (
+                        <span aria-hidden="true" className="inline-flex size-5 items-center justify-center text-muted-foreground">
+                          <DashboardToggleIcon expanded={sidebarExpanded} mobile={false} />
+                        </span>
+                      ) : (
+                        <>
+                          <span className="inline-flex items-center gap-2">
+                            <span className="inline-flex size-5 items-center justify-center rounded-md border border-border/70 bg-background text-muted-foreground">
+                              <DashboardPinIcon />
+                            </span>
+                            <span>{sidebarExpanded ? '收起导航' : '展开导航'}</span>
+                          </span>
+                          <span className="inline-flex size-5 items-center justify-center text-muted-foreground">
+                            <DashboardToggleIcon expanded={sidebarExpanded} mobile={false} />
+                          </span>
+                        </>
+                      )
+                    ) : (
+                      <span className="inline-flex size-5 items-center justify-center text-muted-foreground">
+                        <DashboardToggleIcon expanded={sidebarExpanded} mobile={!desktopViewport} />
+                      </span>
+                    )}
+                  </button>
+                );
+
+                if (desktopViewport && sidebarCollapsedOnDesktop) {
+                  return (
+                    <SmartTooltip content={sidebarExpanded ? '收起导航' : '展开导航'} placement="right">
+                      {toggleButton}
+                    </SmartTooltip>
+                  );
+                }
+
+                return toggleButton;
+              })()}
             </div>
           </div>
         </aside>
 
-        {sidebarOpen ? <button aria-label="关闭侧边导航" className="fixed inset-0 z-30 bg-foreground/20 lg:hidden" onClick={() => setSidebarOpen(false)} type="button" /> : null}
+        {!desktopViewport && sidebarOpen ? <button aria-label="关闭侧边导航" className="fixed inset-0 z-30 bg-foreground/20 lg:hidden" onClick={() => setSidebarOpen(false)} type="button" /> : null}
 
         <div className="min-w-0 rounded-2xl border border-border/70 bg-background/76 shadow-[0_16px_36px_rgba(79,108,163,0.1)] backdrop-blur-sm">
           <div className="border-b border-border/60 px-5 py-4">

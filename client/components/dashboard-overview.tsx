@@ -50,7 +50,7 @@ export function DashboardOverview() {
 
   const projectCounts = useMemo(
     () => ({
-      created: profile?.user.role === 'expert' && profile.card ? 1 : 0,
+      created: profile?.card ? 1 : 0,
       favorited: projectCards.filter((card) => favoriteIds.has(card.id)).length,
       liked: projectCards.filter((card) => likeIds.has(card.id)).length,
     }),
@@ -117,7 +117,7 @@ export function DashboardOverview() {
 
   return (
     <div className="relative space-y-6 overflow-hidden">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_10%_0%,rgba(124,141,255,0.14),transparent_48%),radial-gradient(circle_at_90%_20%,rgba(87,217,197,0.14),transparent_45%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_10%_0%,rgba(19,191,168,0.14),transparent_48%),radial-gradient(circle_at_90%_20%,rgba(76,200,255,0.14),transparent_45%)]" />
       <section className="relative grid gap-4 rounded-2xl border border-border/70 bg-card/82 p-6 shadow-[0_16px_38px_rgba(79,108,163,0.14)] backdrop-blur-sm md:grid-cols-[1fr_auto] md:items-center">
         <div>
           <span className="inline-flex rounded-full bg-secondary/85 px-3 py-1 text-xs font-semibold tracking-wide text-secondary-foreground">控制台概览</span>
@@ -176,7 +176,7 @@ export function DashboardOverview() {
         <Card className="border-border/70 bg-card/82 shadow-[0_12px_30px_rgba(79,108,163,0.1)]">
           <CardHeader>
             <CardTitle>资料状态</CardTitle>
-            <p className="text-sm text-muted-foreground">{profile?.user.role === 'expert' ? `你当前已发布 ${projectCounts.created} 个项目卡片。` : '完善资料后更容易被项目方识别与发起请求。'}</p>
+            <p className="text-sm text-muted-foreground">{projectCounts.created > 0 ? `你当前已发布 ${projectCounts.created} 个项目卡片。` : '完善资料后更容易被对方识别与发起请求。'}</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {completionItems.map((item) => (
@@ -186,8 +186,8 @@ export function DashboardOverview() {
               </div>
             ))}
             <div className="flex flex-wrap gap-3 pt-1">
-              <Link className={buttonVariants({ variant: 'outline' })} href="/onboarding/basic">
-              基础信息
+              <Link className={buttonVariants({ variant: 'outline' })} href="/onboarding/profile">
+              我的资料
             </Link>
               <Link className={buttonVariants()} href="/onboarding/detail">
               详细信息

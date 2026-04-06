@@ -32,11 +32,7 @@ export class SeedService implements OnModuleInit {
     }
 
     const expertMedical = this.userRepository.create({
-      role: UserRole.EXPERT,
       displayName: '陈医生',
-      city: '杭州',
-      basicSummary: '做基层医疗供应链效率平台，希望找一起做 MVP 的程序员。',
-      desiredDirection: null,
       detailedProfile: {
         intro: '长期在医疗供应链行业工作，熟悉采购、库存、账期问题。',
         education: '浙江大学 / 管理学',
@@ -47,11 +43,7 @@ export class SeedService implements OnModuleInit {
     });
 
     const expertBrand = this.userRepository.create({
-      role: UserRole.EXPERT,
       displayName: '周岚',
-      city: '深圳',
-      basicSummary: '长期做跨境品牌与渠道运营，希望找能快速验证增长工具的技术合伙人。',
-      desiredDirection: null,
       detailedProfile: {
         intro: '长期做品牌出海，熟悉欧美平台规则与团队协作。',
         education: '中山大学 / 市场营销',
@@ -62,11 +54,7 @@ export class SeedService implements OnModuleInit {
     });
 
     const developerGrowth = this.userRepository.create({
-      role: UserRole.DEVELOPER,
       displayName: '林工',
-      city: '上海',
-      basicSummary: 'Next.js / NestJS 全栈，擅长把模糊需求快速落成 MVP。',
-      desiredDirection: '内容工具、AI 工作流、效率平台',
       detailedProfile: {
         intro: '过去几年一直在创业团队与小型产品团队做全栈开发。',
         education: '同济大学 / 软件工程',
@@ -77,11 +65,7 @@ export class SeedService implements OnModuleInit {
     });
 
     const developerData = this.userRepository.create({
-      role: UserRole.DEVELOPER,
       displayName: '许原',
-      city: '北京',
-      basicSummary: '偏后端和数据方向，喜欢把行业 know-how 结构化成真正能跑的产品。',
-      desiredDirection: '产业互联网、AI 分析、企业工具',
       detailedProfile: {
         intro: '长期做数据产品与企业内部工具，有较强的问题建模能力。',
         education: '北京航空航天大学 / 计算机科学',

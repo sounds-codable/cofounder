@@ -5,7 +5,6 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { InfoDisclosure } from '@/components/info-disclosure';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { extractErrorMessage, saveDetailProfile } from '@/lib/platform-api';
 import { useAuthState } from '@/lib/use-auth';
@@ -18,11 +17,6 @@ export function DetailProfileForm() {
   const [education, setEducation] = useState('');
   const [experience, setExperience] = useState('');
   const [projectDetail, setProjectDetail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [wechat, setWechat] = useState('');
-  const [qq, setQq] = useState('');
-  const [email, setEmail] = useState('');
-  const [other, setOther] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -39,11 +33,6 @@ export function DetailProfileForm() {
     setEducation(profile.user.detailedProfile?.education || '');
     setExperience(profile.user.detailedProfile?.experience || '');
     setProjectDetail(profile.user.detailedProfile?.projectDetail || '');
-    setPhone(profile.contactMethods.find((item) => item.type === 'phone')?.value || '');
-    setWechat(profile.contactMethods.find((item) => item.type === 'wechat')?.value || '');
-    setQq(profile.contactMethods.find((item) => item.type === 'qq')?.value || '');
-    setEmail(profile.contactMethods.find((item) => item.type === 'email')?.value || profile.user.email || '');
-    setOther(profile.contactMethods.find((item) => item.type === 'other')?.value || '');
   }, [profile]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -52,7 +41,7 @@ export function DetailProfileForm() {
     setMessage(null);
 
     try {
-      await saveDetailProfile({ intro, education, experience, projectDetail, phone, wechat, qq, email, other });
+      await saveDetailProfile({ intro, education, experience, projectDetail });
       await refresh();
       setMessage('详细信息已保存，你现在可以发起了解详情请求。');
       router.push('/requests');
@@ -73,7 +62,7 @@ export function DetailProfileForm() {
             <p className="text-sm text-muted-foreground">详细信息会用于后续授权流程和联系方式交换。</p>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => router.push('/login?next=/onboarding/detail')} type="button">
+            <Button onClick={() => router.push('/login?next=/onboarding/profile')} type="button">
           去登录
             </Button>
           </CardContent>
@@ -96,7 +85,7 @@ export function DetailProfileForm() {
           <div>
           <InfoDisclosure title="填写说明" compact>
             <p>详细信息只需要填写一次。</p>
-            <p>联系方式可以先填着，但只有在后续交换联系方式时才会真正展示给对方。</p>
+            <p>联系方式会在第 03 步“交换联系方式”时再填写并交换。</p>
           </InfoDisclosure>
           </div>
         </CardHeader>
@@ -117,28 +106,6 @@ export function DetailProfileForm() {
             <label className="grid gap-2 text-sm font-medium text-foreground">
           项目详情 / 做过的产品介绍
           <Textarea name="projectDetail" onChange={(event) => setProjectDetail(event.target.value)} rows={5} placeholder="更详细介绍你的项目、产品或代表作品" value={projectDetail} />
-            </label>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2 text-sm font-medium text-foreground">
-            电话
-            <Input name="phone" onChange={(event) => setPhone(event.target.value)} placeholder="选填" type="text" value={phone} />
-              </label>
-              <label className="grid gap-2 text-sm font-medium text-foreground">
-            微信
-            <Input name="wechat" onChange={(event) => setWechat(event.target.value)} placeholder="选填" type="text" value={wechat} />
-              </label>
-              <label className="grid gap-2 text-sm font-medium text-foreground">
-            QQ
-            <Input name="qq" onChange={(event) => setQq(event.target.value)} placeholder="选填" type="text" value={qq} />
-              </label>
-              <label className="grid gap-2 text-sm font-medium text-foreground">
-            邮箱
-            <Input name="email" onChange={(event) => setEmail(event.target.value)} placeholder="选填" type="email" value={email} />
-              </label>
-            </div>
-            <label className="grid gap-2 text-sm font-medium text-foreground">
-          其他联系方式
-          <Input name="other" onChange={(event) => setOther(event.target.value)} placeholder="选填，例如 Telegram / 飞书" type="text" value={other} />
             </label>
             {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
             <Button className="w-full sm:w-auto" disabled={submitting} type="submit">

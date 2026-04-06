@@ -30,7 +30,16 @@ export class DetailRequest {
   approvedAt!: Date | null;
 
   @Column({ type: 'timestamptz', nullable: true })
+  rejectedAt!: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
   contactExchangedAt!: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  exchangeReviewingAt!: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  requesterDeclinedContactAt!: Date | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;

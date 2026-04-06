@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsArray, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsArray, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { UserRole } from '../../common/enums/user-role.enum';
 
 function normalizeStrengths(value: unknown): string[] {
@@ -22,21 +22,14 @@ export class SaveBasicProfileDto {
   role!: UserRole;
 
   @IsString()
-  @MinLength(2)
-  @MaxLength(120)
-  displayName!: string;
-
-  @IsString()
-  @MinLength(6)
   @MaxLength(200)
   headline!: string;
 
   @IsString()
-  @MinLength(6)
+  @MaxLength(2000)
   basicSummary!: string;
 
   @IsString()
-  @MinLength(2)
   @MaxLength(120)
   city!: string;
 

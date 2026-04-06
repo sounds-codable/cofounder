@@ -39,7 +39,7 @@ export default function PublicWelfarePage() {
 
   return (
     <div className="relative mx-auto w-full max-w-6xl space-y-5 overflow-hidden px-4 py-6 md:px-6 md:py-8">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_0%_0%,rgba(124,141,255,0.18),transparent_48%),radial-gradient(circle_at_100%_20%,rgba(87,217,197,0.16),transparent_50%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_0%_0%,rgba(19,191,168,0.18),transparent_48%),radial-gradient(circle_at_100%_20%,rgba(76,200,255,0.16),transparent_50%)]" />
       <section className="relative space-y-3 rounded-2xl border border-border/70 bg-card/84 p-5 shadow-[0_18px_44px_rgba(73,101,163,0.14)] backdrop-blur-sm">
         <span className="inline-flex w-fit rounded-full bg-secondary/80 px-3 py-1 text-xs text-secondary-foreground">公益</span>
         <h1 className="text-3xl font-semibold leading-tight md:text-4xl">这是一个纯公益的协作社区。</h1>

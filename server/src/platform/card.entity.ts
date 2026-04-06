@@ -1,6 +1,7 @@
 import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { UserRole } from '../common/enums/user-role.enum';
 import { User } from '../users/user.entity';
+import { CardTag } from './card-tag.entity';
 import { DetailRequest } from './detail-request.entity';
 
 @Entity({ name: 'cards' })
@@ -37,6 +38,9 @@ export class Card {
 
   @OneToMany(() => DetailRequest, (detailRequest) => detailRequest.targetCard)
   detailRequests!: DetailRequest[];
+
+  @OneToMany(() => CardTag, (cardTag) => cardTag.card)
+  cardTags!: CardTag[];
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;

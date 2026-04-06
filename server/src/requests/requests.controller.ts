@@ -50,4 +50,20 @@ export class RequestsController {
     const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
     return this.requestsService.exchangeContact(user.id, id);
   }
+
+  @Post(':id/mark-exchange-reviewing')
+  async markExchangeReviewing(@Headers('authorization') authorization: string | undefined, @Param('id') id: string) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.requestsService.markExchangeReviewing(user.id, id);
+  }
+
+  @Post(':id/decline-contact')
+  async declineContact(
+    @Headers('authorization') authorization: string | undefined,
+    @Param('id') id: string,
+    @Body() body: RejectDetailRequestDto,
+  ) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.requestsService.declineContactByRequester(user.id, id, body.reason);
+  }
 }
