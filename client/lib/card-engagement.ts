@@ -1,6 +1,8 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import { fetchMyEngagements, toggleCardEngagement } from '@/lib/platform-api';
+import { getStoredAccessToken } from '@/lib/session';
 
 type EngagementState = {
   favorites: Record<string, true>;
@@ -20,6 +22,24 @@ let cachedRawValue: string | null = null;
 
 function getDefaultState(): EngagementState {
   return defaultState;
+}
+
+async function syncStateFromServer() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  if (!getStoredAccessToken()) {
+    writeState(getDefaultState());
+    return;
+  }
+
+  try {
+    const serverState = await fetchMyEngagements();
+    writeState(serverState);
+  } catch {
+    return;
+  }
 }
 
 function ensureInitialized() {
@@ -96,6 +116,7 @@ export function useCardEngagementState() {
     (listener) => {
       ensureInitialized();
       listeners.add(listener);
+      void syncStateFromServer();
 
       return () => {
         listeners.delete(listener);
@@ -106,6 +127,10 @@ export function useCardEngagementState() {
   );
 }
 
+export async function refreshCardEngagementState() {
+  await syncStateFromServer();
+}
+
 export function useCardEngagement(cardId: string) {
   const state = useCardEngagementState();
 
@@ -114,16 +139,42 @@ export function useCardEngagement(cardId: string) {
     favorited: Boolean(state.favorites[cardId]),
     toggleFavorite() {
       const currentState = readState();
-      writeState({
+      const nextState = {
         ...currentState,
         favorites: toggleRecord(currentState.favorites, cardId),
+      };
+      writeState(nextState);
+
+      if (!getStoredAccessToken()) {
+        return;
+      }
+
+      void toggleCardEngagement({
+        cardId,
+        type: 'favorite',
+        active: Boolean(nextState.favorites[cardId]),
+      }).catch(() => {
+        writeState(currentState);
       });
     },
     toggleLike() {
       const currentState = readState();
-      writeState({
+      const nextState = {
         ...currentState,
         likes: toggleRecord(currentState.likes, cardId),
+      };
+      writeState(nextState);
+
+      if (!getStoredAccessToken()) {
+        return;
+      }
+
+      void toggleCardEngagement({
+        cardId,
+        type: 'like',
+        active: Boolean(nextState.likes[cardId]),
+      }).catch(() => {
+        writeState(currentState);
       });
     },
   };

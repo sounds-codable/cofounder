@@ -21,7 +21,7 @@ type DashboardNavGroup = {
   items: Array<{
     href: string;
     label: string;
-    icon: 'dashboard' | 'requests' | 'projects' | 'developers' | 'profile';
+    icon: 'dashboard' | 'requests' | 'projects' | 'developers' | 'invite' | 'points' | 'profile';
     match?: 'exact' | 'prefix';
   }>;
 };
@@ -44,6 +44,8 @@ const dashboardNavGroups: DashboardNavGroup[] = [
   {
     title: '账号',
     items: [
+      { href: '/invite-codes', label: '邀请码', icon: 'invite', match: 'prefix' },
+      { href: '/points', label: '积分', icon: 'points', match: 'prefix' },
       { href: '/onboarding/profile', label: '我的资料', icon: 'profile', match: 'prefix' },
     ],
   },
@@ -54,6 +56,23 @@ function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['
     return (
       <svg aria-hidden="true" viewBox="0 0 24 24">
         <path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  if (icon === 'invite') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M12 3l2.4 4.8L20 9l-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6L4 9l5.6-1.2z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (icon === 'points') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M9 13.5h5a2 2 0 0 0 0-4H10a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H9" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
       </svg>
     );
   }
@@ -145,7 +164,7 @@ function DashboardToggleIcon({ mobile, expanded }: { mobile: boolean; expanded: 
 }
 
 function isDashboardRoute(pathname: string) {
-  return ['/dashboard', '/projects', '/developers', '/requests', '/onboarding', '/cards'].some((route) => pathname === route || pathname.startsWith(`${route}/`));
+  return ['/dashboard', '/projects', '/developers', '/requests', '/invite-codes', '/points', '/onboarding', '/cards'].some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
 function getPageTitle(pathname: string) {
@@ -167,6 +186,14 @@ function getPageTitle(pathname: string) {
 
   if (pathname.startsWith('/onboarding')) {
     return '我的资料';
+  }
+
+  if (pathname.startsWith('/invite-codes')) {
+    return '邀请码';
+  }
+
+  if (pathname.startsWith('/points')) {
+    return '积分';
   }
 
   if (pathname.startsWith('/cards')) {

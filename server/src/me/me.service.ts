@@ -1,9 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CardEngagementType } from '../common/enums/card-engagement-type.enum';
 import { ContactMethod } from '../contacts/contact-method.entity';
 import { ContactType } from '../common/enums/contact-type.enum';
+import { RewardAction } from '../common/enums/reward-action.enum';
+import { UserRole } from '../common/enums/user-role.enum';
+import { RewardService } from '../rewards/reward.service';
 import { User } from '../users/user.entity';
+import { CardEngagement } from '../platform/card-engagement.entity';
 import { Card } from '../platform/card.entity';
 import { CardTag } from '../platform/card-tag.entity';
 import { Tag } from '../platform/tag.entity';
@@ -15,10 +20,13 @@ import { SaveDisplayNameDto } from './dto/save-display-name.dto';
 @Injectable()
 export class MeService {
   constructor(
+    private readonly rewardService: RewardService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Card)
     private readonly cardRepository: Repository<Card>,
+    @InjectRepository(CardEngagement)
+    private readonly cardEngagementRepository: Repository<CardEngagement>,
     @InjectRepository(Tag)
     private readonly tagRepository: Repository<Tag>,
     @InjectRepository(CardTag)
@@ -77,8 +85,131 @@ export class MeService {
     card.detailPreview = user.detailedProfile ?? card.detailPreview ?? this.createDetailPreviewFallback();
     const savedCard = await this.cardRepository.save(card);
     await this.syncCardTags(savedCard, card.strengths);
+    await this.rewardService.ensureInviteCodeForUser(user.id);
+    await this.rewardService.awardPoints(
+      user.id,
+      body.role === UserRole.EXPERT ? RewardAction.PUBLISH_PROJECT : RewardAction.REGISTER_DEVELOPER,
+      `${body.role === UserRole.EXPERT ? RewardAction.PUBLISH_PROJECT : RewardAction.REGISTER_DEVELOPER}:${user.id}:${savedCard.id}`,
+      {
+        cardId: savedCard.id,
+        cardSlug: savedCard.slug,
+        role: body.role,
+      },
+    );
 
     return this.getProfile(userId);
+  }
+
+  async getInviteOverview(userId: string) {
+    return this.rewardService.getMyInviteOverview(userId);
+  }
+
+  async getPointsOverview(userId: string) {
+    return this.rewardService.getMyPointsOverview(userId);
+  }
+
+  async getEngagements(userId: string) {
+    const engagements = await this.cardEngagementRepository.find({
+      where: {
+        user: { id: userId },
+        active: true,
+      },
+      relations: {
+        card: true,
+      },
+    });
+
+    return engagements.reduce<{ favorites: Record<string, true>; likes: Record<string, true> }>(
+      (acc, item) => {
+        const cardId = item.card.slug;
+
+        if (item.type === CardEngagementType.FAVORITE) {
+          acc.favorites[cardId] = true;
+        }
+
+        if (item.type === CardEngagementType.LIKE) {
+          acc.likes[cardId] = true;
+        }
+
+        return acc;
+      },
+      {
+        favorites: {},
+        likes: {},
+      },
+    );
+  }
+
+  async toggleCardEngagement(userId: string, cardId: string, type: CardEngagementType, active: boolean) {
+    let card = await this.cardRepository.findOne({
+      where: { slug: cardId },
+      relations: {
+        owner: true,
+      },
+    });
+
+    if (!card && this.isUuid(cardId)) {
+      card = await this.cardRepository.findOne({
+        where: { id: cardId },
+        relations: {
+          owner: true,
+        },
+      });
+    }
+
+    if (!card) {
+      throw new NotFoundException('目标卡片不存在');
+    }
+
+    let engagement = await this.cardEngagementRepository.findOne({
+      where: {
+        user: { id: userId },
+        card: { id: card.id },
+        type,
+      },
+      relations: {
+        user: true,
+        card: true,
+      },
+    });
+
+    if (!engagement) {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+
+      if (!user) {
+        throw new NotFoundException('用户不存在');
+      }
+
+      engagement = this.cardEngagementRepository.create({
+        user,
+        card,
+        type,
+        active,
+        firstActivatedAt: active ? new Date() : null,
+      });
+    } else {
+      engagement.active = active;
+
+      if (active && !engagement.firstActivatedAt) {
+        engagement.firstActivatedAt = new Date();
+      }
+    }
+
+    const savedEngagement = await this.cardEngagementRepository.save(engagement);
+
+    if (savedEngagement.active && savedEngagement.firstActivatedAt) {
+      const action = type === CardEngagementType.LIKE ? RewardAction.LIKE_CARD : RewardAction.FAVORITE_CARD;
+      await this.rewardService.awardPoints(userId, action, `engagement:${type}:${userId}:${card.id}`, {
+        cardId: card.id,
+        cardSlug: card.slug,
+      });
+    }
+
+    return {
+      cardId: card.slug,
+      type,
+      active: savedEngagement.active,
+    };
   }
 
   async saveDisplayName(userId: string, body: SaveDisplayNameDto) {
@@ -307,5 +438,9 @@ export class MeService {
       experience: '待补充工作背景',
       projectDetail: '待补充项目介绍',
     };
+  }
+
+  private isUuid(value: string) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   }
 }

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHmac, randomInt } from 'node:crypto';
 import { Repository } from 'typeorm';
+import { RewardService } from '../rewards/reward.service';
 import { MailService } from './mail.service';
 import { User } from '../users/user.entity';
 
@@ -16,15 +17,40 @@ export class AuthService {
   constructor(
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
+    private readonly rewardService: RewardService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async sendLoginCode(email: string) {
+  async sendLoginCode(email: string, inviteCode?: string) {
     const normalizedEmail = this.normalizeEmail(email);
     let user = await this.userRepository.findOne({ where: { email: normalizedEmail } });
+    const normalizedInviteCode = inviteCode?.trim().toUpperCase();
+    const requireInviteForSignup = this.configService.get<string>('AUTH_REQUIRE_INVITE_FOR_SIGNUP', 'false') === 'true';
 
     if (!user) {
+      let invitedByUserId: string | null = null;
+
+      if (requireInviteForSignup) {
+        if (!normalizedInviteCode) {
+          throw new BadRequestException({
+            code: 'INVITE_CODE_REQUIRED',
+            message: '还不是系统用户，需要邀请码才能注册，请输入邀请码。',
+          });
+        }
+
+        const inviter = await this.userRepository.findOne({ where: { inviteCode: normalizedInviteCode } });
+
+        if (!inviter) {
+          throw new BadRequestException({
+            code: 'INVITE_CODE_INVALID',
+            message: '邀请码无效，请检查后重试。',
+          });
+        }
+
+        invitedByUserId = inviter.id;
+      }
+
       user = this.userRepository.create({
         email: normalizedEmail,
         displayName: normalizedEmail.split('@')[0] || '新用户',
@@ -33,13 +59,21 @@ export class AuthService {
         loginCode: null,
         loginCodeExpiresAt: null,
         lastLoginAt: null,
+        inviteCode: null,
+        invitedByUserId,
+        invitationAcceptedAt: null,
       });
+    }
+
+    if (!user.invitedByUserId) {
+      await this.rewardService.attachInviterByCode(user, normalizedInviteCode);
     }
 
     const code = String(randomInt(100000, 1000000));
     user.loginCode = code;
     user.loginCodeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await this.userRepository.save(user);
+    await this.rewardService.finalizeInvitationIfNeeded(user);
 
     const mailResult = await this.mailService.sendLoginCodeEmail(normalizedEmail, code);
     const isDevelopment = this.configService.get<string>('NODE_ENV', 'development') !== 'production';
@@ -73,6 +107,7 @@ export class AuthService {
     user.loginCodeExpiresAt = null;
     user.lastLoginAt = new Date();
     await this.userRepository.save(user);
+    await this.rewardService.finalizeInvitationIfNeeded(user);
 
     return {
       accessToken: this.signToken({

@@ -8,6 +8,44 @@ export type ContactMethod = {
   isPrimary: boolean;
 };
 
+export type InviteOverview = {
+  inviteCode: string | null;
+  inviteLink: string | null;
+  invitedBy: {
+    id: string;
+    displayName: string;
+  } | null;
+  activationGuide: string;
+  shareText: string | null;
+  invitedUsers: Array<{
+    id: string;
+    displayName: string;
+    registeredAt: string;
+  }>;
+};
+
+export type PointsOverview = {
+  totalPoints: number;
+  rules: Array<{
+    action: string;
+    points: number;
+    label: string;
+  }>;
+  history: Array<{
+    id: string;
+    action: string;
+    points: number;
+    description: string;
+    relatedUserDisplayName?: string | null;
+    createdAt: string;
+  }>;
+};
+
+export type EngagementState = {
+  favorites: Record<string, true>;
+  likes: Record<string, true>;
+};
+
 export type AuthUser = {
   id: string;
   email: string | null;
@@ -270,10 +308,13 @@ export function isUnauthorizedError(error: unknown) {
   return extractErrorMessage(error).includes('请先登录') || extractErrorMessage(error).includes('登录态');
 }
 
-export async function sendLoginCode(email: string) {
+export async function sendLoginCode(email: string, inviteCode?: string) {
   return requestJson<{ ok: boolean; expiresInSeconds: number; delivery: 'smtp' | 'dev'; message: string; devCode?: string }>('/auth/send-code', {
     method: 'POST',
-    body: { email },
+    body: {
+      email,
+      ...(inviteCode?.trim() ? { inviteCode: inviteCode.trim() } : {}),
+    },
     token: null,
   });
 }
@@ -394,5 +435,28 @@ export async function submitPublicWelfareMessage(body: {
     method: 'POST',
     body,
     token: null,
+  });
+}
+
+export async function fetchInviteOverview() {
+  return requestJson<InviteOverview>('/me/invites');
+}
+
+export async function fetchPointsOverview() {
+  return requestJson<PointsOverview>('/me/points');
+}
+
+export async function fetchMyEngagements() {
+  return requestJson<EngagementState>('/me/engagements');
+}
+
+export async function toggleCardEngagement(body: {
+  cardId: string;
+  type: 'like' | 'favorite';
+  active: boolean;
+}) {
+  return requestJson<{ cardId: string; type: 'like' | 'favorite'; active: boolean }>('/me/engagements', {
+    method: 'POST',
+    body,
   });
 }

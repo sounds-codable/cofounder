@@ -9,7 +9,7 @@ export class AuthController {
 
   @Post('send-code')
   sendCode(@Body() body: SendLoginCodeDto) {
-    return this.authService.sendLoginCode(body.email);
+    return this.authService.sendLoginCode(body.email, body.inviteCode);
   }
 
   @Post('verify-code')

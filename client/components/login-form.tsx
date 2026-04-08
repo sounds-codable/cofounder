@@ -21,7 +21,27 @@ export function LoginForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [inviteCodeInput, setInviteCodeInput] = useState('');
+  const [inviteModalMessage, setInviteModalMessage] = useState<string | null>(null);
   const resolvedNextPath = useMemo(() => searchParams.get('next') || '/projects', [searchParams]);
+  const inviteCode = useMemo(() => searchParams.get('invite')?.trim() || '', [searchParams]);
+
+  const parseApiError = (error: unknown) => {
+    if (!(error instanceof Error)) {
+      return { code: null as string | null, message: '请求失败' };
+    }
+
+    try {
+      const parsed = JSON.parse(error.message) as { code?: string; message?: string | string[] };
+      return {
+        code: parsed.code || null,
+        message: Array.isArray(parsed.message) ? parsed.message.join('，') : parsed.message || error.message,
+      };
+    } catch {
+      return { code: null as string | null, message: error.message };
+    }
+  };
 
   useEffect(() => {
     if (cooldownSeconds <= 0) {
@@ -46,20 +66,36 @@ export function LoginForm() {
     router.refresh();
   }, [authenticated, loading, resolvedNextPath, router]);
 
-  async function handleSendCode() {
+  async function handleSendCode(overrideInviteCode?: string) {
     setSending(true);
     setMessage(null);
+    setInviteModalMessage(null);
+
+    const nextInviteCode = overrideInviteCode?.trim() || inviteCode || undefined;
 
     try {
-      const result = await sendLoginCode(email);
+      const result = await sendLoginCode(email, nextInviteCode);
       setDevCode(result.devCode ?? null);
       setCooldownSeconds(60);
       setMessage(result.message || '验证码已发送，请留意邮箱。');
+      setInviteModalOpen(false);
     } catch (error) {
-      setMessage(extractErrorMessage(error));
+      const parsed = parseApiError(error);
+
+      if (parsed.code === 'INVITE_CODE_REQUIRED' || parsed.code === 'INVITE_CODE_INVALID') {
+        setInviteCodeInput(overrideInviteCode?.trim() || inviteCode || '');
+        setInviteModalMessage(parsed.message);
+        setInviteModalOpen(true);
+      } else {
+        setMessage(extractErrorMessage(error));
+      }
     } finally {
       setSending(false);
     }
+  }
+
+  async function handleConfirmInviteAndSendCode() {
+    await handleSendCode(inviteCodeInput);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -100,7 +136,7 @@ export function LoginForm() {
           验证码
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Input className="sm:flex-1" name="code" onChange={(event) => setCode(event.target.value)} placeholder="输入邮箱验证码" type="text" value={code} />
-            <Button className="sm:shrink-0" variant="outline" disabled={sending || !email || cooldownSeconds > 0} type="button" onClick={handleSendCode}>
+            <Button className="sm:shrink-0" variant="outline" disabled={sending || !email || cooldownSeconds > 0} type="button" onClick={() => void handleSendCode()}>
               {sending ? '发送中…' : cooldownSeconds > 0 ? `${cooldownSeconds}s 后重发` : '发送验证码'}
             </Button>
           </div>
@@ -116,6 +152,57 @@ export function LoginForm() {
           </form>
         </CardContent>
       </Card>
+
+      {inviteModalOpen ? (
+        <div aria-label="邀请码提示" aria-modal="true" className="fixed inset-0 z-[70] overflow-y-auto p-4" role="dialog">
+          <button
+            aria-label="关闭弹框"
+            className="fixed inset-0 bg-foreground/30"
+            type="button"
+            onClick={() => {
+              setInviteModalOpen(false);
+              setInviteModalMessage(null);
+            }}
+          />
+          <div className="relative z-10 flex min-h-full items-start justify-center py-2 md:items-center">
+            <section className="w-full max-w-lg space-y-4 rounded-2xl border border-border/70 bg-card/96 p-5 shadow-[0_18px_42px_rgba(79,108,163,0.24)] backdrop-blur-md">
+              <h2 className="text-xl font-semibold text-foreground">还不是系统用户，需要邀请码注册</h2>
+              <p className="text-sm text-muted-foreground">请输入邀请码后，再发送验证码完成注册。</p>
+
+              <label className="grid gap-2 text-sm font-medium text-foreground">
+                邀请码
+                <Input placeholder="请输入邀请码" type="text" value={inviteCodeInput} onChange={(event) => setInviteCodeInput(event.target.value)} />
+              </label>
+
+              <div className="rounded-xl border border-sky-300/60 bg-sky-50/70 p-3 text-sm text-sky-900">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-sky-300 text-xs font-semibold">i</span>
+                  <strong>如何获得邀请码</strong>
+                </div>
+                <p className="mt-2 leading-6">可以去小红书上查找叩饭 Cofounder，也可以向网站现有用户索要邀请码。</p>
+              </div>
+
+              {inviteModalMessage ? <p className="text-sm text-destructive">{inviteModalMessage}</p> : null}
+
+              <div className="flex flex-wrap gap-2">
+                <Button disabled={sending || !email || !inviteCodeInput.trim()} type="button" onClick={() => void handleConfirmInviteAndSendCode()}>
+                  {sending ? '发送中…' : '提交邀请码并发送验证码'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setInviteModalOpen(false);
+                    setInviteModalMessage(null);
+                  }}
+                >
+                  取消
+                </Button>
+              </div>
+            </section>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

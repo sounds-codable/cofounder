@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Headers, Put } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Post, Put } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import { SaveBasicProfileDto } from './dto/save-basic-profile.dto';
 import { SaveContactMethodsDto } from './dto/save-contact-methods.dto';
 import { SaveDetailProfileDto } from './dto/save-detail-profile.dto';
 import { SaveDisplayNameDto } from './dto/save-display-name.dto';
+import { ToggleCardEngagementDto } from './dto/toggle-card-engagement.dto';
 import { MeService } from './me.service';
 
 @Controller('me')
@@ -41,5 +42,29 @@ export class MeController {
   async saveDisplayName(@Headers('authorization') authorization: string | undefined, @Body() body: SaveDisplayNameDto) {
     const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
     return this.meService.saveDisplayName(user.id, body);
+  }
+
+  @Get('invites')
+  async getInvites(@Headers('authorization') authorization?: string) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.meService.getInviteOverview(user.id);
+  }
+
+  @Get('points')
+  async getPoints(@Headers('authorization') authorization?: string) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.meService.getPointsOverview(user.id);
+  }
+
+  @Get('engagements')
+  async getEngagements(@Headers('authorization') authorization?: string) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.meService.getEngagements(user.id);
+  }
+
+  @Post('engagements')
+  async toggleEngagement(@Headers('authorization') authorization: string | undefined, @Body() body: ToggleCardEngagementDto) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.meService.toggleCardEngagement(user.id, body.cardId, body.type, body.active);
   }
 }

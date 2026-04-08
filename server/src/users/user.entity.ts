@@ -1,7 +1,9 @@
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { ContactMethod } from '../contacts/contact-method.entity';
+import { CardEngagement } from '../platform/card-engagement.entity';
 import { Card } from '../platform/card.entity';
 import { DetailRequest } from '../platform/detail-request.entity';
+import { RewardTransaction } from '../rewards/reward-transaction.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -29,6 +31,15 @@ export class User {
   @Column({ type: 'timestamptz', nullable: true })
   lastLoginAt!: Date | null;
 
+  @Column({ type: 'varchar', length: 20, unique: true, nullable: true })
+  inviteCode!: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  invitedByUserId!: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  invitationAcceptedAt!: Date | null;
+
   @OneToMany(() => ContactMethod, (contactMethod) => contactMethod.user)
   contactMethods!: ContactMethod[];
 
@@ -40,6 +51,12 @@ export class User {
 
   @OneToMany(() => DetailRequest, (detailRequest) => detailRequest.requester)
   requestedDetails!: DetailRequest[];
+
+  @OneToMany(() => RewardTransaction, (transaction) => transaction.user)
+  rewardTransactions!: RewardTransaction[];
+
+  @OneToMany(() => CardEngagement, (engagement) => engagement.user)
+  cardEngagements!: CardEngagement[];
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;

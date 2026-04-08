@@ -8,6 +8,7 @@ import { ContactMethod } from './contacts/contact-method.entity';
 import { HealthController } from './health/health.controller';
 import { MeController } from './me/me.controller';
 import { MeService } from './me/me.service';
+import { CardEngagement } from './platform/card-engagement.entity';
 import { Card } from './platform/card.entity';
 import { CardTag } from './platform/card-tag.entity';
 import { DetailRequest } from './platform/detail-request.entity';
@@ -18,6 +19,8 @@ import { Tag } from './platform/tag.entity';
 import { PublicWelfareController } from './public-welfare/public-welfare.controller';
 import { PublicWelfareMessage } from './public-welfare/public-welfare-message.entity';
 import { PublicWelfareService } from './public-welfare/public-welfare.service';
+import { RewardTransaction } from './rewards/reward-transaction.entity';
+import { RewardService } from './rewards/reward.service';
 import { RequestsController } from './requests/requests.controller';
 import { RequestsService } from './requests/requests.service';
 import { User } from './users/user.entity';
@@ -44,9 +47,9 @@ import { User } from './users/user.entity';
         logging: configService.get<string>('DB_LOGGING', 'false') === 'true',
       }),
     }),
-    TypeOrmModule.forFeature([User, ContactMethod, Card, DetailRequest, Tag, CardTag, PublicWelfareMessage]),
+    TypeOrmModule.forFeature([User, ContactMethod, Card, DetailRequest, Tag, CardTag, PublicWelfareMessage, RewardTransaction, CardEngagement]),
   ],
   controllers: [HealthController, PlatformController, AuthController, MeController, RequestsController, PublicWelfareController],
-  providers: [PlatformService, SeedService, AuthService, MailService, MeService, RequestsService, PublicWelfareService],
+  providers: [PlatformService, SeedService, AuthService, MailService, MeService, RequestsService, PublicWelfareService, RewardService],
 })
 export class AppModule {}

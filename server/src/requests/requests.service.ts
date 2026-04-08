@@ -3,13 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ContactMethod } from '../contacts/contact-method.entity';
 import { DetailRequestStatus } from '../common/enums/detail-request-status.enum';
+import { RewardAction } from '../common/enums/reward-action.enum';
 import { Card } from '../platform/card.entity';
 import { DetailRequest } from '../platform/detail-request.entity';
+import { RewardService } from '../rewards/reward.service';
 import { User } from '../users/user.entity';
 
 @Injectable()
 export class RequestsService {
   constructor(
+    private readonly rewardService: RewardService,
     @InjectRepository(DetailRequest)
     private readonly detailRequestRepository: Repository<DetailRequest>,
     @InjectRepository(Card)
@@ -193,6 +196,16 @@ export class RequestsService {
     request.status = DetailRequestStatus.CONTACT_EXCHANGED;
     request.contactExchangedAt = request.contactExchangedAt ?? new Date();
     await this.detailRequestRepository.save(request);
+    await this.rewardService.awardPoints(userId, RewardAction.MATCH_SUCCESS, `match-success:${request.id}:${request.requester.id}`, {
+      requestId: request.id,
+      cardId: request.targetCard.id,
+      role: 'requester',
+    });
+    await this.rewardService.awardPoints(request.publisher.id, RewardAction.MATCH_SUCCESS, `match-success:${request.id}:${request.publisher.id}`, {
+      requestId: request.id,
+      cardId: request.targetCard.id,
+      role: 'publisher',
+    });
 
     return request.requester.id === userId ? this.toOutgoingRequestItem(request) : this.toIncomingRequestItem(request);
   }
