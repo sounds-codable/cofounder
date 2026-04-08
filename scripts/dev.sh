@@ -12,6 +12,33 @@ log() {
   echo "[$(date '+%F %T')] $*"
 }
 
+sanitize_next_router_dirs() {
+  local client_dir="$PROJECT_ROOT/client"
+  local app_dir="$client_dir/app"
+  local legacy_pages_dir="$client_dir/src/pages"
+
+  if [[ ! -d "$app_dir" || ! -d "$legacy_pages_dir" ]]; then
+    return
+  fi
+
+  # Next.js app router 项目中，残留的 src/pages 会导致:
+  # `pages` and `app` directories should be under the same folder
+  # 仅在目录为空（或仅 .DS_Store）时自动清理；否则给出明确提示并退出。
+  local entries
+  entries="$(ls -A "$legacy_pages_dir" 2>/dev/null || true)"
+
+  if [[ -z "$entries" || "$entries" == ".DS_Store" ]]; then
+    rm -f "$legacy_pages_dir/.DS_Store" 2>/dev/null || true
+    rmdir "$legacy_pages_dir" 2>/dev/null || true
+    log "已清理残留目录: client/src/pages"
+    return
+  fi
+
+  log "检测到 client/src/pages 与 client/app 同时存在，Next.js 会启动失败。"
+  log "请迁移或删除 client/src/pages 后重试。当前目录内容: $entries"
+  exit 1
+}
+
 kill_port() {
   local port="$1"
   local pids
@@ -36,12 +63,16 @@ kill_port() {
 start_single_terminal() {
   log "单终端模式：同时输出前后端实时日志"
 
-  cd "$PROJECT_ROOT"
-
-  npm run dev --prefix client 2>&1 | sed -u 's/^/[frontend] /' &
+  (
+    cd "$PROJECT_ROOT/client"
+    npm run dev
+  ) 2>&1 | sed -u 's/^/[frontend] /' &
   local frontend_pid=$!
 
-  npm run start:dev --prefix server 2>&1 | sed -u 's/^/[backend] /' &
+  (
+    cd "$PROJECT_ROOT/server"
+    npm run start:dev
+  ) 2>&1 | sed -u 's/^/[backend] /' &
   local backend_pid=$!
 
   cleanup() {
@@ -77,6 +108,7 @@ start_split_terminal() {
 }
 
 main() {
+  sanitize_next_router_dirs
   kill_port "$FRONTEND_PORT"
   kill_port "$BACKEND_PORT"
 
