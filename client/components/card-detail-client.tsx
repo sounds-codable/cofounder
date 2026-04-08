@@ -151,6 +151,18 @@ function composeOtherContactValue(displayName: string, other: string) {
   return normalizedOther;
 }
 
+const contactTypeLabels: Record<string, string> = {
+  phone: '手机号',
+  wechat: '微信',
+  email: '邮箱',
+  qq: 'QQ',
+  other: '其他联系方式',
+};
+
+function formatContactType(type: string) {
+  return contactTypeLabels[type.toLowerCase()] || type;
+}
+
 function getViewerStatusBadgeClass(status?: string | null) {
   if (!status) {
     return 'border-border/80 bg-background/88 text-foreground';
@@ -269,6 +281,10 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   const [contactQq, setContactQq] = useState('');
   const [contactOther, setContactOther] = useState('');
   const [contactValidationMessage, setContactValidationMessage] = useState<string | null>(null);
+  const [exchangeJustCompleted, setExchangeJustCompleted] = useState(false);
+  const [justExchangedPublisherContacts, setJustExchangedPublisherContacts] = useState<ContactMethod[]>([]);
+  const [riskNoticeModalOpen, setRiskNoticeModalOpen] = useState(false);
+  const [mvpGuideModalOpen, setMvpGuideModalOpen] = useState(false);
   const [processedActionAtByRequestId, setProcessedActionAtByRequestId] = useState<Record<string, string>>({});
   const [expandedCommunicationInfoById, setExpandedCommunicationInfoById] = useState<Record<string, boolean>>({});
   const [collapsedIncomingCommunicationByRequestId, setCollapsedIncomingCommunicationByRequestId] = useState<Record<string, boolean>>({});
@@ -601,6 +617,8 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
 
     setExchangeModalMessage(null);
     setContactValidationMessage(null);
+    setExchangeJustCompleted(false);
+    setJustExchangedPublisherContacts([]);
     setExchangeRejectReason(
       '感谢你提供这么完整的信息，也谢谢你的耐心。我们评估后觉得当前合作时机还不够合适，这次先不联系了。后续如果出现更匹配的方向，期待再沟通。',
     );
@@ -641,7 +659,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         other: composeOtherContactValue(contactDisplayName, contactOther),
       });
       await refresh();
-      await exchangeContact(requestMeta.id);
+      const exchangedRequest = await exchangeContact(requestMeta.id);
       await refreshRequestsForCurrentCard();
       const nextCard = await fetchCardById(id);
 
@@ -649,7 +667,12 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         setCard(nextCard);
       }
 
-      setExchangeContactModalOpen(false);
+      if ('publisher' in exchangedRequest) {
+        setJustExchangedPublisherContacts(exchangedRequest.publisher.contactMethods);
+      }
+
+      setExchangeJustCompleted(true);
+      setExchangeModalMessage('交换成功，双方现在可以直接看到彼此联系方式。');
       setMessage('已完成联系方式交换，双方现在可以看到彼此联系方式。');
     } catch (error) {
       setExchangeModalMessage(extractErrorMessage(error));
@@ -862,6 +885,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   const noVisibleContactsHint = requestMeta?.status === 'contact_exchanged'
     ? '对方尚未填写联系方式，暂时无法查看。'
     : '你填写得越清楚，对方越容易判断你们是否合适，也就更可能把更多信息开放给你。';
+  const outgoingVisibleContacts = requestMeta?.status === 'contact_exchanged' ? requestMeta.publisher.contactMethods : [];
   const isOwnCard = Boolean(authenticated && profile?.user.id && card.ownerId && profile.user.id === card.ownerId);
   const incomingRequestsSorted = [...incomingRequestsForCard].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const publisherDetailRows: ReadonlyArray<readonly [string, string]> = [
@@ -916,7 +940,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         id: 'outgoing-contact',
         at: requestMeta.contactExchangedAt,
         tone: 'success',
-        text: '你已完成交换联系方式，双方可以立即查看彼此联系方式。',
+        text: '你已完成交换联系方式。现在双方均可查看彼此联系方式。尽情沟通吧！',
       });
     }
 
@@ -994,6 +1018,46 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         </div>
       </section>
 
+      {requestMeta?.status === 'contact_exchanged' ? (
+        <section className="space-y-3 rounded-2xl border border-emerald-300/70 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 p-5 shadow-[0_16px_36px_rgba(16,185,129,0.2)]">
+          <h2 className="text-2xl font-semibold text-emerald-900">🎉 匹配成功：对方联系方式</h2>
+          {outgoingVisibleContacts.length > 0 ? (
+            <div className="grid gap-2">
+              {outgoingVisibleContacts.map((contact) => (
+                <div className="rounded-2xl border border-emerald-200 bg-white/90 px-4 py-3" key={`outgoing-contact-hero-${contact.id}`}>
+                  <strong className="text-base font-semibold text-emerald-900">{formatContactType(contact.type)}</strong>
+                  <p className="mt-1 break-words text-base text-emerald-800">{contact.value}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-amber-300/60 bg-amber-50/80 px-3 py-2 text-sm text-amber-900">{noVisibleContactsHint}</p>
+          )}
+          <div className="mt-2 grid gap-3 border-t border-emerald-300/50 pt-4 md:grid-cols-2">
+            <button
+              className={cn(
+                buttonVariants({ size: 'lg' }),
+                'h-12 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50 to-rose-50 text-base font-semibold text-amber-900 shadow-[0_8px_20px_rgba(146,64,14,0.14)] transition-transform hover:scale-[1.01] hover:from-amber-100 hover:to-rose-100',
+              )}
+              type="button"
+              onClick={() => setRiskNoticeModalOpen(true)}
+            >
+              ⚠️ 风险提示（必读）
+            </button>
+            <button
+              className={cn(
+                buttonVariants({ size: 'lg' }),
+                'h-12 rounded-xl border border-emerald-300/80 bg-gradient-to-r from-emerald-50 to-teal-50 text-base font-semibold text-emerald-900 shadow-[0_8px_20px_rgba(6,95,70,0.12)] transition-transform hover:scale-[1.01] hover:from-emerald-100 hover:to-teal-100',
+              )}
+              type="button"
+              onClick={() => setMvpGuideModalOpen(true)}
+            >
+              🚀 MVP建议（推荐）
+            </button>
+          </div>
+        </section>
+      ) : null}
+
       {isOwnCard ? (
         <section className="space-y-3 rounded-2xl border border-border/70 bg-card/84 p-5 shadow-[0_14px_34px_rgba(79,108,163,0.12)]">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1010,6 +1074,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                 const busy = pendingIncomingActionRequestId === request.id;
                 const requestStatusLabel = getIncomingRequestStatusLabel(request.status);
                 const communicationCollapsed = collapsedIncomingCommunicationByRequestId[request.id] || false;
+                const incomingVisibleContacts = request.status === 'contact_exchanged' ? request.requester.contactMethods : [];
                 const requesterDetailRows: ReadonlyArray<readonly [string, string]> = [
                   ['项目详情', request.requester.detailedProfile?.projectDetail || '暂未查看'],
                   ['个人简介', request.requester.detailedProfile?.intro || '暂未查看'],
@@ -1062,7 +1127,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                       id: `incoming-contact-${request.id}`,
                       at: request.contactExchangedAt,
                       tone: 'success',
-                      text: '你已完成交换联系方式，双方可以立即查看彼此联系方式。',
+                      text: '你已完成交换联系方式。现在双方均可查看彼此联系方式。尽情沟通吧！',
                     });
                   }
 
@@ -1111,6 +1176,24 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                         </button>
                       ) : null}
                     </div>
+
+                    {request.status === 'contact_exchanged' ? (
+                      <section className="space-y-2 rounded-xl border border-emerald-300/65 bg-emerald-50/80 p-3">
+                        <h3 className="text-sm font-semibold text-emerald-900">对方联系方式（已可直接联系）</h3>
+                        {incomingVisibleContacts.length > 0 ? (
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {incomingVisibleContacts.map((contact) => (
+                              <div className="rounded-md border border-emerald-300/60 bg-white/90 px-3 py-2" key={`incoming-visible-contact-${request.id}-${contact.id}`}>
+                                <p className="text-xs font-medium text-emerald-900">{formatContactType(contact.type)}</p>
+                                <p className="mt-1 break-words text-sm text-emerald-800">{contact.value}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="rounded-md border border-amber-300/60 bg-amber-50/80 px-3 py-2 text-xs text-amber-900">对方尚未填写联系方式，暂时无法查看。</p>
+                        )}
+                      </section>
+                    ) : null}
 
                     <section className="space-y-2 rounded-xl border border-sky-300/60 bg-sky-50/65 p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1488,68 +1571,204 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                 ))}
               </div>
 
-              <section className="space-y-3 rounded-xl border border-emerald-300/60 bg-emerald-50/80 p-3">
-                <h3 className="text-sm font-semibold text-emerald-900">对方已提供联系方式</h3>
-                <p className="text-xs leading-5 text-emerald-800">
-                  如果你希望与对方联系，请填你的联系方式并保存。
-                  <br />
-                  保存后，双方可立即看到彼此联系方式。
+              {exchangeJustCompleted ? (
+                <section className="space-y-3 rounded-xl border border-emerald-300/75 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 p-4">
+                  <h3 className="text-base font-semibold text-emerald-900">交换成功，已立即显示对方联系方式</h3>
+                  {justExchangedPublisherContacts.length > 0 ? (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {justExchangedPublisherContacts.map((contact) => (
+                        <div className="rounded-lg border border-emerald-300/65 bg-white/90 px-3 py-2" key={`just-exchanged-contact-${contact.id}`}>
+                          <p className="text-xs font-medium text-emerald-900">{formatContactType(contact.type)}</p>
+                          <p className="mt-1 break-words text-sm text-emerald-800">{contact.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="rounded-md border border-amber-300/60 bg-amber-50/80 px-3 py-2 text-sm text-amber-900">对方尚未填写联系方式，暂时无法查看。</p>
+                  )}
+                  <button className={buttonVariants()} type="button" onClick={() => setExchangeContactModalOpen(false)}>
+                    我已看到联系方式
+                  </button>
+                </section>
+              ) : (
+                <>
+                  <section className="space-y-3 rounded-xl border border-emerald-300/60 bg-emerald-50/80 p-3">
+                    <h3 className="text-sm font-semibold text-emerald-900">对方已提供联系方式</h3>
+                    <p className="text-xs leading-5 text-emerald-800">
+                      如果你希望与对方联系，请填你的联系方式并保存。
+                      <br />
+                      保存后，双方可立即看到彼此联系方式。
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <label className="grid gap-1 text-xs text-foreground sm:col-span-2">
+                        称呼
+                        <input
+                          className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+                          name="exchangeContactDisplayName"
+                          placeholder="选填，例如 王女士 / Alex"
+                          value={contactDisplayName}
+                          onChange={(event) => setContactDisplayName(event.target.value)}
+                        />
+                      </label>
+                      <label className="grid gap-1 text-xs text-foreground">
+                        手机号
+                        <input className="h-9 rounded-md border border-border bg-background px-3 text-sm" placeholder="选填" value={contactPhone} onChange={(event) => setContactPhone(event.target.value)} />
+                      </label>
+                      <label className="grid gap-1 text-xs text-foreground">
+                        微信
+                        <input className="h-9 rounded-md border border-border bg-background px-3 text-sm" placeholder="选填" value={contactWechat} onChange={(event) => setContactWechat(event.target.value)} />
+                      </label>
+                      <label className="grid gap-1 text-xs text-foreground">
+                        邮箱
+                        <input className="h-9 rounded-md border border-border bg-background px-3 text-sm" placeholder="选填" value={contactEmail} onChange={(event) => setContactEmail(event.target.value)} />
+                      </label>
+                      <label className="grid gap-1 text-xs text-foreground">
+                        QQ
+                        <input className="h-9 rounded-md border border-border bg-background px-3 text-sm" placeholder="选填" value={contactQq} onChange={(event) => setContactQq(event.target.value)} />
+                      </label>
+                    </div>
+                    <label className="grid gap-1 text-xs text-foreground">
+                      其他联系方式
+                      <input className="h-9 rounded-md border border-border bg-background px-3 text-sm" placeholder="选填，例如 Telegram / 飞书 / Discord" value={contactOther} onChange={(event) => setContactOther(event.target.value)} />
+                    </label>
+                    {contactValidationMessage ? <p className="rounded-md border border-destructive/35 bg-destructive/10 px-3 py-2 text-xs leading-5 text-destructive">{contactValidationMessage}</p> : null}
+                    <button className={buttonVariants()} disabled={savingExchangeContact} type="button" onClick={() => void handleConfirmExchangeContact()}>
+                      {savingExchangeContact ? '提交中…' : '保存并交换联系方式'}
+                    </button>
+                  </section>
+
+                  <section className="space-y-3 rounded-xl border border-amber-300/65 bg-amber-50/85 p-3">
+                    <h3 className="text-sm font-semibold text-amber-900">不想联系</h3>
+                    <p className="text-xs leading-5 text-amber-800">
+                      如果你当前不想联系，建议填写说明后提交。
+                      <br />
+                      这样双方都不会看到彼此联系方式，可避免联系信息泄漏。
+                    </p>
+                    <label className="grid gap-1 text-sm text-foreground">
+                      说明
+                      <Textarea name="exchangeRejectReason" rows={4} value={exchangeRejectReason} onChange={(event) => setExchangeRejectReason(event.target.value)} />
+                    </label>
+                    <button className={buttonVariants({ variant: 'outline' })} disabled={savingExchangeContact} type="button" onClick={() => void handleDeclineExchangeContact()}>
+                      不想联系
+                    </button>
+                  </section>
+                </>
+              )}
+
+              {exchangeModalMessage ? (
+                <p className={cn('text-sm', exchangeJustCompleted ? 'text-emerald-700' : 'text-destructive')}>{exchangeModalMessage}</p>
+              ) : null}
+            </section>
+          </div>
+        </div>
+      ) : null}
+
+      {riskNoticeModalOpen ? (
+        <div className="fixed inset-0 z-[70] overflow-y-auto p-4" role="dialog" aria-modal="true" aria-label="风险提示">
+          <button className="fixed inset-0 bg-foreground/35" onClick={() => setRiskNoticeModalOpen(false)} type="button" aria-label="关闭风险提示弹框" />
+          <div className="relative z-10 flex min-h-full items-start justify-center py-2 md:items-center">
+            <section className="relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-amber-300/70 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,247,237,0.98))] p-5 shadow-[0_18px_42px_rgba(180,83,9,0.2)] backdrop-blur-md">
+              <button
+                aria-label="关闭风险提示弹框"
+                className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-300/70 bg-white text-xl leading-none text-amber-900 shadow-[0_8px_18px_rgba(180,83,9,0.2)] transition-colors hover:bg-amber-100"
+                type="button"
+                onClick={() => setRiskNoticeModalOpen(false)}
+              >
+                ×
+              </button>
+              <h2 className="pr-10 text-xl font-semibold text-amber-950">风险提示（请务必阅读）</h2>
+
+              <section className="space-y-2 rounded-xl border border-amber-300/70 bg-white/80 p-4">
+                <h3 className="text-sm font-semibold text-amber-900">善意提醒</h3>
+                <p className="text-sm leading-6 text-amber-900/95">
+                  本平台是公益性质的信息连接服务，平台不会也无法对项目发布者身份、项目真实性、项目履约能力作出实质性背书。
+                  在当前诈骗与虚假信息高发环境下，请你务必保持审慎，优先通过小范围、可验证的协作来建立信任。
                 </p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <label className="grid gap-1 text-xs text-foreground sm:col-span-2">
-                    称呼
-                    <input
-                      className="h-9 rounded-md border border-border bg-background px-3 text-sm"
-                      name="exchangeContactDisplayName"
-                      placeholder="选填，例如 王女士 / Alex"
-                      value={contactDisplayName}
-                      onChange={(event) => setContactDisplayName(event.target.value)}
-                    />
-                  </label>
-                  <label className="grid gap-1 text-xs text-foreground">
-                    手机号
-                    <input className="h-9 rounded-md border border-border bg-background px-3 text-sm" placeholder="选填" value={contactPhone} onChange={(event) => setContactPhone(event.target.value)} />
-                  </label>
-                  <label className="grid gap-1 text-xs text-foreground">
-                    微信
-                    <input className="h-9 rounded-md border border-border bg-background px-3 text-sm" placeholder="选填" value={contactWechat} onChange={(event) => setContactWechat(event.target.value)} />
-                  </label>
-                  <label className="grid gap-1 text-xs text-foreground">
-                    邮箱
-                    <input className="h-9 rounded-md border border-border bg-background px-3 text-sm" placeholder="选填" value={contactEmail} onChange={(event) => setContactEmail(event.target.value)} />
-                  </label>
-                  <label className="grid gap-1 text-xs text-foreground">
-                    QQ
-                    <input className="h-9 rounded-md border border-border bg-background px-3 text-sm" placeholder="选填" value={contactQq} onChange={(event) => setContactQq(event.target.value)} />
-                  </label>
+              </section>
+
+              <section className="space-y-2 rounded-xl border border-amber-300/70 bg-white/80 p-4">
+                <h3 className="text-sm font-semibold text-amber-900">建议你这样做</h3>
+                <ul className="list-disc space-y-1.5 pl-5 text-sm leading-6 text-amber-900/95">
+                  <li>在完成 MVP 前，尽量不要发生任何金钱往来、借贷或股权承诺。</li>
+                  <li>把“共同完成 MVP”作为主要验证过程，通过真实协作判断对方能力、执行力与诚信度。</li>
+                  <li>对关键身份和经历信息做交叉验证，例如学信网、工作邮箱、公开职业档案、可核验的项目记录等。</li>
+                </ul>
+              </section>
+
+              <section className="space-y-2 rounded-xl border border-rose-300/70 bg-rose-50/80 p-4">
+                <h3 className="text-sm font-semibold text-rose-900">免责与责任边界</h3>
+                <p className="text-sm leading-6 text-rose-900/95">
+                  平台仅提供信息展示与沟通工具，不参与任何线下接触、交易决策、合同签署、资金流转、股权安排或争议处理。
+                  因用户沟通、合作或交易行为引发的任何直接或间接损失、纠纷与法律后果，均由相关用户自行承担，平台不承担担保责任、连带责任或赔偿责任。
+                </p>
+              </section>
+
+              <div className="flex justify-end">
+                <button className={buttonVariants()} type="button" onClick={() => setRiskNoticeModalOpen(false)}>
+                  我已阅读并理解
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+      ) : null}
+
+      {mvpGuideModalOpen ? (
+        <div className="fixed inset-0 z-[70] overflow-y-auto p-4" role="dialog" aria-modal="true" aria-label="MVP建议">
+          <button className="fixed inset-0 bg-foreground/35" onClick={() => setMvpGuideModalOpen(false)} type="button" aria-label="关闭MVP建议弹框" />
+          <div className="relative z-10 flex min-h-full items-start justify-center py-2 md:items-center">
+            <section className="relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-sky-300/70 bg-[linear-gradient(180deg,rgba(239,246,255,0.98),rgba(236,253,245,0.98))] p-5 shadow-[0_18px_42px_rgba(14,116,144,0.18)] backdrop-blur-md">
+              <button
+                aria-label="关闭MVP建议弹框"
+                className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-sky-300/70 bg-white text-xl leading-none text-sky-900 shadow-[0_8px_18px_rgba(14,116,144,0.2)] transition-colors hover:bg-sky-100"
+                type="button"
+                onClick={() => setMvpGuideModalOpen(false)}
+              >
+                ×
+              </button>
+              <h2 className="pr-10 text-xl font-semibold text-sky-950">MVP 建议（先验证，再投入）</h2>
+
+              <section className="space-y-2 rounded-xl border border-sky-300/70 bg-white/85 p-4">
+                <h3 className="text-sm font-semibold text-sky-900">为什么先做 MVP</h3>
+                <p className="text-sm leading-6 text-sky-900/95">
+                  MVP 的核心目标是：用最小投入，尽快验证需求是否真实成立。
+                  当你们看到真实用户反馈、留存或付费意愿后，再决定是否继续深度合作，会更稳、更高效。
+                  同时，MVP 共创过程本身，也能帮助双方更快判断彼此的沟通效率、执行能力与合作默契。
+                </p>
+              </section>
+
+              <section className="space-y-2 rounded-xl border border-sky-300/70 bg-white/85 p-4">
+                <h3 className="text-sm font-semibold text-sky-900">可落地的两种起步方式</h3>
+                <div className="grid gap-2">
+                  <div className="rounded-lg border border-sky-200 bg-sky-50/70 p-3">
+                    <p className="text-sm font-semibold text-sky-900">方案 A：先销售，再做产品（Waitlist 验证）</p>
+                    <p className="mt-1 text-sm leading-6 text-sky-900/90">
+                      先做一个清晰的 waitlist 页面，讲清价值主张与目标人群，收集邮箱或预约意向，暂不开发完整功能。
+                      先验证“有没有人愿意为这个问题停留和报名”。
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 p-3">
+                    <p className="text-sm font-semibold text-emerald-900">方案 B：只做核心能力最小闭环</p>
+                    <p className="mt-1 text-sm leading-6 text-emerald-900/90">
+                      先实现核心功能的基础版，账户体系、复杂 UI、支付等可暂缓。
+                      优先拉目标用户试用，重点观察“是否解决痛点”与“是否有付费意愿”。
+                    </p>
+                  </div>
                 </div>
-                <label className="grid gap-1 text-xs text-foreground">
-                  其他联系方式
-                  <input className="h-9 rounded-md border border-border bg-background px-3 text-sm" placeholder="选填，例如 Telegram / 飞书 / Discord" value={contactOther} onChange={(event) => setContactOther(event.target.value)} />
-                </label>
-                {contactValidationMessage ? <p className="rounded-md border border-destructive/35 bg-destructive/10 px-3 py-2 text-xs leading-5 text-destructive">{contactValidationMessage}</p> : null}
-                <button className={buttonVariants()} disabled={savingExchangeContact} type="button" onClick={() => void handleConfirmExchangeContact()}>
-                  {savingExchangeContact ? '提交中…' : '保存并交换联系方式'}
-                </button>
               </section>
 
-              <section className="space-y-3 rounded-xl border border-amber-300/65 bg-amber-50/85 p-3">
-                <h3 className="text-sm font-semibold text-amber-900">不想联系</h3>
-                <p className="text-xs leading-5 text-amber-800">
-                  如果你当前不想联系，建议填写说明后提交。
-                  <br />
-                  这样双方都不会看到彼此联系方式，可避免联系信息泄漏。
+              <section className="rounded-xl border border-slate-300/70 bg-slate-50/80 p-4">
+                <p className="text-sm leading-6 text-slate-700">
+                  建议你们把每周目标控制在 1-2 个可验证指标（如报名数、访谈数、试用留存、付费意向），
+                  用数据决定下一步，而不是用想象决定投入。
                 </p>
-                <label className="grid gap-1 text-sm text-foreground">
-                  说明
-                  <Textarea name="exchangeRejectReason" rows={4} value={exchangeRejectReason} onChange={(event) => setExchangeRejectReason(event.target.value)} />
-                </label>
-                <button className={buttonVariants({ variant: 'outline' })} disabled={savingExchangeContact} type="button" onClick={() => void handleDeclineExchangeContact()}>
-                  不想联系
-                </button>
               </section>
 
-              {exchangeModalMessage ? <p className="text-sm text-destructive">{exchangeModalMessage}</p> : null}
+              <div className="flex justify-end">
+                <button className={buttonVariants()} type="button" onClick={() => setMvpGuideModalOpen(false)}>
+                  我知道了，继续沟通
+                </button>
+              </div>
             </section>
           </div>
         </div>
@@ -1994,19 +2213,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         </div>
       ) : null}
 
-      {card.viewerState?.contactVisible && card.viewerState.contactMethods.length > 0 ? (
-        <section className="space-y-3 rounded-2xl border border-border/70 bg-card/84 p-5 shadow-[0_14px_34px_rgba(79,108,163,0.12)]">
-          <h2 className="text-xl font-semibold text-foreground">已可见联系方式</h2>
-          <div className="grid gap-2">
-            {card.viewerState.contactMethods.map((contact: ContactMethod) => (
-              <div className="rounded-lg border border-border/60 bg-background/74 px-3 py-2" key={contact.id}>
-                <strong className="text-sm text-foreground">{contact.type}</strong>
-                <p className="text-sm text-muted-foreground">{contact.value}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      
     </div>
   );
 }
