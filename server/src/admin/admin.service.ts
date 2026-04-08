@@ -1,0 +1,451 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
+import { CardEngagementType } from '../common/enums/card-engagement-type.enum';
+import { DetailRequestStatus } from '../common/enums/detail-request-status.enum';
+import { UserRole } from '../common/enums/user-role.enum';
+import { ContactMethod } from '../contacts/contact-method.entity';
+import { CardEngagement } from '../platform/card-engagement.entity';
+import { Card } from '../platform/card.entity';
+import { DetailRequest } from '../platform/detail-request.entity';
+import { RewardTransaction } from '../rewards/reward-transaction.entity';
+import { User } from '../users/user.entity';
+
+@Injectable()
+export class AdminService {
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Card)
+    private readonly cardRepository: Repository<Card>,
+    @InjectRepository(DetailRequest)
+    private readonly detailRequestRepository: Repository<DetailRequest>,
+    @InjectRepository(CardEngagement)
+    private readonly cardEngagementRepository: Repository<CardEngagement>,
+    @InjectRepository(RewardTransaction)
+    private readonly rewardTransactionRepository: Repository<RewardTransaction>,
+    @InjectRepository(ContactMethod)
+    private readonly contactMethodRepository: Repository<ContactMethod>,
+  ) {}
+
+  async getOverview() {
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const [
+      totalUsers,
+      totalCards,
+      totalProjects,
+      totalDevelopers,
+      matchingInProgress,
+      matchingSuccess,
+      matchingFailed,
+      usersWithDetailedProfile,
+      activeUsersLast7Days,
+      totalRewardTransactions,
+      allContacts,
+    ] = await Promise.all([
+      this.userRepository.count(),
+      this.cardRepository.count(),
+      this.cardRepository.count({ where: { role: UserRole.EXPERT } }),
+      this.cardRepository.count({ where: { role: UserRole.DEVELOPER } }),
+      this.detailRequestRepository.count({
+        where: {
+          status: In([
+            DetailRequestStatus.PENDING_REQUEST,
+            DetailRequestStatus.PUBLISHER_VIEWED_DETAIL,
+            DetailRequestStatus.APPROVED_DETAIL_VISIBLE,
+          ]),
+        },
+      }),
+      this.detailRequestRepository.count({ where: { status: DetailRequestStatus.CONTACT_EXCHANGED } }),
+      this.detailRequestRepository.count({
+        where: {
+          status: In([DetailRequestStatus.REJECTED, DetailRequestStatus.REQUESTER_DECLINED_CONTACT]),
+        },
+      }),
+      this.userRepository.count({ where: { detailedProfileCompletedAt: Not(IsNull()) } }),
+      this.userRepository.count({ where: { lastLoginAt: MoreThanOrEqual(since) } }),
+      this.rewardTransactionRepository.count(),
+      this.contactMethodRepository.find({ relations: { user: true } }),
+    ]);
+
+    const usersWithContacts = new Set(allContacts.map((item) => item.user.id)).size;
+
+    const [invitedLeaders, projectLeaders, participationLeaders] = await Promise.all([
+      this.getInvitedLeaders(),
+      this.getProjectLeaders(),
+      this.getParticipationLeaders(),
+    ]);
+
+    return {
+      summary: {
+        totalUsers,
+        totalCards,
+        totalProjects,
+        totalDevelopers,
+        matchingInProgress,
+        matchingSuccess,
+        matchingFailed,
+        usersWithDetailedProfile,
+        usersWithContacts,
+        activeUsersLast7Days,
+        totalRewardTransactions,
+      },
+      leaders: {
+        invitedLeaders,
+        projectLeaders,
+        participationLeaders,
+      },
+      adminNotes: [
+        '可在数据库 users 表直接修改 isAdmin 字段（true/false）控制后台权限。',
+        '匹配中 = pending_request / publisher_viewed_detail / approved_detail_visible。',
+        '匹配失败 = rejected / requester_declined_contact。',
+      ],
+    };
+  }
+
+  async searchUsers(rawQuery?: string, rawLimit?: string) {
+    const query = rawQuery?.trim() || '';
+    const limitNumber = Number(rawLimit || 20);
+    const limit = Number.isFinite(limitNumber) ? Math.min(Math.max(Math.floor(limitNumber), 1), 100) : 20;
+
+    const userQuery = this.userRepository
+      .createQueryBuilder('user')
+      .orderBy('user.createdAt', 'DESC')
+      .take(limit);
+
+    if (query) {
+      userQuery.where('user.displayName ILIKE :query OR user.email ILIKE :query', { query: `%${query}%` });
+    }
+
+    const users = await userQuery.getMany();
+    const userIds = users.map((user) => user.id);
+
+    if (userIds.length === 0) {
+      return { items: [] };
+    }
+
+    const [cards, invitedUsers, rewardTransactions, relatedRequests, engagements] = await Promise.all([
+      this.cardRepository.find({
+        where: {
+          owner: {
+            id: In(userIds),
+          },
+        },
+        relations: { owner: true },
+      }),
+      this.userRepository.find({
+        where: {
+          invitedByUserId: In(userIds),
+        },
+      }),
+      this.rewardTransactionRepository.find({
+        where: {
+          user: {
+            id: In(userIds),
+          },
+        },
+        relations: { user: true },
+      }),
+      this.detailRequestRepository.find({
+        where: [{ requester: { id: In(userIds) } }, { publisher: { id: In(userIds) } }],
+        relations: {
+          requester: true,
+          publisher: true,
+        },
+      }),
+      this.cardEngagementRepository.find({
+        where: {
+          user: {
+            id: In(userIds),
+          },
+          active: true,
+        },
+        relations: { user: true },
+      }),
+    ]);
+
+    const cardsMap = this.countByUserId(cards.map((item) => item.owner.id));
+    const invitedMap = this.countByUserId(invitedUsers.map((item) => item.invitedByUserId).filter((id): id is string => Boolean(id)));
+    const pointsMap = this.sumPointsByUserId(rewardTransactions.map((item) => ({ userId: item.user.id, points: item.points })));
+
+    const requestsMap = this.countByUserId([
+      ...relatedRequests.map((item) => item.requester.id),
+      ...relatedRequests.map((item) => item.publisher.id),
+    ]);
+
+    const likesMap = this.countByUserId(
+      engagements.filter((item) => item.type === CardEngagementType.LIKE).map((item) => item.user.id),
+    );
+
+    const favoritesMap = this.countByUserId(
+      engagements.filter((item) => item.type === CardEngagementType.FAVORITE).map((item) => item.user.id),
+    );
+
+    return {
+      items: users.map((user) => ({
+        id: user.id,
+        displayName: user.displayName,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
+        hasDetailedProfile: Boolean(user.detailedProfileCompletedAt),
+        cardsCount: cardsMap[user.id] || 0,
+        invitedUsersCount: invitedMap[user.id] || 0,
+        points: pointsMap[user.id] || 0,
+        requestParticipationCount: requestsMap[user.id] || 0,
+        likesCount: likesMap[user.id] || 0,
+        favoritesCount: favoritesMap[user.id] || 0,
+      })),
+    };
+  }
+
+  async getUserDetail(userId: string) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: {
+        cards: true,
+        contactMethods: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+
+    const [inviter, invitedUsers, engagements, rewardTransactions, relatedRequests] = await Promise.all([
+      user.invitedByUserId ? this.userRepository.findOne({ where: { id: user.invitedByUserId } }) : Promise.resolve(null),
+      this.userRepository.find({ where: { invitedByUserId: userId }, order: { createdAt: 'DESC' } }),
+      this.cardEngagementRepository.find({
+        where: {
+          user: { id: userId },
+          active: true,
+        },
+        relations: {
+          card: true,
+        },
+        order: { updatedAt: 'DESC' },
+      }),
+      this.rewardTransactionRepository.find({
+        where: { user: { id: userId } },
+        order: { createdAt: 'DESC' },
+        take: 100,
+      }),
+      this.detailRequestRepository.find({
+        where: [{ publisher: { id: userId } }, { requester: { id: userId } }],
+        relations: {
+          requester: true,
+          publisher: true,
+          targetCard: { owner: true },
+        },
+        order: { createdAt: 'DESC' },
+        take: 200,
+      }),
+    ]);
+
+    const requestStatusCount: Record<string, number> = {};
+
+    relatedRequests.forEach((request) => {
+      requestStatusCount[request.status] = (requestStatusCount[request.status] || 0) + 1;
+    });
+
+    const totalPoints = rewardTransactions.reduce((sum, transaction) => sum + transaction.points, 0);
+
+    const likes = engagements.filter((item) => item.type === CardEngagementType.LIKE);
+    const favorites = engagements.filter((item) => item.type === CardEngagementType.FAVORITE);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        isAdmin: user.isAdmin,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        lastLoginAt: user.lastLoginAt,
+        inviteCode: user.inviteCode,
+        invitedByUserId: user.invitedByUserId,
+        invitationAcceptedAt: user.invitationAcceptedAt,
+        detailedProfileCompletedAt: user.detailedProfileCompletedAt,
+        detailedProfile: user.detailedProfile,
+        contactMethods: user.contactMethods,
+      },
+      cards: user.cards.map((card) => ({
+        id: card.id,
+        slug: card.slug,
+        role: card.role,
+        headline: card.headline,
+        city: card.city,
+        basicSummary: card.basicSummary,
+        strengths: card.strengths,
+        updatedAt: card.updatedAt,
+        link: `/cards/${card.slug}`,
+      })),
+      invitation: {
+        inviter: inviter
+          ? {
+              id: inviter.id,
+              displayName: inviter.displayName,
+              email: inviter.email,
+            }
+          : null,
+        invitedUsersCount: invitedUsers.length,
+        invitedUsers: invitedUsers.slice(0, 50).map((item) => ({
+          id: item.id,
+          displayName: item.displayName,
+          email: item.email,
+          createdAt: item.createdAt,
+        })),
+      },
+      engagements: {
+        likesCount: likes.length,
+        favoritesCount: favorites.length,
+        likes: likes.slice(0, 50).map((item) => ({
+          id: item.id,
+          cardId: item.card.id,
+          cardSlug: item.card.slug,
+          cardHeadline: item.card.headline,
+          link: `/cards/${item.card.slug}`,
+          firstActivatedAt: item.firstActivatedAt,
+          updatedAt: item.updatedAt,
+        })),
+        favorites: favorites.slice(0, 50).map((item) => ({
+          id: item.id,
+          cardId: item.card.id,
+          cardSlug: item.card.slug,
+          cardHeadline: item.card.headline,
+          link: `/cards/${item.card.slug}`,
+          firstActivatedAt: item.firstActivatedAt,
+          updatedAt: item.updatedAt,
+        })),
+      },
+      requests: {
+        total: relatedRequests.length,
+        statusCount: requestStatusCount,
+        items: relatedRequests.map((request) => ({
+          id: request.id,
+          status: request.status,
+          createdAt: request.createdAt,
+          updatedAt: request.updatedAt,
+          targetCard: {
+            id: request.targetCard.id,
+            slug: request.targetCard.slug,
+            headline: request.targetCard.headline,
+            link: `/cards/${request.targetCard.slug}`,
+          },
+          publisher: {
+            id: request.publisher.id,
+            displayName: request.publisher.displayName,
+            email: request.publisher.email,
+          },
+          requester: {
+            id: request.requester.id,
+            displayName: request.requester.displayName,
+            email: request.requester.email,
+          },
+        })),
+      },
+      rewards: {
+        totalPoints,
+        transactionCount: rewardTransactions.length,
+        recentTransactions: rewardTransactions.map((item) => ({
+          id: item.id,
+          action: item.action,
+          points: item.points,
+          description: item.description,
+          createdAt: item.createdAt,
+          metadata: item.metadata,
+        })),
+      },
+      adminHints: {
+        updateAdminSql: `UPDATE users SET "isAdmin" = true WHERE id = '${user.id}';`,
+      },
+    };
+  }
+
+  private async getInvitedLeaders(limit = 5) {
+    const invitedUsers = await this.userRepository.find({
+      where: {
+        invitedByUserId: Not(IsNull()),
+      },
+    });
+
+    const counts = this.countByUserId(invitedUsers.map((item) => item.invitedByUserId).filter((id): id is string => Boolean(id)));
+
+    return this.attachUsersToLeaderboard(
+      Object.entries(counts)
+        .map(([userId, count]) => ({ userId, count: String(count) }))
+        .sort((a, b) => Number(b.count) - Number(a.count))
+        .slice(0, limit),
+    );
+  }
+
+  private async getProjectLeaders(limit = 5) {
+    const cards = await this.cardRepository.find({ relations: { owner: true } });
+    const counts = this.countByUserId(cards.map((item) => item.owner.id));
+
+    return this.attachUsersToLeaderboard(
+      Object.entries(counts)
+        .map(([userId, count]) => ({ userId, count: String(count) }))
+        .sort((a, b) => Number(b.count) - Number(a.count))
+        .slice(0, limit),
+    );
+  }
+
+  private async getParticipationLeaders(limit = 5) {
+    const requests = await this.detailRequestRepository.find({
+      relations: {
+        requester: true,
+        publisher: true,
+      },
+    });
+
+    const rows = Object.entries(
+      this.countByUserId([
+        ...requests.map((item) => item.requester.id),
+        ...requests.map((item) => item.publisher.id),
+      ]),
+    )
+      .map(([userId, count]) => ({ userId, count: String(count) }))
+      .sort((a, b) => Number(b.count) - Number(a.count))
+      .slice(0, limit);
+
+    return this.attachUsersToLeaderboard(rows);
+  }
+
+  private async attachUsersToLeaderboard(rows: Array<{ userId: string; count: string }>) {
+    const userIds = rows.map((row) => row.userId);
+
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    const users = await this.userRepository.find({ where: { id: In(userIds) } });
+    const userMap = new Map(users.map((user) => [user.id, user]));
+
+    return rows.map((row) => {
+      const user = userMap.get(row.userId);
+
+      return {
+        userId: row.userId,
+        displayName: user?.displayName || '未知用户',
+        email: user?.email || null,
+        count: Number(row.count || '0'),
+      };
+    });
+  }
+
+  private countByUserId(userIds: string[]) {
+    return userIds.reduce<Record<string, number>>((acc, userId) => {
+      acc[userId] = (acc[userId] || 0) + 1;
+      return acc;
+    }, {});
+  }
+
+  private sumPointsByUserId(items: Array<{ userId: string; points: number }>) {
+    return items.reduce<Record<string, number>>((acc, item) => {
+      acc[item.userId] = (acc[item.userId] || 0) + item.points;
+      return acc;
+    }, {});
+  }
+}

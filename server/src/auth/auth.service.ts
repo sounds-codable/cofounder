@@ -62,6 +62,7 @@ export class AuthService {
         inviteCode: null,
         invitedByUserId,
         invitationAcceptedAt: null,
+        isAdmin: false,
       });
     }
 
@@ -154,6 +155,7 @@ export class AuthService {
       id: user.id,
       email: user.email,
       displayName: user.displayName,
+      isAdmin: user.isAdmin,
       detailedProfileCompletedAt: user.detailedProfileCompletedAt,
       lastLoginAt: user.lastLoginAt,
     };

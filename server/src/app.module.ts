@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AdminController } from './admin/admin.controller';
+import { AdminService } from './admin/admin.service';
 import { AuthController } from './auth/auth.controller';
 import { MailService } from './auth/mail.service';
 import { AuthService } from './auth/auth.service';
@@ -49,7 +51,7 @@ import { User } from './users/user.entity';
     }),
     TypeOrmModule.forFeature([User, ContactMethod, Card, DetailRequest, Tag, CardTag, PublicWelfareMessage, RewardTransaction, CardEngagement]),
   ],
-  controllers: [HealthController, PlatformController, AuthController, MeController, RequestsController, PublicWelfareController],
-  providers: [PlatformService, SeedService, AuthService, MailService, MeService, RequestsService, PublicWelfareService, RewardService],
+  controllers: [HealthController, PlatformController, AuthController, MeController, RequestsController, PublicWelfareController, AdminController],
+  providers: [PlatformService, SeedService, AuthService, MailService, MeService, RequestsService, PublicWelfareService, RewardService, AdminService],
 })
 export class AppModule {}

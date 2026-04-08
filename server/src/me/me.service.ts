@@ -390,6 +390,7 @@ export class MeService {
         id: user.id,
         email: user.email,
         displayName: user.displayName,
+        isAdmin: user.isAdmin,
         detailedProfile: user.detailedProfile,
         detailedProfileCompletedAt: user.detailedProfileCompletedAt,
         lastLoginAt: user.lastLoginAt,

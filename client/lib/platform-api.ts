@@ -50,8 +50,151 @@ export type AuthUser = {
   id: string;
   email: string | null;
   displayName: string;
+  isAdmin: boolean;
   detailedProfileCompletedAt: string | null;
   lastLoginAt: string | null;
+};
+
+export type AdminOverview = {
+  summary: {
+    totalUsers: number;
+    totalCards: number;
+    totalProjects: number;
+    totalDevelopers: number;
+    matchingInProgress: number;
+    matchingSuccess: number;
+    matchingFailed: number;
+    usersWithDetailedProfile: number;
+    usersWithContacts: number;
+    activeUsersLast7Days: number;
+    totalRewardTransactions: number;
+  };
+  leaders: {
+    invitedLeaders: Array<{ userId: string; displayName: string; email: string | null; count: number }>;
+    projectLeaders: Array<{ userId: string; displayName: string; email: string | null; count: number }>;
+    participationLeaders: Array<{ userId: string; displayName: string; email: string | null; count: number }>;
+  };
+  adminNotes: string[];
+};
+
+export type AdminUserSearchResult = {
+  items: Array<{
+    id: string;
+    displayName: string;
+    email: string | null;
+    isAdmin: boolean;
+    createdAt: string;
+    lastLoginAt: string | null;
+    hasDetailedProfile: boolean;
+    cardsCount: number;
+    invitedUsersCount: number;
+    points: number;
+    requestParticipationCount: number;
+    likesCount: number;
+    favoritesCount: number;
+  }>;
+};
+
+export type AdminUserDetail = {
+  user: {
+    id: string;
+    email: string | null;
+    displayName: string;
+    isAdmin: boolean;
+    createdAt: string;
+    updatedAt: string;
+    lastLoginAt: string | null;
+    inviteCode: string | null;
+    invitedByUserId: string | null;
+    invitationAcceptedAt: string | null;
+    detailedProfileCompletedAt: string | null;
+    detailedProfile: Record<string, string> | null;
+    contactMethods: ContactMethod[];
+  };
+  cards: Array<{
+    id: string;
+    slug: string;
+    role: UserRole;
+    headline: string;
+    city: string;
+    basicSummary: string;
+    strengths: string[];
+    updatedAt: string;
+    link: string;
+  }>;
+  invitation: {
+    inviter: { id: string; displayName: string; email: string | null } | null;
+    invitedUsersCount: number;
+    invitedUsers: Array<{
+      id: string;
+      displayName: string;
+      email: string | null;
+      createdAt: string;
+    }>;
+  };
+  engagements: {
+    likesCount: number;
+    favoritesCount: number;
+    likes: Array<{
+      id: string;
+      cardId: string;
+      cardSlug: string;
+      cardHeadline: string;
+      link: string;
+      firstActivatedAt: string | null;
+      updatedAt: string;
+    }>;
+    favorites: Array<{
+      id: string;
+      cardId: string;
+      cardSlug: string;
+      cardHeadline: string;
+      link: string;
+      firstActivatedAt: string | null;
+      updatedAt: string;
+    }>;
+  };
+  requests: {
+    total: number;
+    statusCount: Record<string, number>;
+    items: Array<{
+      id: string;
+      status: string;
+      createdAt: string;
+      updatedAt: string;
+      targetCard: {
+        id: string;
+        slug: string;
+        headline: string;
+        link: string;
+      };
+      publisher: {
+        id: string;
+        displayName: string;
+        email: string | null;
+      };
+      requester: {
+        id: string;
+        displayName: string;
+        email: string | null;
+      };
+    }>;
+  };
+  rewards: {
+    totalPoints: number;
+    transactionCount: number;
+    recentTransactions: Array<{
+      id: string;
+      action: string;
+      points: number;
+      description: string;
+      createdAt: string;
+      metadata: Record<string, unknown> | null;
+    }>;
+  };
+  adminHints: {
+    updateAdminSql: string;
+  };
 };
 
 export type MeProfile = {
@@ -459,4 +602,24 @@ export async function toggleCardEngagement(body: {
     method: 'POST',
     body,
   });
+}
+
+export async function fetchAdminOverview() {
+  return requestJson<AdminOverview>('/admin/overview');
+}
+
+export async function fetchAdminUsers(query?: string, limit = 20) {
+  const searchParams = new URLSearchParams();
+
+  if (query?.trim()) {
+    searchParams.set('query', query.trim());
+  }
+
+  searchParams.set('limit', String(limit));
+
+  return requestJson<AdminUserSearchResult>(`/admin/users?${searchParams.toString()}`);
+}
+
+export async function fetchAdminUserDetail(userId: string) {
+  return requestJson<AdminUserDetail>(`/admin/users/${encodeURIComponent(userId)}`);
 }

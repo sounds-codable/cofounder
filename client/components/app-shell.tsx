@@ -21,12 +21,12 @@ type DashboardNavGroup = {
   items: Array<{
     href: string;
     label: string;
-    icon: 'dashboard' | 'requests' | 'projects' | 'developers' | 'invite' | 'points' | 'profile';
+    icon: 'dashboard' | 'requests' | 'projects' | 'developers' | 'invite' | 'points' | 'profile' | 'admin';
     match?: 'exact' | 'prefix';
   }>;
 };
 
-const dashboardNavGroups: DashboardNavGroup[] = [
+const dashboardNavGroupsBase: DashboardNavGroup[] = [
   {
     title: '工作台',
     items: [
@@ -51,11 +51,34 @@ const dashboardNavGroups: DashboardNavGroup[] = [
   },
 ];
 
+function getDashboardNavGroups(isAdmin: boolean): DashboardNavGroup[] {
+  if (!isAdmin) {
+    return dashboardNavGroupsBase;
+  }
+
+  return [
+    ...dashboardNavGroupsBase,
+    {
+      title: '管理',
+      items: [{ href: '/admin', label: '管理后台', icon: 'admin', match: 'prefix' }],
+    },
+  ];
+}
+
 function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['icon'] }) {
   if (icon === 'dashboard') {
     return (
       <svg aria-hidden="true" viewBox="0 0 24 24">
         <path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  if (icon === 'admin') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M12 3l7 3v5c0 4.2-2.5 7.8-7 10-4.5-2.2-7-5.8-7-10V6l7-3z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+        <path d="M9.5 12l1.8 1.8L14.8 10" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
       </svg>
     );
   }
@@ -164,7 +187,7 @@ function DashboardToggleIcon({ mobile, expanded }: { mobile: boolean; expanded: 
 }
 
 function isDashboardRoute(pathname: string) {
-  return ['/dashboard', '/projects', '/developers', '/requests', '/invite-codes', '/points', '/onboarding', '/cards'].some((route) => pathname === route || pathname.startsWith(`${route}/`));
+  return ['/dashboard', '/projects', '/developers', '/requests', '/invite-codes', '/points', '/onboarding', '/cards', '/admin'].some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
 function getPageTitle(pathname: string) {
@@ -200,6 +223,10 @@ function getPageTitle(pathname: string) {
     return '详情';
   }
 
+  if (pathname.startsWith('/admin')) {
+    return '管理后台';
+  }
+
   return '控制台';
 }
 
@@ -218,6 +245,7 @@ function AppShellContent({ children }: AppShellProps) {
   const [desktopViewport, setDesktopViewport] = useState(false);
   const [pending, startTransition] = useTransition();
   const { authenticated, profile, refresh } = useAuthState();
+  const dashboardNavGroups = getDashboardNavGroups(Boolean(profile?.user.isAdmin));
   const sidebarCollapsedOnDesktop = desktopViewport && !sidebarExpanded;
 
   const showDashboardShell = authenticated && pathname !== '/login' && pathname !== '/' && isDashboardRoute(pathname);

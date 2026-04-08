@@ -40,6 +40,9 @@ export class User {
   @Column({ type: 'timestamptz', nullable: true })
   invitationAcceptedAt!: Date | null;
 
+  @Column({ type: 'boolean', default: false })
+  isAdmin!: boolean;
+
   @OneToMany(() => ContactMethod, (contactMethod) => contactMethod.user)
   contactMethods!: ContactMethod[];
 
