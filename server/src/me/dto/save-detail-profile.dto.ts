@@ -1,4 +1,4 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsOptional, IsString, MinLength, ValidateIf } from 'class-validator';
 
 export class SaveDetailProfileDto {
   @IsString({ message: '个人简介格式不正确' })
@@ -13,7 +13,21 @@ export class SaveDetailProfileDto {
   @MinLength(6, { message: '工作背景至少需要 6 个字符' })
   experience!: string;
 
+  @IsOptional()
+  @ValidateIf((_, value: unknown) => value !== null && value !== undefined && value !== '')
   @IsString({ message: '项目详情格式不正确' })
   @MinLength(6, { message: '项目详情至少需要 6 个字符' })
-  projectDetail!: string;
+  expertProjectDetail?: string;
+
+  @IsOptional()
+  @ValidateIf((_, value: unknown) => value !== null && value !== undefined && value !== '')
+  @IsString({ message: '做过的项目/产品格式不正确' })
+  @MinLength(6, { message: '做过的项目/产品至少需要 6 个字符' })
+  developerProjectExperience?: string;
+
+  @IsOptional()
+  @ValidateIf((_, value: unknown) => value !== null && value !== undefined && value !== '')
+  @IsString({ message: '项目详情格式不正确' })
+  @MinLength(6, { message: '项目详情至少需要 6 个字符' })
+  projectDetail?: string;
 }

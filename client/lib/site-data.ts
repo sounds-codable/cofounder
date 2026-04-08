@@ -15,6 +15,8 @@ export type PublicCard = {
     intro: string;
     education: string;
     experience: string;
+    expertProjectDetail: string;
+    developerProjectExperience: string;
     projectDetail: string;
   };
 };
@@ -43,6 +45,8 @@ export const fallbackPublicCards: PublicCard[] = [
       intro: '连续创业者，长期在医疗供应链行业工作，熟悉上下游采购、库存、账期管理。',
       education: '浙江大学 / 管理学',
       experience: '做过区域供应链整合、SaaS 商业化、团队搭建。',
+      expertProjectDetail: '想从库存协同、采购预测切入，先做一个让门店每天愿意打开的轻量系统。',
+      developerProjectExperience: '',
       projectDetail: '想从库存协同、采购预测切入，先做一个让门店每天愿意打开的轻量系统。',
     },
   },
@@ -58,6 +62,8 @@ export const fallbackPublicCards: PublicCard[] = [
       intro: '长期做品牌出海，熟悉欧美平台规则与团队协作。',
       education: '中山大学 / 市场营销',
       experience: '主导过从 0 到 1 品牌搭建、投放策略、私域转化。',
+      expertProjectDetail: '希望找到既能动手写系统，又能理解业务转化链路的技术合伙人。',
+      developerProjectExperience: '',
       projectDetail: '希望找到既能动手写系统，又能理解业务转化链路的技术合伙人。',
     },
   },
@@ -74,6 +80,8 @@ export const fallbackPublicCards: PublicCard[] = [
       intro: '过去几年一直在创业团队与小型产品团队做全栈开发。',
       education: '同济大学 / 软件工程',
       experience: '负责过从产品设计到上线运维的完整链路。',
+      expertProjectDetail: '',
+      developerProjectExperience: '做过 AI 文案、知识管理、工作流自动化、订阅转化系统。',
       projectDetail: '做过 AI 文案、知识管理、工作流自动化、订阅转化系统。',
     },
   },
@@ -90,6 +98,8 @@ export const fallbackPublicCards: PublicCard[] = [
       intro: '长期做数据产品与企业内部工具，有较强的问题建模能力。',
       education: '北京航空航天大学 / 计算机科学',
       experience: '做过数据中台、画像分析、智能推荐、企业 AI Copilot。',
+      expertProjectDetail: '',
+      developerProjectExperience: '希望与强行业资源方合作，做有真实需求、有壁垒的产品。',
       projectDetail: '希望与强行业资源方合作，做有真实需求、有壁垒的产品。',
     },
   },

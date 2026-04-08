@@ -27,12 +27,13 @@ type ActiveTagToken = {
 
 const MAX_TAG_COUNT = 5;
 
-const roleCopy: Record<UserRole, { badge: string; title: string; description: string; submitText: string; summaryLabel: string; summaryPlaceholder: string }> = {
+const roleCopy: Record<UserRole, { badge: string; title: string; description: string; submitText: string; headlineLabel: string; summaryLabel: string; summaryPlaceholder: string }> = {
   expert: {
     badge: '发布项目',
     title: '填写项目信息',
     description: '以下填写的信息将公开展示哦，建议先大致介绍项目方向，太多细节就等匹配上了合适的小伙伴再聊。',
     submitText: '发布项目',
+    headlineLabel: '项目名称',
     summaryLabel: '项目描述',
     summaryPlaceholder: '用最少的话说明最重要的价值。输入 # 可以添加标签，例如 #MVP #医疗SaaS',
   },
@@ -41,6 +42,7 @@ const roleCopy: Record<UserRole, { badge: string; title: string; description: st
     title: '填写程序员卡片信息',
     description: '仅填写会显示在程序员卡片里的公开信息，不需要先填基础信息页。',
     submitText: '发布程序员卡片',
+    headlineLabel: '标题',
     summaryLabel: '能力描述',
     summaryPlaceholder: '用最少的话说明最重要的价值。输入 # 可以添加标签，例如 #Next.js #AI工具',
   },
@@ -108,6 +110,7 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
   const [tagPanelOpen, setTagPanelOpen] = useState(false);
   const [loadingTagSuggestions, setLoadingTagSuggestions] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'headline' | 'summary' | 'city', string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const selectedTags = useMemo(() => extractTagsFromText(basicSummary), [basicSummary]);
 
@@ -238,17 +241,18 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
     const normalizedStrengths = uniqueTags(selectedTags).slice(0, MAX_TAG_COUNT);
 
     if (!normalizedHeadline || !normalizedBasicSummary || !normalizedCity) {
+      setFieldErrors({
+        headline: normalizedHeadline ? '' : `${copy.headlineLabel}不能为空`,
+        summary: normalizedBasicSummary ? '' : `${copy.summaryLabel}不能为空`,
+        city: normalizedCity ? '' : '城市不能为空',
+      });
       setMessage('请先填写标题、描述和城市后再发布。');
-      return;
-    }
-
-    if (normalizedStrengths.length === 0) {
-      setMessage('请在描述里至少添加 1 个 #标签。');
       return;
     }
 
     setSubmitting(true);
     setMessage(null);
+    setFieldErrors({});
 
     try {
       if (!profile) {
@@ -322,13 +326,26 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <label className="grid gap-2 text-sm font-medium text-foreground">
-              项目名称
-              <Textarea className="min-h-0 h-14" name="headline" onChange={(event) => setHeadline(event.target.value)} placeholder="一句话介绍项目" rows={2} value={headline} />
+              {copy.headlineLabel}
+              <Textarea
+                className={cn('min-h-0 h-14', fieldErrors.headline ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
+                name="headline"
+                onChange={(event) => {
+                  setHeadline(event.target.value);
+                  if (fieldErrors.headline) {
+                    setFieldErrors((previous) => ({ ...previous, headline: '' }));
+                  }
+                }}
+                placeholder="一句话介绍项目"
+                rows={2}
+                value={headline}
+              />
+              {fieldErrors.headline ? <p className="text-xs text-destructive">{fieldErrors.headline}</p> : null}
             </label>
             <label className="relative grid gap-2 text-sm font-medium text-foreground">
               {copy.summaryLabel}
               <Textarea
-                className="min-h-0 h-40"
+                className={cn('min-h-0 h-40', fieldErrors.summary ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
                 ref={summaryTextareaRef}
                 name="summary"
                 onBlur={() => {
@@ -345,6 +362,9 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
 
                   setMessage(null);
                   setBasicSummary(value);
+                  if (fieldErrors.summary) {
+                    setFieldErrors((previous) => ({ ...previous, summary: '' }));
+                  }
                   syncActiveTagToken(value, event.target.selectionStart ?? value.length);
                 }}
                 onClick={handleSummaryCaretChanged}
@@ -354,6 +374,7 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
                 rows={12}
                 value={basicSummary}
               />
+              {fieldErrors.summary ? <p className="text-xs text-destructive">{fieldErrors.summary}</p> : null}
               <p className="text-xs font-normal text-muted-foreground">提示：输入 `#` 即可搜索已有标签，也可以直接新增。</p>
               {selectedTags.length > 0 ? (
                 <div className="grid gap-2">
@@ -413,7 +434,20 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
             </label>
             <label className="grid gap-2 text-sm font-medium text-foreground">
               城市
-              <Textarea className="min-h-0 h-11" name="city" onChange={(event) => setCity(event.target.value)} placeholder="例如：杭州" rows={1} value={city} />
+              <Textarea
+                className={cn('min-h-0 h-11', fieldErrors.city ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
+                name="city"
+                onChange={(event) => {
+                  setCity(event.target.value);
+                  if (fieldErrors.city) {
+                    setFieldErrors((previous) => ({ ...previous, city: '' }));
+                  }
+                }}
+                placeholder="例如：杭州"
+                rows={1}
+                value={city}
+              />
+              {fieldErrors.city ? <p className="text-xs text-destructive">{fieldErrors.city}</p> : null}
             </label>
             {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
             <div className="flex flex-wrap gap-2">

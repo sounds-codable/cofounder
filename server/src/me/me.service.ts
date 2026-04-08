@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CardEngagementType } from '../common/enums/card-engagement-type.enum';
@@ -244,11 +244,41 @@ export class MeService {
       throw new NotFoundException('用户不存在');
     }
 
+    const cardRole = user.cards[0]?.role;
+    const previousDetail = (user.detailedProfile ?? {}) as Record<string, unknown>;
+    const legacyProjectDetail = this.normalizeOptionalDetailField(body.projectDetail);
+    const existingExpertProjectDetail = this.normalizeOptionalDetailField(previousDetail.expertProjectDetail ?? previousDetail.projectDetail);
+    const existingDeveloperProjectExperience = this.normalizeOptionalDetailField(previousDetail.developerProjectExperience ?? previousDetail.projectDetail);
+
+    let expertProjectDetail = this.normalizeOptionalDetailField(body.expertProjectDetail) ?? existingExpertProjectDetail;
+    let developerProjectExperience = this.normalizeOptionalDetailField(body.developerProjectExperience) ?? existingDeveloperProjectExperience;
+
+    if (legacyProjectDetail) {
+      if (cardRole === UserRole.EXPERT) {
+        expertProjectDetail = legacyProjectDetail;
+      } else if (cardRole === UserRole.DEVELOPER) {
+        developerProjectExperience = legacyProjectDetail;
+      } else {
+        expertProjectDetail = expertProjectDetail ?? legacyProjectDetail;
+        developerProjectExperience = developerProjectExperience ?? legacyProjectDetail;
+      }
+    }
+
+    if (cardRole === UserRole.EXPERT && !expertProjectDetail) {
+      throw new BadRequestException('请填写项目详情');
+    }
+
+    if (cardRole === UserRole.DEVELOPER && !developerProjectExperience) {
+      throw new BadRequestException('请填写做过的项目/产品');
+    }
+
     user.detailedProfile = {
       intro: body.intro.trim(),
       education: body.education.trim(),
       experience: body.experience.trim(),
-      projectDetail: body.projectDetail.trim(),
+      expertProjectDetail: expertProjectDetail ?? '',
+      developerProjectExperience: developerProjectExperience ?? '',
+      projectDetail: expertProjectDetail ?? developerProjectExperience ?? '',
     };
     user.detailedProfileCompletedAt = new Date();
     await this.userRepository.save(user);
@@ -437,8 +467,19 @@ export class MeService {
       intro: '待补充详细信息',
       education: '待补充教育背景',
       experience: '待补充工作背景',
+      expertProjectDetail: '待补充项目详情',
+      developerProjectExperience: '待补充做过的项目/产品',
       projectDetail: '待补充项目介绍',
     };
+  }
+
+  private normalizeOptionalDetailField(value: unknown) {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : null;
   }
 
   private isUuid(value: string) {

@@ -26,7 +26,7 @@ import {
   type PlatformCardDetail,
   viewRequesterDetail,
 } from '@/lib/platform-api';
-import { fallbackPublicCards, roleLabels } from '@/lib/site-data';
+import { fallbackPublicCards, roleLabels, type UserRole } from '@/lib/site-data';
 import { useAuthState } from '@/lib/use-auth';
 
 type CardDetailClientProps = {
@@ -34,13 +34,68 @@ type CardDetailClientProps = {
 };
 
 type DetailField = 'intro' | 'education' | 'experience' | 'projectDetail';
+type DetailProfileLike = Partial<{
+  intro: string;
+  education: string;
+  experience: string;
+  projectDetail: string;
+  expertProjectDetail: string;
+  developerProjectExperience: string;
+}>;
 
 const detailFieldMeta: Record<DetailField, { label: string; minLength: number }> = {
   intro: { label: '个人简介', minLength: 6 },
   education: { label: '教育背景', minLength: 4 },
   experience: { label: '工作背景', minLength: 6 },
-  projectDetail: { label: '项目详情', minLength: 6 },
+  projectDetail: { label: '项目补充信息', minLength: 6 },
 };
+
+function getProjectFieldLabel(role?: UserRole | null) {
+  return role === 'developer' ? '做过的项目/产品' : '项目详情';
+}
+
+function getProjectFieldPlaceholder(role?: UserRole | null) {
+  return role === 'developer' ? '补充你做过的项目、产品或代表作品' : '补充项目细节、成果或能力证明';
+}
+
+function getRoleSpecificProjectDetail(detailProfile: DetailProfileLike | null | undefined, role?: UserRole | null) {
+  if (!detailProfile) {
+    return '';
+  }
+
+  if (role === 'developer') {
+    return detailProfile.developerProjectExperience || detailProfile.projectDetail || '';
+  }
+
+  return detailProfile.expertProjectDetail || detailProfile.projectDetail || '';
+}
+
+function buildDetailRows(detailProfile: DetailProfileLike | null | undefined, role: UserRole, fallbackText: string): ReadonlyArray<readonly [string, string]> {
+  return [
+    ['个人简介', detailProfile?.intro || fallbackText],
+    ['教育背景', detailProfile?.education || fallbackText],
+    ['工作背景', detailProfile?.experience || fallbackText],
+    [getProjectFieldLabel(role), getRoleSpecificProjectDetail(detailProfile, role) || fallbackText],
+  ];
+}
+
+function buildDetailProfilePayload(role: UserRole, values: { intro: string; education: string; experience: string; projectDetail: string }) {
+  if (role === 'developer') {
+    return {
+      intro: values.intro,
+      education: values.education,
+      experience: values.experience,
+      developerProjectExperience: values.projectDetail,
+    };
+  }
+
+  return {
+    intro: values.intro,
+    education: values.education,
+    experience: values.experience,
+    expertProjectDetail: values.projectDetail,
+  };
+}
 
 const viewerStatusLabels: Record<string, string> = {
   approved_detail_visible: '已收到联系申请 - 待处理',
@@ -61,9 +116,10 @@ function formatPublishedAt(updatedAt?: string, ownerName?: string) {
   return `${formatBeijingDateTime(updatedAt, '时间未知')} by ${ownerName?.trim() || '未知发布者'}`;
 }
 
-function getDetailFieldError(field: DetailField, value: string) {
+function getDetailFieldError(field: DetailField, value: string, projectFieldLabel = detailFieldMeta.projectDetail.label) {
   const trimmed = value.trim();
-  const { label, minLength } = detailFieldMeta[field];
+  const { minLength } = detailFieldMeta[field];
+  const label = field === 'projectDetail' ? projectFieldLabel : detailFieldMeta[field].label;
 
   if (!trimmed) {
     return `请填写${label}`;
@@ -76,9 +132,9 @@ function getDetailFieldError(field: DetailField, value: string) {
   return '';
 }
 
-function validateDetailFields(values: Record<DetailField, string>) {
+function validateDetailFields(values: Record<DetailField, string>, projectFieldLabel = detailFieldMeta.projectDetail.label) {
   return (Object.keys(values) as DetailField[]).reduce<Partial<Record<DetailField, string>>>((acc, field) => {
-    const nextError = getDetailFieldError(field, values[field]);
+    const nextError = getDetailFieldError(field, values[field], projectFieldLabel);
 
     if (nextError) {
       acc[field] = nextError;
@@ -88,7 +144,7 @@ function validateDetailFields(values: Record<DetailField, string>) {
   }, {});
 }
 
-function parseDetailFieldErrorsFromMessage(message: string) {
+function parseDetailFieldErrorsFromMessage(message: string, projectFieldLabel = detailFieldMeta.projectDetail.label) {
   const text = message.toLowerCase();
   const nextErrors: Partial<Record<DetailField, string>> = {};
 
@@ -96,12 +152,13 @@ function parseDetailFieldErrorsFromMessage(message: string) {
     ['intro', [/intro/, /个人简介/]],
     ['education', [/education/, /教育背景/]],
     ['experience', [/experience/, /工作背景/]],
-    ['projectDetail', [/projectdetail/, /project detail/, /项目详情/, /项目介绍/]],
+    ['projectDetail', [/projectdetail/, /project detail/, /expertprojectdetail/, /developerprojectexperience/, /项目详情/, /项目介绍/, /做过的项目/, /项目\/产品/]],
   ];
 
   matchers.forEach(([field, patterns]) => {
     if (patterns.some((pattern) => pattern.test(text))) {
-      nextErrors[field] = detailFieldMeta[field].label + `至少需要 ${detailFieldMeta[field].minLength} 个字符`;
+      const label = field === 'projectDetail' ? projectFieldLabel : detailFieldMeta[field].label;
+      nextErrors[field] = label + `至少需要 ${detailFieldMeta[field].minLength} 个字符`;
     }
   });
 
@@ -320,7 +377,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
     setIntro(profile.user.detailedProfile?.intro || '');
     setEducation(profile.user.detailedProfile?.education || '');
     setExperience(profile.user.detailedProfile?.experience || '');
-    setProjectDetail(profile.user.detailedProfile?.projectDetail || '');
+    setProjectDetail(getRoleSpecificProjectDetail(profile.user.detailedProfile, profile.card?.role));
     setContactPhone(getContactValueByType(profile.contactMethods, 'phone'));
     setContactWechat(getContactValueByType(profile.contactMethods, 'wechat'));
     setContactEmail(getContactValueByType(profile.contactMethods, 'email'));
@@ -388,7 +445,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
       education,
       experience,
       projectDetail,
-    });
+    }, projectFieldLabel);
 
     if (Object.keys(localErrors).length > 0) {
       setFieldErrors(localErrors);
@@ -402,13 +459,13 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
     setMessage(null);
 
     try {
-      await saveDetailProfile({ intro, education, experience, projectDetail });
+      await saveDetailProfile(buildDetailProfilePayload(currentUserRole, { intro, education, experience, projectDetail }));
       await refresh();
       setEditingDetailInApproveModal(false);
       setMessage('详细信息已更新，可继续发送申请。');
     } catch (error) {
       const errorMessage = extractErrorMessage(error);
-      const backendFieldErrors = parseDetailFieldErrorsFromMessage(errorMessage);
+      const backendFieldErrors = parseDetailFieldErrorsFromMessage(errorMessage, projectFieldLabel);
 
       if (Object.keys(backendFieldErrors).length > 0) {
         setFieldErrors((previous) => ({
@@ -430,7 +487,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
       education,
       experience,
       projectDetail,
-    });
+    }, projectFieldLabel);
 
     if (Object.keys(localErrors).length > 0) {
       setFieldErrors(localErrors);
@@ -444,13 +501,13 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
     setMessage(null);
 
     try {
-      await saveDetailProfile({ intro, education, experience, projectDetail });
+      await saveDetailProfile(buildDetailProfilePayload(currentUserRole, { intro, education, experience, projectDetail }));
       await refresh();
       setEditingDetailInRequestModal(false);
       setMessage('详细信息已更新，可继续发送申请。');
     } catch (error) {
       const errorMessage = extractErrorMessage(error);
-      const backendFieldErrors = parseDetailFieldErrorsFromMessage(errorMessage);
+      const backendFieldErrors = parseDetailFieldErrorsFromMessage(errorMessage, projectFieldLabel);
 
       if (Object.keys(backendFieldErrors).length > 0) {
         setFieldErrors((previous) => ({
@@ -490,7 +547,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
       education,
       experience,
       projectDetail,
-    });
+    }, projectFieldLabel);
 
     if (Object.keys(localErrors).length > 0) {
       setFieldErrors(localErrors);
@@ -505,14 +562,14 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
     setMessage(null);
 
     try {
-      await saveDetailProfile({ intro, education, experience, projectDetail });
+      await saveDetailProfile(buildDetailProfilePayload(currentUserRole, { intro, education, experience, projectDetail }));
       await refresh();
       await createRequestAndRefreshCard();
       setRequestModalOpen(false);
       setMessage('详细信息已提交并成功发起申请，接下来等待对方处理。');
     } catch (error) {
       const errorMessage = extractErrorMessage(error);
-      const backendFieldErrors = parseDetailFieldErrorsFromMessage(errorMessage);
+      const backendFieldErrors = parseDetailFieldErrorsFromMessage(errorMessage, projectFieldLabel);
 
       if (Object.keys(backendFieldErrors).length > 0) {
         setFieldErrors((previous) => ({
@@ -590,7 +647,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
       education,
       experience,
       projectDetail,
-    });
+    }, projectFieldLabel);
 
     if (Object.keys(localErrors).length > 0) {
       setFieldErrors(localErrors);
@@ -598,7 +655,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
       return false;
     }
 
-    await saveDetailProfile({ intro, education, experience, projectDetail });
+    await saveDetailProfile(buildDetailProfilePayload(currentUserRole, { intro, education, experience, projectDetail }));
     await saveContactMethods({
       phone: contactPhone.trim(),
       wechat: contactWechat.trim(),
@@ -762,7 +819,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
       setActiveIncomingRequest(null);
     } catch (error) {
       const errorMessage = extractErrorMessage(error);
-      const backendFieldErrors = parseDetailFieldErrorsFromMessage(errorMessage);
+      const backendFieldErrors = parseDetailFieldErrorsFromMessage(errorMessage, projectFieldLabel);
 
       if (Object.keys(backendFieldErrors).length > 0) {
         setFieldErrors((previous) => ({
@@ -871,13 +928,11 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   const backToListHref = card.role === 'expert' ? '/projects' : '/developers';
   const backToListLabel = card.role === 'expert' ? '返回项目列表' : '返回程序员列表';
   const targetRoleLabel = card.role === 'expert' ? '项目方' : '程序员';
+  const currentUserRole: UserRole = profile?.card?.role ?? (card.role === 'expert' ? 'developer' : 'expert');
+  const projectFieldLabel = getProjectFieldLabel(currentUserRole);
+  const projectFieldPlaceholder = getProjectFieldPlaceholder(currentUserRole);
   const hasDetailProfile = Boolean(profile?.completion.hasDetailProfile && profile.user.detailedProfile);
-  const previewRows = [
-    ['项目详情', profile?.user.detailedProfile?.projectDetail || '未填写'],
-    ['个人简介', profile?.user.detailedProfile?.intro || '未填写'],
-    ['教育背景', profile?.user.detailedProfile?.education || '未填写'],
-    ['工作背景', profile?.user.detailedProfile?.experience || '未填写'],
-  ] as const;
+  const previewRows = buildDetailRows(profile?.user.detailedProfile, currentUserRole, '未填写');
   const alertText = hasDetailProfile
     ? '小提醒：先把下面这些信息发给对方，对方会更放心，也更愿意继续聊下去。'
     : '小提醒：先花几分钟把下面的信息补充一下发给对方，对方会更放心，也更愿意继续聊下去。';
@@ -888,12 +943,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   const outgoingVisibleContacts = requestMeta?.status === 'contact_exchanged' ? requestMeta.publisher.contactMethods : [];
   const isOwnCard = Boolean(authenticated && profile?.user.id && card.ownerId && profile.user.id === card.ownerId);
   const incomingRequestsSorted = [...incomingRequestsForCard].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const publisherDetailRows: ReadonlyArray<readonly [string, string]> = [
-    ['项目详情', requestMeta?.publisher.detailedProfile?.projectDetail || '暂未开放'],
-    ['个人简介', requestMeta?.publisher.detailedProfile?.intro || '暂未开放'],
-    ['教育背景', requestMeta?.publisher.detailedProfile?.education || '暂未开放'],
-    ['工作背景', requestMeta?.publisher.detailedProfile?.experience || '暂未开放'],
-  ];
+  const publisherDetailRows = buildDetailRows(requestMeta?.publisher.detailedProfile, card.role, '暂未开放');
   const communicationLogs = (() => {
     if (!requestMeta) {
       return [] as Array<{ id: string; at: string; tone: 'neutral' | 'info' | 'success' | 'warning'; text: string }>;
@@ -1005,7 +1055,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                 <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-xs font-medium', getViewerStatusBadgeClass(card.viewerState.status))}>当前状态：{statusLabel}</span>
                 {requestMeta?.actions.canExchangeContact ? (
                   <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))} type="button" onClick={() => void handleOpenExchangeContactModal()}>
-                    交换联系方式
+                    {requestMeta.status === 'requester_declined_contact' ? '后悔了，重新联系' : '交换联系方式'}
                   </button>
                 ) : null}
               </div>
@@ -1073,14 +1123,11 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                 const requesterName = request.requester.displayName?.trim() || '未知用户';
                 const busy = pendingIncomingActionRequestId === request.id;
                 const requestStatusLabel = getIncomingRequestStatusLabel(request.status);
+                const hasViewedRequesterDetail = Boolean(request.publisherViewedRequesterDetailAt);
                 const communicationCollapsed = collapsedIncomingCommunicationByRequestId[request.id] || false;
                 const incomingVisibleContacts = request.status === 'contact_exchanged' ? request.requester.contactMethods : [];
-                const requesterDetailRows: ReadonlyArray<readonly [string, string]> = [
-                  ['项目详情', request.requester.detailedProfile?.projectDetail || '暂未查看'],
-                  ['个人简介', request.requester.detailedProfile?.intro || '暂未查看'],
-                  ['教育背景', request.requester.detailedProfile?.education || '暂未查看'],
-                  ['工作背景', request.requester.detailedProfile?.experience || '暂未查看'],
-                ];
+                const requesterRole: UserRole = request.targetCard.role === 'expert' ? 'developer' : 'expert';
+                const requesterDetailRows = buildDetailRows(request.requester.detailedProfile, requesterRole, '暂未查看');
                 const incomingCommunicationLogs = (() => {
                   const logs: Array<{ id: string; at: string; tone: 'neutral' | 'info' | 'success' | 'warning'; text: string; canExpandInfo?: boolean; detailRows?: ReadonlyArray<readonly [string, string]> }> = [
                     {
@@ -1234,7 +1281,14 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                                     <button
                                       className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 px-2 text-xs')}
                                       type="button"
-                                      onClick={() => setExpandedCommunicationInfoById((previous) => ({ ...previous, [log.id]: !expanded }))}
+                                      onClick={() => {
+                                        if (log.id === `incoming-created-${request.id}` && !hasViewedRequesterDetail) {
+                                          void handleOpenRequesterDetail(request);
+                                          return;
+                                        }
+
+                                        setExpandedCommunicationInfoById((previous) => ({ ...previous, [log.id]: !expanded }));
+                                      }}
                                     >
                                       {expanded ? '收起信息' : '查看信息'}
                                     </button>
@@ -1296,6 +1350,11 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                         onClick={() => setExpandedCommunicationInfoById((previous) => ({ ...previous, [log.id]: !expanded }))}
                       >
                         {expanded ? '收起信息' : '查看信息'}
+                      </button>
+                    ) : null}
+                    {log.id === 'outgoing-self-decline' && requestMeta.actions.canExchangeContact ? (
+                      <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 px-2 text-xs')} type="button" onClick={() => void handleOpenExchangeContactModal()}>
+                        后悔了，重新联系
                       </button>
                     ) : null}
                   </div>
@@ -1364,21 +1423,6 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                 {editingDetailInRequestModal ? (
                   <form className="space-y-3" onSubmit={(event) => event.preventDefault()}>
                     <label className="grid gap-1 text-sm text-foreground">
-                      项目详情
-                      <Textarea
-                        className={cn(fieldErrors.projectDetail ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
-                        name="projectDetail"
-                        onChange={(event) => {
-                          setProjectDetail(event.target.value);
-                          setFieldErrors((previous) => ({ ...previous, projectDetail: getDetailFieldError('projectDetail', event.target.value) }));
-                        }}
-                        rows={4}
-                        placeholder="补充项目细节、成果或能力证明"
-                        value={projectDetail}
-                      />
-                      {fieldErrors.projectDetail ? <span className="text-xs text-destructive">{fieldErrors.projectDetail}</span> : null}
-                    </label>
-                    <label className="grid gap-1 text-sm text-foreground">
                       个人简介
                       <Textarea
                         className={cn(fieldErrors.intro ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
@@ -1423,6 +1467,21 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                       />
                       {fieldErrors.experience ? <span className="text-xs text-destructive">{fieldErrors.experience}</span> : null}
                     </label>
+                    <label className="grid gap-1 text-sm text-foreground">
+                      {projectFieldLabel}
+                      <Textarea
+                        className={cn(fieldErrors.projectDetail ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
+                        name="projectDetail"
+                        onChange={(event) => {
+                          setProjectDetail(event.target.value);
+                          setFieldErrors((previous) => ({ ...previous, projectDetail: getDetailFieldError('projectDetail', event.target.value, projectFieldLabel) }));
+                        }}
+                        rows={4}
+                        placeholder={projectFieldPlaceholder}
+                        value={projectDetail}
+                      />
+                      {fieldErrors.projectDetail ? <span className="text-xs text-destructive">{fieldErrors.projectDetail}</span> : null}
+                    </label>
 
                     <div className="flex flex-wrap gap-2">
                       <button className={buttonVariants({ size: 'sm' })} disabled={savingDetail || submittingRequest} type="button" onClick={() => void handleSaveDetailOnly()}>
@@ -1436,7 +1495,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                           setIntro(profile?.user.detailedProfile?.intro || '');
                           setEducation(profile?.user.detailedProfile?.education || '');
                           setExperience(profile?.user.detailedProfile?.experience || '');
-                          setProjectDetail(profile?.user.detailedProfile?.projectDetail || '');
+                          setProjectDetail(getRoleSpecificProjectDetail(profile?.user.detailedProfile, currentUserRole));
                           setFieldErrors({});
                           setModalMessage(null);
                           setEditingDetailInRequestModal(false);
@@ -1470,21 +1529,6 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">还没有录入详细信息，请先录入详细信息。</p>
                 <form className="space-y-3" onSubmit={(event) => event.preventDefault()}>
-                  <label className="grid gap-1 text-sm text-foreground">
-                    项目详情
-                    <Textarea
-                      className={cn(fieldErrors.projectDetail ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
-                      name="projectDetail"
-                      onChange={(event) => {
-                        setProjectDetail(event.target.value);
-                        setFieldErrors((previous) => ({ ...previous, projectDetail: getDetailFieldError('projectDetail', event.target.value) }));
-                      }}
-                      rows={4}
-                      placeholder="补充项目细节、成果或能力证明"
-                      value={projectDetail}
-                    />
-                    {fieldErrors.projectDetail ? <span className="text-xs text-destructive">{fieldErrors.projectDetail}</span> : null}
-                  </label>
                   <label className="grid gap-1 text-sm text-foreground">
                     个人简介
                     <Textarea
@@ -1529,6 +1573,21 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                       value={experience}
                     />
                     {fieldErrors.experience ? <span className="text-xs text-destructive">{fieldErrors.experience}</span> : null}
+                  </label>
+                  <label className="grid gap-1 text-sm text-foreground">
+                    {projectFieldLabel}
+                    <Textarea
+                      className={cn(fieldErrors.projectDetail ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
+                      name="projectDetail"
+                      onChange={(event) => {
+                        setProjectDetail(event.target.value);
+                        setFieldErrors((previous) => ({ ...previous, projectDetail: getDetailFieldError('projectDetail', event.target.value, projectFieldLabel) }));
+                      }}
+                      rows={4}
+                      placeholder={projectFieldPlaceholder}
+                      value={projectDetail}
+                    />
+                    {fieldErrors.projectDetail ? <span className="text-xs text-destructive">{fieldErrors.projectDetail}</span> : null}
                   </label>
                 </form>
                 {modalMessage ? <p className="text-sm text-destructive">{modalMessage}</p> : null}
@@ -1794,12 +1853,11 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                 申请时间：{formatDateTime(activeIncomingRequest.createdAt)}
               </p>
               <div className="grid max-h-72 gap-2 overflow-y-auto rounded-lg border border-border/60 bg-background/60 p-2">
-                {[
-                  ['个人简介', activeIncomingRequest.requester.detailedProfile?.intro || '暂未开放'],
-                  ['教育背景', activeIncomingRequest.requester.detailedProfile?.education || '暂未开放'],
-                  ['工作背景', activeIncomingRequest.requester.detailedProfile?.experience || '暂未开放'],
-                  ['项目详情', activeIncomingRequest.requester.detailedProfile?.projectDetail || '暂未开放'],
-                ].map(([label, value]) => (
+                {buildDetailRows(
+                  activeIncomingRequest.requester.detailedProfile,
+                  activeIncomingRequest.targetCard.role === 'expert' ? 'developer' : 'expert',
+                  '暂未开放',
+                ).map(([label, value]) => (
                   <div className="rounded-lg border border-border/60 bg-background/70 p-3" key={`incoming-${String(label)}`}>
                     <strong className="text-sm text-foreground">{label}</strong>
                     <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground">{value}</p>
@@ -1894,21 +1952,6 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                   {editingDetailInApproveModal ? (
                     <form className="space-y-3" onSubmit={(event) => event.preventDefault()}>
                       <label className="grid gap-1 text-sm text-foreground">
-                        项目详情
-                        <Textarea
-                          className={cn(fieldErrors.projectDetail ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
-                          name="projectDetail"
-                          onChange={(event) => {
-                            setProjectDetail(event.target.value);
-                            setFieldErrors((previous) => ({ ...previous, projectDetail: getDetailFieldError('projectDetail', event.target.value) }));
-                          }}
-                          rows={4}
-                          placeholder="补充项目细节、成果或能力证明"
-                          value={projectDetail}
-                        />
-                        {fieldErrors.projectDetail ? <span className="text-xs text-destructive">{fieldErrors.projectDetail}</span> : null}
-                      </label>
-                      <label className="grid gap-1 text-sm text-foreground">
                         个人简介
                         <Textarea
                           className={cn(fieldErrors.intro ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
@@ -1953,6 +1996,21 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                         />
                         {fieldErrors.experience ? <span className="text-xs text-destructive">{fieldErrors.experience}</span> : null}
                       </label>
+                      <label className="grid gap-1 text-sm text-foreground">
+                        {projectFieldLabel}
+                        <Textarea
+                          className={cn(fieldErrors.projectDetail ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
+                          name="projectDetail"
+                          onChange={(event) => {
+                            setProjectDetail(event.target.value);
+                            setFieldErrors((previous) => ({ ...previous, projectDetail: getDetailFieldError('projectDetail', event.target.value, projectFieldLabel) }));
+                          }}
+                          rows={4}
+                          placeholder={projectFieldPlaceholder}
+                          value={projectDetail}
+                        />
+                        {fieldErrors.projectDetail ? <span className="text-xs text-destructive">{fieldErrors.projectDetail}</span> : null}
+                      </label>
 
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -1971,7 +2029,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                             setIntro(profile?.user.detailedProfile?.intro || '');
                             setEducation(profile?.user.detailedProfile?.education || '');
                             setExperience(profile?.user.detailedProfile?.experience || '');
-                            setProjectDetail(profile?.user.detailedProfile?.projectDetail || '');
+                            setProjectDetail(getRoleSpecificProjectDetail(profile?.user.detailedProfile, currentUserRole));
                             setFieldErrors({});
                             setIncomingModalMessage(null);
                             setEditingDetailInApproveModal(false);
@@ -1994,21 +2052,6 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                 </div>
               ) : (
                 <form className="space-y-3" onSubmit={(event) => event.preventDefault()}>
-                  <label className="grid gap-1 text-sm text-foreground">
-                    项目详情
-                    <Textarea
-                      className={cn(fieldErrors.projectDetail ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
-                      name="projectDetail"
-                      onChange={(event) => {
-                        setProjectDetail(event.target.value);
-                        setFieldErrors((previous) => ({ ...previous, projectDetail: getDetailFieldError('projectDetail', event.target.value) }));
-                      }}
-                      rows={4}
-                      placeholder="补充项目细节、成果或能力证明"
-                      value={projectDetail}
-                    />
-                    {fieldErrors.projectDetail ? <span className="text-xs text-destructive">{fieldErrors.projectDetail}</span> : null}
-                  </label>
                   <label className="grid gap-1 text-sm text-foreground">
                     个人简介
                     <Textarea
@@ -2053,6 +2096,21 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                       value={experience}
                     />
                     {fieldErrors.experience ? <span className="text-xs text-destructive">{fieldErrors.experience}</span> : null}
+                  </label>
+                  <label className="grid gap-1 text-sm text-foreground">
+                    {projectFieldLabel}
+                    <Textarea
+                      className={cn(fieldErrors.projectDetail ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
+                      name="projectDetail"
+                      onChange={(event) => {
+                        setProjectDetail(event.target.value);
+                        setFieldErrors((previous) => ({ ...previous, projectDetail: getDetailFieldError('projectDetail', event.target.value, projectFieldLabel) }));
+                      }}
+                      rows={4}
+                      placeholder={projectFieldPlaceholder}
+                      value={projectDetail}
+                    />
+                    {fieldErrors.projectDetail ? <span className="text-xs text-destructive">{fieldErrors.projectDetail}</span> : null}
                   </label>
                 </form>
               )}

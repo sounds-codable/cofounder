@@ -66,9 +66,11 @@ function getDashboardNavGroups(isAdmin: boolean): DashboardNavGroup[] {
 }
 
 function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['icon'] }) {
+  const navIconClassName = 'h-4 w-4';
+
   if (icon === 'dashboard') {
     return (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className={navIconClassName} viewBox="0 0 24 24">
         <path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" fill="currentColor" />
       </svg>
     );
@@ -76,7 +78,7 @@ function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['
 
   if (icon === 'admin') {
     return (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className={navIconClassName} viewBox="0 0 24 24">
         <path d="M12 3l7 3v5c0 4.2-2.5 7.8-7 10-4.5-2.2-7-5.8-7-10V6l7-3z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
         <path d="M9.5 12l1.8 1.8L14.8 10" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
       </svg>
@@ -85,7 +87,7 @@ function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['
 
   if (icon === 'invite') {
     return (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className={navIconClassName} viewBox="0 0 24 24">
         <path d="M12 3l2.4 4.8L20 9l-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6L4 9l5.6-1.2z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
       </svg>
     );
@@ -93,7 +95,7 @@ function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['
 
   if (icon === 'points') {
     return (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className={navIconClassName} viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.8" />
         <path d="M9 13.5h5a2 2 0 0 0 0-4H10a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H9" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
       </svg>
@@ -102,7 +104,7 @@ function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['
 
   if (icon === 'requests') {
     return (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className={navIconClassName} viewBox="0 0 24 24">
         <path d="M6 3h9l5 5v12a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" strokeWidth="1.8" />
         <path d="M15 3v6h6" fill="none" stroke="currentColor" strokeWidth="1.8" />
         <path d="M8 13h8M8 17h6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -112,7 +114,7 @@ function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['
 
   if (icon === 'projects') {
     return (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className={navIconClassName} viewBox="0 0 24 24">
         <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" strokeWidth="1.8" />
       </svg>
     );
@@ -120,7 +122,7 @@ function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['
 
   if (icon === 'developers') {
     return (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className={navIconClassName} viewBox="0 0 24 24">
         <circle cx="9" cy="9" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
         <path d="M4 18c.9-2.3 2.7-3.5 5-3.5s4.1 1.2 5 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
         <circle cx="17.5" cy="10" r="2.4" fill="none" stroke="currentColor" strokeWidth="1.8" />
@@ -129,7 +131,7 @@ function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['
   }
 
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
+    <svg aria-hidden="true" className={navIconClassName} viewBox="0 0 24 24">
       <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
       <path d="M6 19c1.1-2.9 3.1-4.3 6-4.3s4.9 1.4 6 4.3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>

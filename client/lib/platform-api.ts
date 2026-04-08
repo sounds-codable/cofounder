@@ -203,6 +203,8 @@ export type MeProfile = {
       intro: string;
       education: string;
       experience: string;
+      expertProjectDetail: string;
+      developerProjectExperience: string;
       projectDetail: string;
     } | null;
   };
@@ -492,7 +494,9 @@ export async function saveDetailProfile(body: {
   intro: string;
   education: string;
   experience: string;
-  projectDetail: string;
+  expertProjectDetail?: string;
+  developerProjectExperience?: string;
+  projectDetail?: string;
 }) {
   return requestJson<MeProfile>('/me/detail', {
     method: 'PUT',

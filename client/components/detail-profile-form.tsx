@@ -24,6 +24,10 @@ export function DetailProfileForm() {
     setMounted(true);
   }, []);
 
+  const currentUserRole = profile?.card?.role;
+  const projectFieldLabel = currentUserRole === 'developer' ? '做过的项目/产品' : '项目详情';
+  const projectFieldPlaceholder = currentUserRole === 'developer' ? '更详细介绍你做过的项目、产品或代表作品' : '更详细介绍你的项目细节、成果或能力证明';
+
   useEffect(() => {
     if (!profile) {
       return;
@@ -32,7 +36,11 @@ export function DetailProfileForm() {
     setIntro(profile.user.detailedProfile?.intro || '');
     setEducation(profile.user.detailedProfile?.education || '');
     setExperience(profile.user.detailedProfile?.experience || '');
-    setProjectDetail(profile.user.detailedProfile?.projectDetail || '');
+    setProjectDetail(
+      profile.card?.role === 'developer'
+        ? profile.user.detailedProfile?.developerProjectExperience || profile.user.detailedProfile?.projectDetail || ''
+        : profile.user.detailedProfile?.expertProjectDetail || profile.user.detailedProfile?.projectDetail || '',
+    );
   }, [profile]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -41,7 +49,11 @@ export function DetailProfileForm() {
     setMessage(null);
 
     try {
-      await saveDetailProfile({ intro, education, experience, projectDetail });
+      await saveDetailProfile(
+        currentUserRole === 'developer'
+          ? { intro, education, experience, developerProjectExperience: projectDetail }
+          : { intro, education, experience, expertProjectDetail: projectDetail },
+      );
       await refresh();
       setMessage('详细信息已保存，你现在可以发起了解详情请求。');
       router.push('/requests');
@@ -104,8 +116,8 @@ export function DetailProfileForm() {
           <Textarea name="experience" onChange={(event) => setExperience(event.target.value)} rows={4} placeholder="做过哪些公司，负责过哪些事" value={experience} />
             </label>
             <label className="grid gap-2 text-sm font-medium text-foreground">
-          项目详情 / 做过的产品介绍
-          <Textarea name="projectDetail" onChange={(event) => setProjectDetail(event.target.value)} rows={5} placeholder="更详细介绍你的项目、产品或代表作品" value={projectDetail} />
+          {projectFieldLabel}
+          <Textarea name="projectDetail" onChange={(event) => setProjectDetail(event.target.value)} rows={5} placeholder={projectFieldPlaceholder} value={projectDetail} />
             </label>
             {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
             <Button className="w-full sm:w-auto" disabled={submitting} type="submit">
