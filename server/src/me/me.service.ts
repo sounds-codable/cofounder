@@ -6,6 +6,7 @@ import { ContactMethod } from '../contacts/contact-method.entity';
 import { ContactType } from '../common/enums/contact-type.enum';
 import { RewardAction } from '../common/enums/reward-action.enum';
 import { UserRole } from '../common/enums/user-role.enum';
+import { ComplianceLogService } from '../compliance/compliance-log.service';
 import { RewardService } from '../rewards/reward.service';
 import { User } from '../users/user.entity';
 import { CardEngagement } from '../platform/card-engagement.entity';
@@ -21,6 +22,7 @@ import { SaveDisplayNameDto } from './dto/save-display-name.dto';
 export class MeService {
   constructor(
     private readonly rewardService: RewardService,
+    private readonly complianceLogService: ComplianceLogService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Card)
@@ -96,6 +98,21 @@ export class MeService {
         role: body.role,
       },
     );
+    await this.complianceLogService.recordPublishedContent({
+      userId: user.id,
+      userEmail: user.email,
+      cardId: savedCard.id,
+      cardSlug: savedCard.slug,
+      operationType: 'publish_card_basic_profile',
+      contentSnapshot: {
+        role: savedCard.role,
+        headline: savedCard.headline,
+        city: savedCard.city,
+        basicSummary: savedCard.basicSummary,
+        optionalDirection: savedCard.optionalDirection,
+        strengths: savedCard.strengths,
+      },
+    });
 
     return this.getProfile(userId);
   }
@@ -289,6 +306,22 @@ export class MeService {
           card.detailPreview = user.detailedProfile ?? this.createDetailPreviewFallback();
           return card;
         }),
+      );
+
+      await Promise.all(
+        user.cards.map((card) =>
+          this.complianceLogService.recordPublishedContent({
+            userId: user.id,
+            userEmail: user.email,
+            cardId: card.id,
+            cardSlug: card.slug,
+            operationType: 'update_card_detail_profile',
+            contentSnapshot: {
+              role: card.role,
+              detailPreview: card.detailPreview,
+            },
+          }),
+        ),
       );
     }
 

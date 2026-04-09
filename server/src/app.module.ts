@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminController } from './admin/admin.controller';
@@ -6,6 +6,10 @@ import { AdminService } from './admin/admin.service';
 import { AuthController } from './auth/auth.controller';
 import { MailService } from './auth/mail.service';
 import { AuthService } from './auth/auth.service';
+import { ComplianceAuditMiddleware } from './compliance/compliance-audit.middleware';
+import { ComplianceLogService } from './compliance/compliance-log.service';
+import { OperationAuditLog } from './compliance/operation-audit-log.entity';
+import { PublishedContentRecord } from './compliance/published-content-record.entity';
 import { ContactMethod } from './contacts/contact-method.entity';
 import { HealthController } from './health/health.controller';
 import { MeController } from './me/me.controller';
@@ -49,9 +53,40 @@ import { User } from './users/user.entity';
         logging: configService.get<string>('DB_LOGGING', 'false') === 'true',
       }),
     }),
-    TypeOrmModule.forFeature([User, ContactMethod, Card, DetailRequest, Tag, CardTag, PublicWelfareMessage, RewardTransaction, CardEngagement]),
+    TypeOrmModule.forFeature([
+      User,
+      ContactMethod,
+      Card,
+      DetailRequest,
+      Tag,
+      CardTag,
+      PublicWelfareMessage,
+      RewardTransaction,
+      CardEngagement,
+      OperationAuditLog,
+      PublishedContentRecord,
+    ]),
   ],
   controllers: [HealthController, PlatformController, AuthController, MeController, RequestsController, PublicWelfareController, AdminController],
-  providers: [PlatformService, SeedService, AuthService, MailService, MeService, RequestsService, PublicWelfareService, RewardService, AdminService],
+  providers: [
+    PlatformService,
+    SeedService,
+    AuthService,
+    MailService,
+    MeService,
+    RequestsService,
+    PublicWelfareService,
+    RewardService,
+    AdminService,
+    ComplianceLogService,
+    ComplianceAuditMiddleware,
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(ComplianceAuditMiddleware).forRoutes({
+      path: '*',
+      method: RequestMethod.ALL,
+    });
+  }
+}
