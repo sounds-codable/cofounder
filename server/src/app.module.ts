@@ -7,6 +7,7 @@ import { AuthController } from './auth/auth.controller';
 import { MailService } from './auth/mail.service';
 import { AuthService } from './auth/auth.service';
 import { ComplianceAuditMiddleware } from './compliance/compliance-audit.middleware';
+import { ContentModerationService } from './compliance/content-moderation.service';
 import { ComplianceLogService } from './compliance/compliance-log.service';
 import { OperationAuditLog } from './compliance/operation-audit-log.entity';
 import { PublishedContentRecord } from './compliance/published-content-record.entity';
@@ -79,6 +80,7 @@ import { User } from './users/user.entity';
     RewardService,
     AdminService,
     ComplianceLogService,
+    ContentModerationService,
     ComplianceAuditMiddleware,
   ],
 })

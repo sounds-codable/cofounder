@@ -1,6 +1,8 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ComplianceLogService } from '../compliance/compliance-log.service';
+import { ContentModerationService } from '../compliance/content-moderation.service';
 import { ContactMethod } from '../contacts/contact-method.entity';
 import { DetailRequestStatus } from '../common/enums/detail-request-status.enum';
 import { RewardAction } from '../common/enums/reward-action.enum';
@@ -13,6 +15,8 @@ import { User } from '../users/user.entity';
 export class RequestsService {
   constructor(
     private readonly rewardService: RewardService,
+    private readonly complianceLogService: ComplianceLogService,
+    private readonly contentModerationService: ContentModerationService,
     @InjectRepository(DetailRequest)
     private readonly detailRequestRepository: Repository<DetailRequest>,
     @InjectRepository(Card)
@@ -148,17 +152,43 @@ export class RequestsService {
     return this.toIncomingRequestItem(request);
   }
 
-  async rejectRequest(userId: string, requestId: string, reason: string) {
+  async rejectRequest(userId: string, requestId: string, reason: string, riskConfirmed?: boolean) {
     const request = await this.getIncomingRequestForPublisher(userId, requestId);
 
     if (request.status !== DetailRequestStatus.PUBLISHER_VIEWED_DETAIL) {
       throw new BadRequestException('请先查看对方详细信息，再做拒绝动作');
     }
 
+    const moderationResult = this.contentModerationService.ensureReviewed({
+      operationType: 'reject_detail_request',
+      riskConfirmed,
+      fields: [{ field: 'reason', content: reason }],
+    });
+
     request.status = DetailRequestStatus.REJECTED;
     request.rejectionReason = reason.trim();
     request.rejectedAt = new Date();
     await this.detailRequestRepository.save(request);
+
+    await this.complianceLogService.recordPublishedContent({
+      userId,
+      userEmail: request.publisher.email,
+      cardId: request.targetCard.id,
+      cardSlug: request.targetCard.slug,
+      operationType: 'reject_detail_request',
+      riskReview: {
+        reviewRequired: moderationResult.hasRisk,
+        riskLevel: moderationResult.riskLevel,
+        categories: moderationResult.categories,
+        matchedTerms: moderationResult.matchedTerms,
+        confirmedToPublish: Boolean(riskConfirmed),
+        provider: moderationResult.provider,
+      },
+      contentSnapshot: {
+        requestId: request.id,
+        reason: request.rejectionReason,
+      },
+    });
 
     return this.toIncomingRequestItem(request);
   }
@@ -242,7 +272,7 @@ export class RequestsService {
     return this.toOutgoingRequestItem(request);
   }
 
-  async declineContactByRequester(userId: string, requestId: string, reason: string) {
+  async declineContactByRequester(userId: string, requestId: string, reason: string, riskConfirmed?: boolean) {
     const request = await this.detailRequestRepository.findOne({
       where: { id: requestId },
       relations: {
@@ -267,11 +297,37 @@ export class RequestsService {
       throw new BadRequestException('当前状态下不能执行不想联系');
     }
 
+    const moderationResult = this.contentModerationService.ensureReviewed({
+      operationType: 'decline_contact_by_requester',
+      riskConfirmed,
+      fields: [{ field: 'reason', content: reason }],
+    });
+
     request.status = DetailRequestStatus.REQUESTER_DECLINED_CONTACT;
     request.rejectionReason = reason.trim();
     request.exchangeReviewingAt = request.exchangeReviewingAt ?? new Date();
     request.requesterDeclinedContactAt = request.requesterDeclinedContactAt ?? new Date();
     await this.detailRequestRepository.save(request);
+
+    await this.complianceLogService.recordPublishedContent({
+      userId,
+      userEmail: request.requester.email,
+      cardId: request.targetCard.id,
+      cardSlug: request.targetCard.slug,
+      operationType: 'decline_contact_by_requester',
+      riskReview: {
+        reviewRequired: moderationResult.hasRisk,
+        riskLevel: moderationResult.riskLevel,
+        categories: moderationResult.categories,
+        matchedTerms: moderationResult.matchedTerms,
+        confirmedToPublish: Boolean(riskConfirmed),
+        provider: moderationResult.provider,
+      },
+      contentSnapshot: {
+        requestId: request.id,
+        reason: request.rejectionReason,
+      },
+    });
 
     return this.toOutgoingRequestItem(request);
   }

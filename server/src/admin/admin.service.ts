@@ -4,6 +4,8 @@ import { In, IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { CardEngagementType } from '../common/enums/card-engagement-type.enum';
 import { DetailRequestStatus } from '../common/enums/detail-request-status.enum';
 import { UserRole } from '../common/enums/user-role.enum';
+import { OperationAuditLog } from '../compliance/operation-audit-log.entity';
+import { PublishedContentRecord } from '../compliance/published-content-record.entity';
 import { ContactMethod } from '../contacts/contact-method.entity';
 import { CardEngagement } from '../platform/card-engagement.entity';
 import { Card } from '../platform/card.entity';
@@ -26,7 +28,63 @@ export class AdminService {
     private readonly rewardTransactionRepository: Repository<RewardTransaction>,
     @InjectRepository(ContactMethod)
     private readonly contactMethodRepository: Repository<ContactMethod>,
+    @InjectRepository(PublishedContentRecord)
+    private readonly publishedContentRecordRepository: Repository<PublishedContentRecord>,
+    @InjectRepository(OperationAuditLog)
+    private readonly operationAuditLogRepository: Repository<OperationAuditLog>,
   ) {}
+
+  async getComplianceLogs(rawLimit?: string) {
+    const parsedLimit = Number(rawLimit || 50);
+    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(Math.floor(parsedLimit), 10), 200) : 50;
+
+    const [operationLogs, publishedRecords] = await Promise.all([
+      this.operationAuditLogRepository.find({
+        order: { operationAt: 'DESC' },
+        take: limit,
+      }),
+      this.publishedContentRecordRepository.find({
+        order: { operationAt: 'DESC' },
+        take: limit,
+      }),
+    ]);
+
+    return {
+      operationLogs: operationLogs.map((item) => ({
+        id: item.id,
+        userId: item.userId,
+        userEmail: item.userEmail,
+        operationType: item.operationType,
+        requestMethod: item.requestMethod,
+        requestPath: item.requestPath,
+        statusCode: item.statusCode,
+        success: item.success,
+        durationMs: item.durationMs,
+        operationAt: item.operationAt,
+        sourceAddress: item.sourceAddress,
+        sourcePort: item.sourcePort,
+        destinationAddress: item.destinationAddress,
+        destinationPort: item.destinationPort,
+        clientHardware: item.clientHardware,
+      })),
+      publishedRecords: publishedRecords.map((item) => ({
+        id: item.id,
+        userId: item.userId,
+        userEmail: item.userEmail,
+        cardId: item.cardId,
+        cardSlug: item.cardSlug,
+        operationType: item.operationType,
+        reviewRequired: item.reviewRequired,
+        riskLevel: item.riskLevel,
+        riskCategories: item.riskCategories || [],
+        riskMatchedTerms: item.riskMatchedTerms || [],
+        confirmedToPublish: item.confirmedToPublish,
+        moderationProvider: item.moderationProvider,
+        operationAt: item.operationAt,
+        contentSnapshot: item.contentSnapshot,
+      })),
+    };
+  }
 
   async getOverview() {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -42,6 +100,7 @@ export class AdminService {
       activeUsersLast7Days,
       totalRewardTransactions,
       allContacts,
+      riskQueue,
     ] = await Promise.all([
       this.userRepository.count(),
       this.cardRepository.count(),
@@ -66,6 +125,11 @@ export class AdminService {
       this.userRepository.count({ where: { lastLoginAt: MoreThanOrEqual(since) } }),
       this.rewardTransactionRepository.count(),
       this.contactMethodRepository.find({ relations: { user: true } }),
+      this.publishedContentRecordRepository.find({
+        where: { reviewRequired: true },
+        order: { operationAt: 'DESC' },
+        take: 100,
+      }),
     ]);
 
     const usersWithContacts = new Set(allContacts.map((item) => item.user.id)).size;
@@ -95,10 +159,25 @@ export class AdminService {
         projectLeaders,
         participationLeaders,
       },
+      riskQueue: riskQueue.map((item) => ({
+        id: item.id,
+        userId: item.userId,
+        userEmail: item.userEmail,
+        cardId: item.cardId,
+        cardSlug: item.cardSlug,
+        operationType: item.operationType,
+        operationAt: item.operationAt,
+        riskLevel: item.riskLevel,
+        categories: item.riskCategories || [],
+        matchedTerms: item.riskMatchedTerms || [],
+        confirmedToPublish: item.confirmedToPublish,
+        contentSnapshot: item.contentSnapshot,
+      })),
       adminNotes: [
         '可在数据库 users 表直接修改 isAdmin 字段（true/false）控制后台权限。',
         '匹配中 = pending_request / publisher_viewed_detail / approved_detail_visible。',
         '匹配失败 = rejected / requester_declined_contact。',
+        '风险内容队列会优先展示包含违法有害风险词的发布记录。',
       ],
     };
   }

@@ -8,7 +8,7 @@ type MvpTermProps = {
   className?: string;
 };
 
-const MVP_TOOLTIP_BENEFITS = ['更快上线验证需求，避免闭门造车。', '更早拿到真实用户反馈，及时修正方向。', '用更低成本试错，把时间和预算集中在真正有效的功能上。'];
+const MVP_TOOLTIP_BENEFITS = ['低成本快速上线，验证真伪需求。', '更早拿到真实用户反馈，及时修正方向。', '用更低成本试错，把时间和预算集中在真正有效的功能上。'];
 
 function MvpTooltipContent() {
   return (
@@ -33,6 +33,7 @@ export function MvpTerm({ className }: MvpTermProps) {
       className="z-[85] max-w-[min(92vw,520px)] rounded-2xl p-4 text-left"
       content={tooltipContent}
       placement="bottom"
+      prewarmOnInteract
       triggerMode="click"
     >
       <button

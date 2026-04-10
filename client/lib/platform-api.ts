@@ -74,7 +74,30 @@ export type AdminOverview = {
     projectLeaders: Array<{ userId: string; displayName: string; email: string | null; count: number }>;
     participationLeaders: Array<{ userId: string; displayName: string; email: string | null; count: number }>;
   };
+  riskQueue: Array<{
+    id: string;
+    userId: string;
+    userEmail: string | null;
+    cardId: string | null;
+    cardSlug: string | null;
+    operationType: string;
+    operationAt: string;
+    riskLevel: 'none' | 'medium' | 'high' | null;
+    categories: string[];
+    matchedTerms: string[];
+    confirmedToPublish: boolean;
+    contentSnapshot: Record<string, unknown>;
+  }>;
   adminNotes: string[];
+};
+
+export type RiskReviewPayload = {
+  operationType: string;
+  riskLevel: 'none' | 'medium' | 'high';
+  categories: string[];
+  matchedTerms: string[];
+  hitFields: string[];
+  provider: string;
 };
 
 export type AdminUserSearchResult = {
@@ -195,6 +218,42 @@ export type AdminUserDetail = {
   adminHints: {
     updateAdminSql: string;
   };
+};
+
+export type AdminComplianceLogs = {
+  operationLogs: Array<{
+    id: string;
+    userId: string | null;
+    userEmail: string | null;
+    operationType: string;
+    requestMethod: string;
+    requestPath: string;
+    statusCode: number | null;
+    success: boolean;
+    durationMs: number;
+    operationAt: string;
+    sourceAddress: string | null;
+    sourcePort: number | null;
+    destinationAddress: string | null;
+    destinationPort: number | null;
+    clientHardware: string | null;
+  }>;
+  publishedRecords: Array<{
+    id: string;
+    userId: string;
+    userEmail: string | null;
+    cardId: string | null;
+    cardSlug: string | null;
+    operationType: string;
+    reviewRequired: boolean;
+    riskLevel: 'none' | 'medium' | 'high' | null;
+    riskCategories: string[];
+    riskMatchedTerms: string[];
+    confirmedToPublish: boolean;
+    moderationProvider: string | null;
+    operationAt: string;
+    contentSnapshot: Record<string, unknown>;
+  }>;
 };
 
 export type MeProfile = {
@@ -362,6 +421,44 @@ async function requestJson<T>(path: string, options: RequestOptions = {}): Promi
 
   if (!response.ok) {
     const text = await response.text();
+
+    try {
+      const parsed = JSON.parse(text) as {
+        code?: string;
+        riskReview?: RiskReviewPayload;
+      };
+
+      if (
+        parsed.code === 'RISK_REVIEW_REQUIRED' &&
+        parsed.riskReview &&
+        options.method &&
+        options.method !== 'GET' &&
+        options.body &&
+        typeof options.body === 'object' &&
+        !Array.isArray(options.body) &&
+        !(options.body as { riskConfirmed?: boolean }).riskConfirmed &&
+        typeof window !== 'undefined'
+      ) {
+        const confirmed = window.confirm(
+          `系统检测到潜在风险内容。\n风险等级：${parsed.riskReview.riskLevel}\n命中类别：${parsed.riskReview.categories.join('、') || '未知'}\n命中词：${parsed.riskReview.matchedTerms.join('、') || '未知'}\n\n是否仍继续发布？`,
+        );
+
+        if (confirmed) {
+          return requestJson<T>(path, {
+            ...options,
+            body: {
+              ...(options.body as Record<string, unknown>),
+              riskConfirmed: true,
+            },
+          });
+        }
+
+        throw new Error('你已取消本次发布。');
+      }
+    } catch {
+      // noop
+    }
+
     throw new Error(text || `Request failed: ${response.status}`);
   }
 
@@ -453,6 +550,27 @@ export function isUnauthorizedError(error: unknown) {
   return extractErrorMessage(error).includes('请先登录') || extractErrorMessage(error).includes('登录态');
 }
 
+export function extractRiskReview(error: unknown): RiskReviewPayload | null {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(error.message) as {
+      code?: string;
+      riskReview?: RiskReviewPayload;
+    };
+
+    if (parsed.code === 'RISK_REVIEW_REQUIRED' && parsed.riskReview) {
+      return parsed.riskReview;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 export async function sendLoginCode(email: string, inviteCode?: string) {
   return requestJson<{ ok: boolean; expiresInSeconds: number; delivery: 'smtp' | 'dev'; message: string; devCode?: string }>('/auth/send-code', {
     method: 'POST',
@@ -483,6 +601,7 @@ export async function saveBasicProfile(body: {
   city: string;
   desiredDirection?: string;
   strengths: string[];
+  riskConfirmed?: boolean;
  }) {
   return requestJson<MeProfile>('/me/basic', {
     method: 'PUT',
@@ -497,6 +616,7 @@ export async function saveDetailProfile(body: {
   expertProjectDetail?: string;
   developerProjectExperience?: string;
   projectDetail?: string;
+  riskConfirmed?: boolean;
 }) {
   return requestJson<MeProfile>('/me/detail', {
     method: 'PUT',
@@ -510,6 +630,7 @@ export async function saveContactMethods(body: {
   qq?: string;
   email?: string;
   other?: string;
+  riskConfirmed?: boolean;
 }) {
   return requestJson<MeProfile>('/me/contacts', {
     method: 'PUT',
@@ -517,10 +638,10 @@ export async function saveContactMethods(body: {
   });
 }
 
-export async function saveDisplayName(displayName: string) {
+export async function saveDisplayName(displayName: string, riskConfirmed?: boolean) {
   return requestJson<MeProfile>('/me/display-name', {
     method: 'PUT',
-    body: { displayName },
+    body: { displayName, riskConfirmed },
   });
 }
 
@@ -547,10 +668,10 @@ export async function approveDetailRequest(requestId: string) {
   });
 }
 
-export async function rejectDetailRequest(requestId: string, reason: string) {
+export async function rejectDetailRequest(requestId: string, reason: string, riskConfirmed?: boolean) {
   return requestJson<IncomingRequest>(`/requests/${requestId}/reject`, {
     method: 'POST',
-    body: { reason },
+    body: { reason, riskConfirmed },
   });
 }
 
@@ -566,10 +687,10 @@ export async function markExchangeReviewing(requestId: string) {
   });
 }
 
-export async function declineContact(requestId: string, reason: string) {
+export async function declineContact(requestId: string, reason: string, riskConfirmed?: boolean) {
   return requestJson<OutgoingRequest>(`/requests/${requestId}/decline-contact`, {
     method: 'POST',
-    body: { reason },
+    body: { reason, riskConfirmed },
   });
 }
 
@@ -577,6 +698,7 @@ export async function submitPublicWelfareMessage(body: {
   name?: string;
   contact: string;
   message: string;
+  riskConfirmed?: boolean;
 }) {
   return requestJson<PublicWelfareMessageResult>('/public-welfare/messages', {
     method: 'POST',
@@ -626,4 +748,10 @@ export async function fetchAdminUsers(query?: string, limit = 20) {
 
 export async function fetchAdminUserDetail(userId: string) {
   return requestJson<AdminUserDetail>(`/admin/users/${encodeURIComponent(userId)}`);
+}
+
+export async function fetchAdminComplianceLogs(limit = 50) {
+  const searchParams = new URLSearchParams();
+  searchParams.set('limit', String(limit));
+  return requestJson<AdminComplianceLogs>(`/admin/compliance-logs?${searchParams.toString()}`);
 }

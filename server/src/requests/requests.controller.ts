@@ -42,7 +42,7 @@ export class RequestsController {
     @Body() body: RejectDetailRequestDto,
   ) {
     const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
-    return this.requestsService.rejectRequest(user.id, id, body.reason);
+    return this.requestsService.rejectRequest(user.id, id, body.reason, body.riskConfirmed);
   }
 
   @Post(':id/exchange-contact')
@@ -64,6 +64,6 @@ export class RequestsController {
     @Body() body: RejectDetailRequestDto,
   ) {
     const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
-    return this.requestsService.declineContactByRequester(user.id, id, body.reason);
+    return this.requestsService.declineContactByRequester(user.id, id, body.reason, body.riskConfirmed);
   }
 }

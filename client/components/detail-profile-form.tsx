@@ -6,7 +6,7 @@ import { InfoDisclosure } from '@/components/info-disclosure';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { extractErrorMessage, saveDetailProfile } from '@/lib/platform-api';
+import { extractErrorMessage, extractRiskReview, saveDetailProfile } from '@/lib/platform-api';
 import { useAuthState } from '@/lib/use-auth';
 
 export function DetailProfileForm() {
@@ -58,6 +58,34 @@ export function DetailProfileForm() {
       setMessage('详细信息已保存，你现在可以发起了解详情请求。');
       router.push('/requests');
     } catch (error) {
+      const riskReview = extractRiskReview(error);
+
+      if (riskReview) {
+        const confirmed = window.confirm(
+          `系统检测到潜在风险内容。\n风险等级：${riskReview.riskLevel}\n命中类别：${riskReview.categories.join('、') || '未知'}\n命中词：${riskReview.matchedTerms.join('、') || '未知'}\n\n是否仍继续发布？`,
+        );
+
+        if (confirmed) {
+          try {
+            await saveDetailProfile(
+              currentUserRole === 'developer'
+                ? { intro, education, experience, developerProjectExperience: projectDetail, riskConfirmed: true }
+                : { intro, education, experience, expertProjectDetail: projectDetail, riskConfirmed: true },
+            );
+            await refresh();
+            setMessage('内容已按你的确认继续发布，建议留意后续管理员审核。');
+            router.push('/requests');
+            return;
+          } catch (retryError) {
+            setMessage(extractErrorMessage(retryError));
+            return;
+          }
+        }
+
+        setMessage('你已取消本次发布。');
+        return;
+      }
+
       setMessage(extractErrorMessage(error));
     } finally {
       setSubmitting(false);

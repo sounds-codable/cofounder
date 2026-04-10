@@ -4,11 +4,15 @@ import {
   cloneElement,
   isValidElement,
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type ReactNode,
+  type TouchEvent as ReactTouchEvent,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useState,
   useSyncExternalStore,
@@ -25,6 +29,7 @@ type SmartTooltipProps = {
   offset?: number;
   placement?: TooltipPlacement;
   triggerMode?: 'hover' | 'click';
+  prewarmOnInteract?: boolean;
 };
 
 const VIEWPORT_PADDING = 8;
@@ -52,13 +57,16 @@ export function SmartTooltip({
   offset = 10,
   placement = 'bottom',
   triggerMode = 'hover',
+  prewarmOnInteract = false,
 }: SmartTooltipProps) {
   const tooltipId = useId();
   const [open, setOpen] = useState(false);
+  const [prewarmed, setPrewarmed] = useState(false);
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null);
   const canUsePortal = useSyncExternalStore(subscribeToClientState, () => true, () => false);
   const [positionStyle, setPositionStyle] = useState<CSSProperties>({ left: -9999, top: -9999 });
   const [resolvedPlacement, setResolvedPlacement] = useState<TooltipPlacement>(placement);
+  const shouldRenderTooltip = open || prewarmed;
 
   const placementPriority = useMemo<TooltipPlacement[]>(() => {
     const orders: Record<TooltipPlacement, TooltipPlacement[]> = {
@@ -110,7 +118,7 @@ export function SmartTooltip({
     };
   }, [anchorElement, open, tooltipId, triggerMode]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open || !anchorElement) {
       return;
     }
@@ -212,11 +220,30 @@ export function SmartTooltip({
     onMouseLeave?: (event: ReactMouseEvent<HTMLElement>) => void;
     onFocus?: (event: React.FocusEvent<HTMLElement>) => void;
     onBlur?: (event: React.FocusEvent<HTMLElement>) => void;
+    onKeyDown?: (event: ReactKeyboardEvent<HTMLElement>) => void;
     onClick?: (event: ReactMouseEvent<HTMLElement>) => void;
+    onPointerEnter?: (event: ReactPointerEvent<HTMLElement>) => void;
+    onTouchStart?: (event: ReactTouchEvent<HTMLElement>) => void;
+  };
+
+  const prewarm = () => {
+    if (!prewarmOnInteract || prewarmed) {
+      return;
+    }
+
+    setPrewarmed(true);
   };
 
   const triggerProps = {
     'aria-describedby': open ? tooltipId : undefined,
+    onPointerEnter: (event: ReactPointerEvent<HTMLElement>) => {
+      childProps.onPointerEnter?.(event);
+      prewarm();
+    },
+    onTouchStart: (event: ReactTouchEvent<HTMLElement>) => {
+      childProps.onTouchStart?.(event);
+      prewarm();
+    },
     onMouseEnter: (event: ReactMouseEvent<HTMLElement>) => {
       childProps.onMouseEnter?.(event);
       setAnchorElement(event.currentTarget);
@@ -233,12 +260,33 @@ export function SmartTooltip({
     onFocus: (event: React.FocusEvent<HTMLElement>) => {
       childProps.onFocus?.(event);
       setAnchorElement(event.currentTarget);
-      setOpen(true);
+      if (triggerMode === 'hover') {
+        setOpen(true);
+      }
     },
     onBlur: (event: React.FocusEvent<HTMLElement>) => {
       childProps.onBlur?.(event);
       if (triggerMode === 'hover') {
         setOpen(false);
+      }
+    },
+    onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => {
+      childProps.onKeyDown?.(event);
+      setAnchorElement(event.currentTarget);
+
+      if (triggerMode !== 'click') {
+        return;
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+
+      if (event.key === ' ') {
+        event.preventDefault();
+        setOpen((current) => !current);
       }
     },
     onClick: (event: ReactMouseEvent<HTMLElement>) => {
@@ -262,12 +310,12 @@ export function SmartTooltip({
   return (
     <>
       {cloneElement(children, triggerProps)}
-      {canUsePortal
+      {canUsePortal && shouldRenderTooltip
         ? createPortal(
           <div
             aria-hidden={!open}
             className={cn(
-              'fixed z-[80] w-max max-w-[min(92vw,420px)] rounded-xl border border-primary/30 bg-[linear-gradient(165deg,rgba(255,255,255,0.98)_0%,rgba(240,250,255,0.98)_100%)] px-3 py-2 text-[12px] leading-5 text-foreground shadow-[0_14px_32px_rgba(73,101,163,0.22)] transition-all duration-150 ease-out',
+              'fixed z-[80] w-max max-w-[min(92vw,420px)] rounded-xl border border-primary/30 bg-[linear-gradient(165deg,rgba(255,255,255,0.98)_0%,rgba(240,250,255,0.98)_100%)] px-3 py-2 text-[12px] leading-5 text-foreground shadow-[0_14px_32px_rgba(73,101,163,0.22)] transition-[opacity,transform] duration-150 ease-out',
               tooltipPositionClass,
               open ? 'pointer-events-none opacity-100' : 'pointer-events-none opacity-0',
               className

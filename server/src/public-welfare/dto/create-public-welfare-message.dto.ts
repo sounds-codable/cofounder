@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreatePublicWelfareMessageDto {
   @IsOptional()
@@ -15,4 +15,8 @@ export class CreatePublicWelfareMessageDto {
   @MinLength(10)
   @MaxLength(3000)
   message!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  riskConfirmed?: boolean;
 }

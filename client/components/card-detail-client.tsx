@@ -14,6 +14,7 @@ import {
   declineContact,
   exchangeContact,
   extractErrorMessage,
+  extractRiskReview,
   fetchCardById,
   fetchMyRequests,
   markExchangeReviewing,
@@ -765,6 +766,36 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
       setExchangeContactModalOpen(false);
       setMessage('已记录你的“不想联系”选择。当前状态已更新为“不想联系”。');
     } catch (error) {
+      const riskReview = extractRiskReview(error);
+
+      if (riskReview) {
+        const confirmed = window.confirm(
+          `系统检测到潜在风险内容。\n风险等级：${riskReview.riskLevel}\n命中类别：${riskReview.categories.join('、') || '未知'}\n命中词：${riskReview.matchedTerms.join('、') || '未知'}\n\n是否仍继续发布？`,
+        );
+
+        if (confirmed) {
+          try {
+            await declineContact(requestMeta.id, finalReason, true);
+            await refreshRequestsForCurrentCard();
+            const nextCard = await fetchCardById(id);
+
+            if (nextCard) {
+              setCard(nextCard);
+            }
+
+            setExchangeContactModalOpen(false);
+            setMessage('已按你的确认记录“不想联系”，管理员会优先审核风险内容。');
+            return;
+          } catch (retryError) {
+            setExchangeModalMessage(extractErrorMessage(retryError));
+            return;
+          }
+        }
+
+        setExchangeModalMessage('你已取消本次操作。');
+        return;
+      }
+
       setExchangeModalMessage(extractErrorMessage(error));
     } finally {
       setSavingExchangeContact(false);
@@ -885,6 +916,35 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
       setRequesterDetailModalOpen(false);
       setActiveIncomingRequest(null);
     } catch (error) {
+      const riskReview = extractRiskReview(error);
+
+      if (riskReview && activeIncomingRequest) {
+        const confirmed = window.confirm(
+          `系统检测到潜在风险内容。\n风险等级：${riskReview.riskLevel}\n命中类别：${riskReview.categories.join('、') || '未知'}\n命中词：${riskReview.matchedTerms.join('、') || '未知'}\n\n是否仍继续发布？`,
+        );
+
+        if (confirmed) {
+          try {
+            await rejectDetailRequest(activeIncomingRequest.id, finalReason, true);
+            await refreshRequestsForCurrentCard();
+            setProcessedActionAtByRequestId((previous) => ({
+              ...previous,
+              [activeIncomingRequest.id]: new Date().toISOString(),
+            }));
+            setRejectRequestModalOpen(false);
+            setRequesterDetailModalOpen(false);
+            setActiveIncomingRequest(null);
+            return;
+          } catch (retryError) {
+            setIncomingModalMessage(extractErrorMessage(retryError));
+            return;
+          }
+        }
+
+        setIncomingModalMessage('你已取消本次操作。');
+        return;
+      }
+
       setIncomingModalMessage(extractErrorMessage(error));
     } finally {
       setPendingIncomingActionRequestId(null);

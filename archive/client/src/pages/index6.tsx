@@ -69,7 +69,7 @@ export default function Index6() {
 
       <View className='hero'>
         <Text className='brand'>ICU · I SEE YOU</Text>
-        <Text className='headline'>AI 时代，不做旁观者。</Text>
+        <Text className='headline'>AI 时代，不做旁观者</Text>
         <View className='subline mvp-line'>
           <Text>先做一个 </Text>
           {renderMvpHint('hero')}
@@ -116,25 +116,25 @@ export default function Index6() {
           <Text className='kicker'>WHY</Text>
           <Text className='coop-title'>为什么必须是「程序员 × 专家」</Text>
           <Text className='coop-desc'>
-            只有专家，想法落不了地；只有程序员，产品容易偏方向。两个人一起，才是最快且最稳的起点。
+            只有专家，想法落不了地；只有程序员，做不出细分应用。两个人一起，才是最快且最稳的起点。
           </Text>
         </View>
 
         <View className={`coop-card ${activeMvpTip === 'how' ? 'active-tip' : ''}`}>
           <Text className='kicker'>HOW</Text>
-          <Text className='coop-title'>我们怎么让双方真正合作</Text>
+          <Text className='coop-title'>如何让双方真正合作</Text>
           <View className='coop-line'>
-            <Text>专家发布场景与资源，程序员发布技术与节奏。双向匹配后先做 </Text>
+            <Text>专家提供真需求并营销产品，程序员负责技术实现。双向匹配后先做 </Text>
             {renderMvpHint('how')}
-            <Text>，边做边验证，边合作边迭代。</Text>
+            <Text>，边合作边验证。</Text>
           </View>
         </View>
 
         <View className='coop-card'>
           <Text className='kicker'>WHAT</Text>
-          <Text className='coop-title'>你会得到什么结果</Text>
+          <Text className='coop-title'>你们会得到什么结果</Text>
           <Text className='coop-desc'>
-            专家拿到可落地产品，程序员拿到真实业务场景。一起把「点子」变成「可验证的产品」。
+            专家快速得到 MVP 验证需求，程序员深入了解细分行业真实场景。开始行动，就有收获！
           </Text>
         </View>
       </View>

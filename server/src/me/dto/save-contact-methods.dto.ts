@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class SaveContactMethodsDto {
   @IsOptional()
@@ -25,4 +25,8 @@ export class SaveContactMethodsDto {
   @IsString({ message: '其他联系方式格式不正确' })
   @MaxLength(160, { message: '其他联系方式不能超过 160 个字符' })
   other?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  riskConfirmed?: boolean;
 }

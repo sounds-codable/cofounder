@@ -31,6 +31,12 @@ export class AdminController {
     return this.adminService.getUserDetail(userId);
   }
 
+  @Get('compliance-logs')
+  async getComplianceLogs(@Headers('authorization') authorization?: string, @Query('limit') limit?: string) {
+    await this.getRequiredAdmin(authorization);
+    return this.adminService.getComplianceLogs(limit);
+  }
+
   private async getRequiredAdmin(authorization?: string) {
     const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
 

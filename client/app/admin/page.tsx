@@ -5,10 +5,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import {
+  fetchAdminComplianceLogs,
   extractErrorMessage,
   fetchAdminOverview,
   fetchAdminUserDetail,
   fetchAdminUsers,
+  type AdminComplianceLogs,
   type AdminOverview,
   type AdminUserDetail,
   type AdminUserSearchResult,
@@ -35,6 +37,9 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUserSearchResult['items']>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<AdminUserDetail | null>(null);
+  const [complianceLogs, setComplianceLogs] = useState<AdminComplianceLogs | null>(null);
+  const [showComplianceLogs, setShowComplianceLogs] = useState(false);
+  const [loadingComplianceLogs, setLoadingComplianceLogs] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -144,6 +149,33 @@ export default function AdminPage() {
     }
   }
 
+  async function handleToggleComplianceLogs() {
+    if (!isAdmin) {
+      return;
+    }
+
+    if (showComplianceLogs) {
+      setShowComplianceLogs(false);
+      return;
+    }
+
+    if (!complianceLogs) {
+      try {
+        setLoadingComplianceLogs(true);
+        const nextLogs = await fetchAdminComplianceLogs(100);
+        setComplianceLogs(nextLogs);
+        setMessage(null);
+      } catch (error) {
+        setMessage(extractErrorMessage(error));
+        return;
+      } finally {
+        setLoadingComplianceLogs(false);
+      }
+    }
+
+    setShowComplianceLogs(true);
+  }
+
   if (!loading && !authenticated) {
     return (
       <div className="mx-auto w-full max-w-4xl px-4 py-6 md:px-6 md:py-8">
@@ -176,6 +208,98 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-6">
+      <section>
+        <Card className="border-border/70 bg-card/82">
+          <CardHeader>
+            <CardTitle>合规日志留存</CardTitle>
+            <p className="text-sm text-muted-foreground">查看用户账号、操作时间、操作类型、网络源/目标地址与端口、客户端硬件特征及发布记录。</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <button className={buttonVariants()} type="button" onClick={() => void handleToggleComplianceLogs()} disabled={loadingComplianceLogs}>
+              {loadingComplianceLogs ? '加载中…' : showComplianceLogs ? '收起合规日志' : '查看合规日志'}
+            </button>
+
+            {showComplianceLogs ? (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-border/60 bg-background/70 p-3">
+                  <p className="text-sm font-medium text-foreground">操作审计日志（最近 {complianceLogs?.operationLogs.length || 0} 条）</p>
+                  <div className="mt-2 space-y-2">
+                    {complianceLogs?.operationLogs.length ? (
+                      complianceLogs.operationLogs.map((item) => (
+                        <div className="rounded-md border border-border/60 bg-background/80 px-3 py-2 text-xs" key={item.id}>
+                          <p>时间：{formatDate(item.operationAt)} · 用户：{item.userEmail || item.userId || '匿名'}</p>
+                          <p>操作：{item.operationType} · 请求：{item.requestMethod} {item.requestPath}</p>
+                          <p>状态：{item.statusCode ?? '—'} · 成功：{item.success ? '是' : '否'} · 耗时：{item.durationMs}ms</p>
+                          <p>网络：{item.sourceAddress || '—'}:{item.sourcePort ?? '—'} → {item.destinationAddress || '—'}:{item.destinationPort ?? '—'}</p>
+                          <p>客户端硬件特征：{item.clientHardware || '—'}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground">暂无操作审计日志。</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border/60 bg-background/70 p-3">
+                  <p className="text-sm font-medium text-foreground">发布信息记录（最近 {complianceLogs?.publishedRecords.length || 0} 条）</p>
+                  <div className="mt-2 space-y-2">
+                    {complianceLogs?.publishedRecords.length ? (
+                      complianceLogs.publishedRecords.map((item) => (
+                        <div className="rounded-md border border-border/60 bg-background/80 px-3 py-2 text-xs" key={item.id}>
+                          <p>时间：{formatDate(item.operationAt)} · 用户：{item.userEmail || item.userId}</p>
+                          <p>类型：{item.operationType} · 卡片：{item.cardSlug || item.cardId || '—'}</p>
+                          <p>
+                            风险：{item.reviewRequired ? '需审核' : '无需审核'} · 等级：{item.riskLevel || 'none'} · 人工确认：
+                            {item.confirmedToPublish ? '是' : '否'}
+                          </p>
+                          <p>分类：{item.riskCategories.join('、') || '无'} · 命中词：{item.riskMatchedTerms.join('、') || '无'}</p>
+                          <pre className="mt-1 whitespace-pre-wrap break-all rounded border border-border/50 bg-background/90 px-2 py-1 text-xs text-muted-foreground">
+                            {JSON.stringify(item.contentSnapshot, null, 2)}
+                          </pre>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground">暂无发布信息记录。</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section>
+        <Card className="border-border/70 bg-card/82">
+          <CardHeader>
+            <CardTitle>风险内容待处理队列</CardTitle>
+            <p className="text-sm text-muted-foreground">检测到潜在违法有害风险词的内容会优先出现在这里。</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {overview?.riskQueue?.length ? (
+              overview.riskQueue.slice(0, 30).map((item) => (
+                <div className="rounded-lg border border-border/60 bg-background/70 px-3 py-3" key={item.id}>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span>时间：{formatDate(item.operationAt)}</span>
+                    <span>类型：{item.operationType}</span>
+                    <span>等级：{item.riskLevel || 'unknown'}</span>
+                    <span>用户：{item.userEmail || item.userId}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">分类：{item.categories.join('、') || '无'}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">命中词：{item.matchedTerms.join('、') || '无'}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">用户确认继续发布：{item.confirmedToPublish ? '是' : '否'}</p>
+                  <pre className="mt-2 whitespace-pre-wrap break-all rounded-md border border-border/50 bg-background/80 px-2 py-2 text-xs text-foreground">
+                    {JSON.stringify(item.contentSnapshot, null, 2)}
+                  </pre>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">当前暂无风险内容。</p>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {summaryItems.map((item) => (
           <Card className="border-border/70 bg-card/82" key={item.label}>

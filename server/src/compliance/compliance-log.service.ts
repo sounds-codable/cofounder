@@ -38,6 +38,14 @@ type PublishedRecordPayload = {
   cardSlug?: string | null;
   operationType: string;
   operationAt?: Date;
+  riskReview?: {
+    reviewRequired: boolean;
+    riskLevel: 'none' | 'medium' | 'high';
+    categories: string[];
+    matchedTerms: string[];
+    confirmedToPublish: boolean;
+    provider: string;
+  };
   contentSnapshot: Record<string, unknown>;
 };
 
@@ -96,6 +104,12 @@ export class ComplianceLogService implements OnModuleInit, OnModuleDestroy {
       cardId: payload.cardId ?? null,
       cardSlug: payload.cardSlug ?? null,
       operationType: payload.operationType,
+      reviewRequired: payload.riskReview?.reviewRequired ?? false,
+      riskLevel: payload.riskReview?.riskLevel ?? null,
+      riskCategories: payload.riskReview?.categories ?? null,
+      riskMatchedTerms: payload.riskReview?.matchedTerms ?? null,
+      confirmedToPublish: payload.riskReview?.confirmedToPublish ?? false,
+      moderationProvider: payload.riskReview?.provider ?? null,
       operationAt: payload.operationAt ?? new Date(),
       contentSnapshot: payload.contentSnapshot,
     });

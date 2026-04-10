@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { extractErrorMessage, fetchTagSuggestions, saveBasicProfile, type TagSuggestion } from '@/lib/platform-api';
+import { extractErrorMessage, extractRiskReview, fetchTagSuggestions, saveBasicProfile, type TagSuggestion } from '@/lib/platform-api';
 import type { UserRole } from '@/lib/site-data';
 import { useAuthState } from '@/lib/use-auth';
 
@@ -274,6 +274,40 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
         router.push(successRedirect);
       }
     } catch (error) {
+      const riskReview = extractRiskReview(error);
+
+      if (riskReview) {
+        const confirmed = window.confirm(
+          `系统检测到潜在风险内容。\n风险等级：${riskReview.riskLevel}\n命中类别：${riskReview.categories.join('、') || '未知'}\n命中词：${riskReview.matchedTerms.join('、') || '未知'}\n\n是否仍继续发布？`,
+        );
+
+        if (confirmed) {
+          try {
+            await saveBasicProfile({
+              role,
+              headline: normalizedHeadline,
+              basicSummary: normalizedBasicSummary,
+              city: normalizedCity,
+              strengths: normalizedStrengths,
+              riskConfirmed: true,
+            });
+            await refresh();
+            if (onSuccess) {
+              onSuccess();
+            } else {
+              router.push(successRedirect);
+            }
+            return;
+          } catch (retryError) {
+            setMessage(extractErrorMessage(retryError));
+            return;
+          }
+        }
+
+        setMessage('你已取消本次发布。');
+        return;
+      }
+
       setMessage(extractErrorMessage(error));
     } finally {
       setSubmitting(false);

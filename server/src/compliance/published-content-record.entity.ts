@@ -20,6 +20,24 @@ export class PublishedContentRecord {
   @Column({ type: 'varchar', length: 120 })
   operationType!: string;
 
+  @Column({ type: 'boolean', default: false })
+  reviewRequired!: boolean;
+
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  riskLevel!: 'none' | 'medium' | 'high' | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  riskCategories!: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  riskMatchedTerms!: string[] | null;
+
+  @Column({ type: 'boolean', default: false })
+  confirmedToPublish!: boolean;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  moderationProvider!: string | null;
+
   @Column({ type: 'timestamptz' })
   operationAt!: Date;
 

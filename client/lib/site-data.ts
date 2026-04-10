@@ -109,15 +109,15 @@ export const staticCardSlugs = fallbackPublicCards.map((card) => card.id);
 
 export const flowSteps = [
   {
-    title: '项目方先发项目简介',
+    title: '抛砖',
     description: '公开基础信息，程序员先判断是否值得申请了解详情。',
   },
   {
-    title: '项目方先做决定',
+    title: '引玉',
     description: '项目方先看程序员详细信息，再决定是否开放项目详情。',
   },
   {
-    title: '程序员再决定是否交换联系方式',
+    title: '连线',
     description: '程序员看到项目详情后，再决定是否互看联系方式并继续沟通。',
   },
 ];

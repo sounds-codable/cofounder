@@ -7,7 +7,7 @@ import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { SmartTooltip } from '@/components/smart-tooltip';
 import { buttonVariants } from '@/components/ui/button';
-import { extractErrorMessage, fetchOverview, saveDisplayName, type LogoVariant } from '@/lib/platform-api';
+import { extractErrorMessage, extractRiskReview, fetchOverview, saveDisplayName, type LogoVariant } from '@/lib/platform-api';
 import { cn } from '@/lib/utils';
 import { clearStoredAccessToken } from '@/lib/session';
 import { useAuthState } from '@/lib/use-auth';
@@ -381,6 +381,29 @@ function AppShellContent({ children }: AppShellProps) {
       await refresh();
       setEditingDisplayName(false);
     } catch (error) {
+      const riskReview = extractRiskReview(error);
+
+      if (riskReview) {
+        const confirmed = window.confirm(
+          `系统检测到潜在风险内容。\n风险等级：${riskReview.riskLevel}\n命中类别：${riskReview.categories.join('、') || '未知'}\n命中词：${riskReview.matchedTerms.join('、') || '未知'}\n\n是否仍继续发布？`,
+        );
+
+        if (confirmed) {
+          try {
+            await saveDisplayName(nextName, true);
+            await refresh();
+            setEditingDisplayName(false);
+            return;
+          } catch (retryError) {
+            setDisplayNameMessage(extractErrorMessage(retryError));
+            return;
+          }
+        }
+
+        setDisplayNameMessage('你已取消本次修改。');
+        return;
+      }
+
       setDisplayNameMessage(extractErrorMessage(error));
     } finally {
       setSavingDisplayName(false);

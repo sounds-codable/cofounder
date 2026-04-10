@@ -6,7 +6,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { extractErrorMessage, submitPublicWelfareMessage } from '@/lib/platform-api';
+import { extractErrorMessage, extractRiskReview, submitPublicWelfareMessage } from '@/lib/platform-api';
 
 export default function PublicWelfarePage() {
   const [name, setName] = useState('');
@@ -31,6 +31,36 @@ export default function PublicWelfarePage() {
       setContact('');
       setMessage('');
     } catch (error) {
+      const riskReview = extractRiskReview(error);
+
+      if (riskReview) {
+        const confirmed = window.confirm(
+          `系统检测到潜在风险内容。\n风险等级：${riskReview.riskLevel}\n命中类别：${riskReview.categories.join('、') || '未知'}\n命中词：${riskReview.matchedTerms.join('、') || '未知'}\n\n是否仍继续发布？`,
+        );
+
+        if (confirmed) {
+          try {
+            await submitPublicWelfareMessage({
+              name: name.trim() || undefined,
+              contact,
+              message,
+              riskConfirmed: true,
+            });
+            setResultMessage('留言已按你的确认继续发布，管理员会优先审核风险内容。');
+            setName('');
+            setContact('');
+            setMessage('');
+            return;
+          } catch (retryError) {
+            setResultMessage(extractErrorMessage(retryError));
+            return;
+          }
+        }
+
+        setResultMessage('你已取消本次留言发布。');
+        return;
+      }
+
       setResultMessage(extractErrorMessage(error));
     } finally {
       setSubmitting(false);

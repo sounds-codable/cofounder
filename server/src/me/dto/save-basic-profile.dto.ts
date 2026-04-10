@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsArray, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { UserRole } from '../../common/enums/user-role.enum';
 
 function normalizeStrengths(value: unknown): string[] {
@@ -41,4 +41,8 @@ export class SaveBasicProfileDto {
   @IsArray()
   @IsString({ each: true })
   strengths!: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  riskConfirmed?: boolean;
 }

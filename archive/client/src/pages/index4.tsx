@@ -74,23 +74,23 @@ export default function Index4() {
           <Text className='block-kicker'>WHY</Text>
           <Text className='block-title'>为什么必须是「程序员 × 专家」</Text>
           <Text className='block-desc'>
-            只有专家，想法落不了地；只有程序员，产品容易偏方向。
+            只有专家，想法落不了地；只有程序员，做不出细分应用。
             两个人一起，才是最快且最稳的起点。
           </Text>
         </View>
 
         <View className='block-card'>
           <Text className='block-kicker'>HOW</Text>
-          <Text className='block-title'>我们怎么让双方真正合作</Text>
+          <Text className='block-title'>如何让双方真正合作</Text>
           <Text className='block-desc'>
-            专家发布场景与资源，程序员发布技术与节奏。
-            双向匹配后先做 MVP，边做边验证，边合作边迭代。
+            专家提供真需求并营销产品，程序员负责技术实现。
+            双向匹配后先做 MVP，边合作边验证。
           </Text>
         </View>
 
         <View className='block-card'>
           <Text className='block-kicker'>WHAT</Text>
-          <Text className='block-title'>你会得到什么结果</Text>
+          <Text className='block-title'>你们会得到什么结果</Text>
           <Text className='block-desc'>
             专家拿到可落地产品，程序员拿到真实业务场景。
             一起把「点子」变成「可验证的产品」。

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { MvpTerm } from '@/components/mvp-term';
 import { buttonVariants } from '@/components/ui/button';
-import { extractErrorMessage, saveDisplayName } from '@/lib/platform-api';
+import { extractErrorMessage, extractRiskReview, saveDisplayName } from '@/lib/platform-api';
 import { cn } from '@/lib/utils';
 import { clearStoredAccessToken } from '@/lib/session';
 import type { LogoVariant } from '@/lib/platform-api';
@@ -86,6 +86,29 @@ export function SiteHeader({ logoVariant = 'overlap' }: SiteHeaderProps) {
       await refresh();
       setEditingDisplayName(false);
     } catch (error) {
+      const riskReview = extractRiskReview(error);
+
+      if (riskReview) {
+        const confirmed = window.confirm(
+          `系统检测到潜在风险内容。\n风险等级：${riskReview.riskLevel}\n命中类别：${riskReview.categories.join('、') || '未知'}\n命中词：${riskReview.matchedTerms.join('、') || '未知'}\n\n是否仍继续发布？`,
+        );
+
+        if (confirmed) {
+          try {
+            await saveDisplayName(nextName, true);
+            await refresh();
+            setEditingDisplayName(false);
+            return;
+          } catch (retryError) {
+            setDisplayNameMessage(extractErrorMessage(retryError));
+            return;
+          }
+        }
+
+        setDisplayNameMessage('你已取消本次修改。');
+        return;
+      }
+
       setDisplayNameMessage(extractErrorMessage(error));
     } finally {
       setSavingDisplayName(false);
@@ -104,7 +127,7 @@ export function SiteHeader({ logoVariant = 'overlap' }: SiteHeaderProps) {
           <div className="grid gap-0.5">
             <strong className="text-sm font-semibold text-foreground md:text-base">叩饭 Cofounder</strong>
             <span className="text-xs text-muted-foreground md:text-sm">
-              行业专家 × 程序员，先做 <MvpTerm className="text-xs md:text-sm" /> 再谈更远
+              行业专家 × 程序员，细分应用一起玩
             </span>
           </div>
         </Link>

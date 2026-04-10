@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MinLength, ValidateIf } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MinLength, ValidateIf } from 'class-validator';
 
 export class SaveDetailProfileDto {
   @IsString({ message: '个人简介格式不正确' })
@@ -30,4 +30,8 @@ export class SaveDetailProfileDto {
   @IsString({ message: '项目详情格式不正确' })
   @MinLength(6, { message: '项目详情至少需要 6 个字符' })
   projectDetail?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  riskConfirmed?: boolean;
 }

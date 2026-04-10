@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { CardEngagementType } from '../common/enums/card-engagement-type.enum';
 import { ContactMethod } from '../contacts/contact-method.entity';
 import { ContactType } from '../common/enums/contact-type.enum';
+import { ContentModerationService } from '../compliance/content-moderation.service';
 import { RewardAction } from '../common/enums/reward-action.enum';
 import { UserRole } from '../common/enums/user-role.enum';
 import { ComplianceLogService } from '../compliance/compliance-log.service';
@@ -23,6 +24,7 @@ export class MeService {
   constructor(
     private readonly rewardService: RewardService,
     private readonly complianceLogService: ComplianceLogService,
+    private readonly contentModerationService: ContentModerationService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Card)
@@ -66,6 +68,18 @@ export class MeService {
       throw new NotFoundException('用户不存在');
     }
 
+    const moderationResult = this.contentModerationService.ensureReviewed({
+      operationType: 'publish_card_basic_profile',
+      riskConfirmed: body.riskConfirmed,
+      fields: [
+        { field: 'headline', content: body.headline },
+        { field: 'basicSummary', content: body.basicSummary },
+        { field: 'city', content: body.city },
+        { field: 'desiredDirection', content: body.desiredDirection },
+        { field: 'strengths', content: body.strengths.join(' | ') },
+      ],
+    });
+
     await this.userRepository.save(user);
 
     const card = this.cardRepository.create({
@@ -104,6 +118,14 @@ export class MeService {
       cardId: savedCard.id,
       cardSlug: savedCard.slug,
       operationType: 'publish_card_basic_profile',
+      riskReview: {
+        reviewRequired: moderationResult.hasRisk,
+        riskLevel: moderationResult.riskLevel,
+        categories: moderationResult.categories,
+        matchedTerms: moderationResult.matchedTerms,
+        confirmedToPublish: Boolean(body.riskConfirmed),
+        provider: moderationResult.provider,
+      },
       contentSnapshot: {
         role: savedCard.role,
         headline: savedCard.headline,
@@ -242,8 +264,31 @@ export class MeService {
       throw new NotFoundException('用户不存在');
     }
 
+    const moderationResult = this.contentModerationService.ensureReviewed({
+      operationType: 'update_display_name',
+      riskConfirmed: body.riskConfirmed,
+      fields: [{ field: 'displayName', content: body.displayName }],
+    });
+
     user.displayName = body.displayName.trim();
     await this.userRepository.save(user);
+
+    await this.complianceLogService.recordPublishedContent({
+      userId: user.id,
+      userEmail: user.email,
+      operationType: 'update_display_name',
+      riskReview: {
+        reviewRequired: moderationResult.hasRisk,
+        riskLevel: moderationResult.riskLevel,
+        categories: moderationResult.categories,
+        matchedTerms: moderationResult.matchedTerms,
+        confirmedToPublish: Boolean(body.riskConfirmed),
+        provider: moderationResult.provider,
+      },
+      contentSnapshot: {
+        displayName: user.displayName,
+      },
+    });
 
     return this.getProfile(userId);
   }
@@ -260,6 +305,19 @@ export class MeService {
     if (!user) {
       throw new NotFoundException('用户不存在');
     }
+
+    const moderationResult = this.contentModerationService.ensureReviewed({
+      operationType: 'update_card_detail_profile',
+      riskConfirmed: body.riskConfirmed,
+      fields: [
+        { field: 'intro', content: body.intro },
+        { field: 'education', content: body.education },
+        { field: 'experience', content: body.experience },
+        { field: 'expertProjectDetail', content: body.expertProjectDetail },
+        { field: 'developerProjectExperience', content: body.developerProjectExperience },
+        { field: 'projectDetail', content: body.projectDetail },
+      ],
+    });
 
     const cardRole = user.cards[0]?.role;
     const previousDetail = (user.detailedProfile ?? {}) as Record<string, unknown>;
@@ -316,6 +374,14 @@ export class MeService {
             cardId: card.id,
             cardSlug: card.slug,
             operationType: 'update_card_detail_profile',
+            riskReview: {
+              reviewRequired: moderationResult.hasRisk,
+              riskLevel: moderationResult.riskLevel,
+              categories: moderationResult.categories,
+              matchedTerms: moderationResult.matchedTerms,
+              confirmedToPublish: Boolean(body.riskConfirmed),
+              provider: moderationResult.provider,
+            },
             contentSnapshot: {
               role: card.role,
               detailPreview: card.detailPreview,
@@ -341,6 +407,18 @@ export class MeService {
       throw new NotFoundException('用户不存在');
     }
 
+    const moderationResult = this.contentModerationService.ensureReviewed({
+      operationType: 'update_contact_methods',
+      riskConfirmed: body.riskConfirmed,
+      fields: [
+        { field: 'phone', content: body.phone },
+        { field: 'wechat', content: body.wechat },
+        { field: 'qq', content: body.qq },
+        { field: 'email', content: body.email },
+        { field: 'other', content: body.other },
+      ],
+    });
+
     await this.contactMethodRepository.delete({ user: { id: user.id } });
 
     const nextContacts = this.buildContactMethods(user, body);
@@ -348,6 +426,27 @@ export class MeService {
     if (nextContacts.length > 0) {
       await this.contactMethodRepository.save(nextContacts);
     }
+
+    await this.complianceLogService.recordPublishedContent({
+      userId: user.id,
+      userEmail: user.email,
+      operationType: 'update_contact_methods',
+      riskReview: {
+        reviewRequired: moderationResult.hasRisk,
+        riskLevel: moderationResult.riskLevel,
+        categories: moderationResult.categories,
+        matchedTerms: moderationResult.matchedTerms,
+        confirmedToPublish: Boolean(body.riskConfirmed),
+        provider: moderationResult.provider,
+      },
+      contentSnapshot: {
+        contacts: nextContacts.map((item) => ({
+          type: item.type,
+          value: item.value,
+          isPrimary: item.isPrimary,
+        })),
+      },
+    });
 
     return this.getProfile(userId);
   }
