@@ -8,6 +8,75 @@ export type ContactMethod = {
   isPrimary: boolean;
 };
 
+export type BlogPostListResult = {
+  items: Array<{
+    id: string;
+    pathSegment: string;
+    title: string;
+    summary: string;
+    authorDisplayName: string;
+    updatedAt: string;
+    createdAt: string;
+    likeCount: number;
+    commentCount: number;
+    likedByMe: boolean;
+  }>;
+};
+
+export type BlogPostDetail = {
+  id: string;
+  pathSegment: string;
+  title: string;
+  summary: string;
+  contentMarkdown: string;
+  authorDisplayName: string;
+  createdAt: string;
+  updatedAt: string;
+  likeCount: number;
+  likedByMe: boolean;
+  comments: Array<{
+    id: string;
+    postId: string;
+    parentCommentId: string | null;
+    authorUserId: string;
+    content: string;
+    authorDisplayName: string;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: string;
+    pendingVisibleToOwner: boolean;
+    canDeleteByMe: boolean;
+  }>;
+};
+
+export type AdminBlogPosts = {
+  items: Array<{
+    id: string;
+    title: string;
+    summary: string;
+    contentMarkdown: string;
+    authorUserId: string;
+    published: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+};
+
+export type AdminBlogComments = {
+  items: Array<{
+    id: string;
+    postId: string;
+    postTitle: string;
+    authorDisplayName: string;
+    content: string;
+    status: 'pending' | 'approved' | 'rejected';
+    riskLevel: 'none' | 'medium' | 'high' | null;
+    riskCategories: string[];
+    riskMatchedTerms: string[];
+    createdAt: string;
+    reviewedAt: string | null;
+  }>;
+};
+
 export type InviteOverview = {
   inviteCode: string | null;
   inviteLink: string | null;
@@ -465,7 +534,7 @@ function getApiBaseUrl() {
 
 type RequestOptions = {
   body?: unknown;
-  method?: 'GET' | 'POST' | 'PUT';
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   token?: string | null;
 };
 
@@ -848,4 +917,129 @@ export async function fetchAdminPublicWelfareMessages(options?: { query?: string
   }
 
   return requestJson<AdminPublicWelfareMessages>(`/admin/public-welfare/messages?${searchParams.toString()}`);
+}
+
+export async function fetchAdminPublicWelfareMessageById(messageId: string) {
+  return requestJson<{
+    id: string;
+    name: string | null;
+    contact: string;
+    message: string;
+    createdAt: string;
+    risk: {
+      reviewRequired: boolean;
+      riskLevel: 'none' | 'medium' | 'high' | null;
+      categories: string[];
+      matchedTerms: string[];
+      confirmedToPublish: boolean;
+    } | null;
+  }>(`/admin/public-welfare/messages/${encodeURIComponent(messageId)}`);
+}
+
+export async function updateAdminPublicWelfareMessage(
+  messageId: string,
+  body: {
+    name?: string;
+    contact: string;
+    message: string;
+    riskConfirmed?: boolean;
+  },
+) {
+  return requestJson<{ id: string; name: string | null; contact: string; message: string; createdAt: string }>(
+    `/admin/public-welfare/messages/${encodeURIComponent(messageId)}`,
+    {
+      method: 'PUT',
+      body,
+    },
+  );
+}
+
+export async function deleteBlogComment(postId: string, commentId: string) {
+  return requestJson<{ ok: boolean }>(`/blog/posts/${encodeURIComponent(postId)}/comments/${encodeURIComponent(commentId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function deleteAdminPublicWelfareMessage(messageId: string) {
+  return requestJson<{ ok: boolean }>(`/admin/public-welfare/messages/${encodeURIComponent(messageId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function fetchBlogPosts() {
+  return requestJson<BlogPostListResult>('/blog/posts');
+}
+
+export async function fetchBlogPostById(postId: string) {
+  return requestJson<BlogPostDetail>(`/blog/posts/${encodeURIComponent(postId)}`);
+}
+
+export async function toggleBlogLike(postId: string) {
+  return requestJson<{ liked: boolean }>(`/blog/posts/${encodeURIComponent(postId)}/likes/toggle`, {
+    method: 'POST',
+  });
+}
+
+export async function createBlogComment(postId: string, body: { content: string; parentCommentId?: string; riskConfirmed?: boolean }) {
+  return requestJson<{ id: string; status: 'pending' | 'approved' | 'rejected'; createdAt: string }>(
+    `/blog/posts/${encodeURIComponent(postId)}/comments`,
+    {
+      method: 'POST',
+      body,
+    },
+  );
+}
+
+export async function fetchAdminBlogPosts() {
+  return requestJson<AdminBlogPosts>('/blog/admin/posts');
+}
+
+export async function createAdminBlogPost(body: {
+  title: string;
+  summary: string;
+  contentMarkdown: string;
+  published?: boolean;
+  riskConfirmed?: boolean;
+}) {
+  return requestJson<{ id: string }>('/blog/admin/posts', {
+    method: 'POST',
+    body,
+  });
+}
+
+export async function updateAdminBlogPost(
+  postId: string,
+  body: {
+    title?: string;
+    summary?: string;
+    contentMarkdown?: string;
+    published?: boolean;
+    riskConfirmed?: boolean;
+  },
+) {
+  return requestJson<{ id: string }>(`/blog/admin/posts/${encodeURIComponent(postId)}`, {
+    method: 'PUT',
+    body,
+  });
+}
+
+export async function deleteAdminBlogPost(postId: string) {
+  return requestJson<{ ok: boolean }>(`/blog/admin/posts/${encodeURIComponent(postId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function fetchAdminBlogComments(status?: 'pending' | 'approved' | 'rejected') {
+  const query = status ? `?status=${status}` : '';
+  return requestJson<AdminBlogComments>(`/blog/admin/comments${query}`);
+}
+
+export async function reviewAdminBlogComment(commentId: string, body: { status: 'approved' | 'rejected'; reason?: string }) {
+  return requestJson<{ id: string; status: 'approved' | 'rejected'; reviewedAt: string }>(
+    `/blog/admin/comments/${encodeURIComponent(commentId)}/review`,
+    {
+      method: 'POST',
+      body,
+    },
+  );
 }

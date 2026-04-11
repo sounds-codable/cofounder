@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { User } from '../users/user.entity';
@@ -85,6 +85,7 @@ export class BlogService {
     return {
       items: posts.map((post) => ({
         id: post.id,
+        pathSegment: this.buildPostPathSegment(post.title, post.id),
         title: post.title,
         summary: post.summary,
         authorDisplayName: authorMap.get(post.authorUserId) || '管理员',
@@ -97,7 +98,8 @@ export class BlogService {
     };
   }
 
-  async getPostById(postId: string, viewer: OptionalUser) {
+  async getPostById(postIdentifier: string, viewer: OptionalUser) {
+    const postId = this.extractPostId(postIdentifier);
     const post = await this.blogPostRepository.findOne({ where: { id: postId, published: true } });
 
     if (!post) {
@@ -137,6 +139,7 @@ export class BlogService {
 
     return {
       id: post.id,
+      pathSegment: this.buildPostPathSegment(post.title, post.id),
       title: post.title,
       summary: post.summary,
       contentMarkdown: post.contentMarkdown,
@@ -147,11 +150,15 @@ export class BlogService {
       likedByMe: Boolean(myLike),
       comments: visibleComments.map((comment) => ({
         id: comment.id,
+        postId: comment.postId,
+        parentCommentId: comment.parentCommentId,
+        authorUserId: comment.authorUserId,
         content: comment.content,
         authorDisplayName: comment.authorDisplayName,
         status: comment.status,
         createdAt: comment.createdAt,
         pendingVisibleToOwner: comment.status !== 'approved',
+        canDeleteByMe: Boolean(viewer && comment.authorUserId === viewer.id),
       })),
     };
   }
@@ -193,10 +200,27 @@ export class BlogService {
   async createComment(postId: string, user: Pick<User, 'id' | 'displayName' | 'email'>, body: CreateBlogCommentDto) {
     await this.ensurePublishedPost(postId);
 
+    const parentCommentId = body.parentCommentId?.trim() || null;
+
+    if (parentCommentId) {
+      const parentComment = await this.blogCommentRepository.findOne({ where: { id: parentCommentId, postId } });
+
+      if (!parentComment) {
+        throw new NotFoundException('要回复的评论不存在');
+      }
+
+      const parentVisible = parentComment.status === 'approved' || parentComment.authorUserId === user.id;
+
+      if (!parentVisible) {
+        throw new ForbiddenException('当前评论暂不可回复');
+      }
+    }
+
     const moderationResult = this.contentModerationService.evaluate([{ field: 'comment', content: body.content }]);
 
     const comment = this.blogCommentRepository.create({
       postId,
+      parentCommentId,
       authorUserId: user.id,
       authorDisplayName: user.displayName,
       content: body.content.trim(),
@@ -225,6 +249,7 @@ export class BlogService {
       contentSnapshot: {
         postId,
         commentId: saved.id,
+        parentCommentId: saved.parentCommentId,
         content: saved.content,
         status: saved.status,
       },
@@ -232,9 +257,51 @@ export class BlogService {
 
     return {
       id: saved.id,
+      parentCommentId: saved.parentCommentId,
       status: saved.status,
       createdAt: saved.createdAt,
     };
+  }
+
+  async deleteComment(postId: string, commentId: string, user: Pick<User, 'id'>) {
+    await this.ensurePublishedPost(postId);
+
+    const comment = await this.blogCommentRepository.findOne({ where: { id: commentId, postId } });
+
+    if (!comment) {
+      throw new NotFoundException('评论不存在');
+    }
+
+    if (comment.authorUserId !== user.id) {
+      throw new ForbiddenException('仅评论作者可删除该评论');
+    }
+
+    const descendants = await this.blogCommentRepository.find({
+      where: { postId },
+      select: { id: true, parentCommentId: true },
+    });
+
+    const queue = [commentId];
+    const toDelete = new Set<string>([commentId]);
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+
+      if (!current) {
+        continue;
+      }
+
+      descendants.forEach((item) => {
+        if (item.parentCommentId === current && !toDelete.has(item.id)) {
+          toDelete.add(item.id);
+          queue.push(item.id);
+        }
+      });
+    }
+
+    await this.blogCommentRepository.softDelete(Array.from(toDelete));
+
+    return { ok: true };
   }
 
   async adminListPosts(adminUser: Pick<User, 'id' | 'isAdmin'>) {
@@ -355,7 +422,14 @@ export class BlogService {
   async adminDeletePost(adminUser: Pick<User, 'id' | 'isAdmin'>, postId: string) {
     this.ensureAdmin(adminUser);
 
-    await this.blogPostRepository.delete({ id: postId });
+    const post = await this.blogPostRepository.findOne({ where: { id: postId } });
+
+    if (!post) {
+      throw new NotFoundException('博客不存在');
+    }
+
+    await this.blogPostRepository.softDelete({ id: postId });
+    await this.blogCommentRepository.softDelete({ postId });
 
     return { ok: true };
   }
@@ -380,6 +454,7 @@ export class BlogService {
       items: comments.map((comment) => ({
         id: comment.id,
         postId: comment.postId,
+        parentCommentId: comment.parentCommentId,
         postTitle: postMap.get(comment.postId)?.title || '已删除博客',
         authorDisplayName: comment.authorDisplayName,
         content: comment.content,
@@ -423,6 +498,10 @@ export class BlogService {
   }
 
   private async ensurePublishedPost(postId: string) {
+    if (!postId) {
+      throw new BadRequestException('博客参数无效');
+    }
+
     const post = await this.blogPostRepository.findOne({
       where: {
         id: postId,
@@ -435,5 +514,34 @@ export class BlogService {
     }
 
     return post;
+  }
+
+  private extractPostId(postIdentifier: string) {
+    const input = postIdentifier.trim();
+
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input)) {
+      return input;
+    }
+
+    const maybeId = input.split('-').slice(-5).join('-');
+
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(maybeId)) {
+      return maybeId;
+    }
+
+    throw new BadRequestException('博客链接无效');
+  }
+
+  private buildPostPathSegment(title: string, postId: string) {
+    const normalized = title
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^\p{L}\p{N}-]/gu, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 64);
+
+    const readable = normalized || 'blog';
+    return `${readable}-${postId}`;
   }
 }

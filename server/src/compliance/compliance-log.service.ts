@@ -127,12 +127,12 @@ export class ComplianceLogService implements OnModuleInit, OnModuleDestroy {
     const [auditCleanupResult, publishCleanupResult] = await Promise.all([
       this.operationAuditLogRepository
         .createQueryBuilder()
-        .delete()
+        .softDelete()
         .where('operationAt < :auditBefore', { auditBefore: auditBefore.toISOString() })
         .execute(),
       this.publishedContentRecordRepository
         .createQueryBuilder()
-        .delete()
+        .softDelete()
         .where('operationAt < :publishBefore', { publishBefore: publishBefore.toISOString() })
         .execute(),
     ]);

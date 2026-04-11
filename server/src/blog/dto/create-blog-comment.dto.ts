@@ -7,6 +7,11 @@ export class CreateBlogCommentDto {
   content!: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  parentCommentId?: string;
+
+  @IsOptional()
   @IsBoolean()
   riskConfirmed?: boolean;
 }

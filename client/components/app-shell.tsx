@@ -21,7 +21,7 @@ type DashboardNavGroup = {
   items: Array<{
     href: string;
     label: string;
-    icon: 'dashboard' | 'requests' | 'projects' | 'developers' | 'invite' | 'points' | 'profile' | 'admin';
+    icon: 'dashboard' | 'requests' | 'projects' | 'developers' | 'blog' | 'invite' | 'points' | 'profile' | 'admin';
     match?: 'exact' | 'prefix';
   }>;
 };
@@ -130,6 +130,16 @@ function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['
     );
   }
 
+  if (icon === 'blog') {
+    return (
+      <svg aria-hidden="true" className={navIconClassName} viewBox="0 0 24 24">
+        <path d="M6 4h8l4 4v12a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M14 4v5h5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M8 12h8M8 16h6" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+
   return (
     <svg aria-hidden="true" className={navIconClassName} viewBox="0 0 24 24">
       <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
@@ -189,7 +199,8 @@ function DashboardToggleIcon({ mobile, expanded }: { mobile: boolean; expanded: 
 }
 
 function isDashboardRoute(pathname: string) {
-  return ['/dashboard', '/projects', '/developers', '/requests', '/invite-codes', '/points', '/onboarding', '/cards', '/admin'].some((route) => pathname === route || pathname.startsWith(`${route}/`));
+  const dashboardRoutes = ['/dashboard', '/projects', '/developers', '/requests', '/invite-codes', '/points', '/onboarding', '/cards', '/admin'];
+  return dashboardRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
 function getPageTitle(pathname: string) {
@@ -203,6 +214,10 @@ function getPageTitle(pathname: string) {
 
   if (pathname.startsWith('/developers')) {
     return '程序员';
+  }
+
+  if (pathname.startsWith('/blog')) {
+    return 'Blog';
   }
 
   if (pathname.startsWith('/requests')) {

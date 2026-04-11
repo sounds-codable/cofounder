@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'published_content_records' })
 export class PublishedContentRecord {
@@ -46,4 +46,7 @@ export class PublishedContentRecord {
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  deletedAt!: Date | null;
 }

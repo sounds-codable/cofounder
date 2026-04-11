@@ -1,7 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Filter } from 'bad-words';
 import { highRiskCategories, RiskCategory } from '../config/content-moderation.config';
 import { CnLexiconFastscanService } from './cn-lexicon-fastscan.service';
+
+type BadWordsFilterLike = {
+  isProfane: (value: string) => boolean;
+};
+
+const fallbackProfanityPattern = /\b(fuck|shit|bitch|asshole|motherfucker|dick|cunt|bastard|slut|whore|nigger|faggot)\b/i;
 
 type ModerationField = {
   field: string;
@@ -32,9 +37,32 @@ type EnsureReviewInput = {
 
 @Injectable()
 export class ContentModerationService {
-  private readonly badWordsFilter = new Filter();
+  private badWordsFilter: BadWordsFilterLike = {
+    isProfane: (value) => fallbackProfanityPattern.test(value),
+  };
 
-  constructor(private readonly cnLexiconFastscanService: CnLexiconFastscanService) {}
+  constructor(private readonly cnLexiconFastscanService: CnLexiconFastscanService) {
+    void this.loadBadWordsFilter();
+  }
+
+  private async loadBadWordsFilter() {
+    try {
+      const badWordsModule = (await import('bad-words')) as { Filter?: new () => { isProfane: (value: string) => boolean } };
+
+      if (!badWordsModule.Filter) {
+        return;
+      }
+
+      const runtimeFilter = new badWordsModule.Filter();
+      this.badWordsFilter = {
+        isProfane: (value) => runtimeFilter.isProfane(value) || fallbackProfanityPattern.test(value),
+      };
+    } catch {
+      this.badWordsFilter = {
+        isProfane: (value) => fallbackProfanityPattern.test(value),
+      };
+    }
+  }
 
   evaluate(fields: ModerationField[]): ModerationResult {
     const detections: DetectedRisk[] = [];

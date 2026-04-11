@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'operation_audit_logs' })
 export class OperationAuditLog {
@@ -55,4 +55,7 @@ export class OperationAuditLog {
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  deletedAt!: Date | null;
 }

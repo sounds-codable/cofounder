@@ -1,4 +1,4 @@
-import { CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { CreateDateColumn, DeleteDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { Card } from './card.entity';
 import { Tag } from './tag.entity';
 
@@ -18,4 +18,7 @@ export class CardTag {
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  deletedAt!: Date | null;
 }

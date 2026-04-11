@@ -41,6 +41,16 @@ export class BlogController {
     return this.blogService.createComment(postId, user, body);
   }
 
+  @Delete('posts/:postId/comments/:commentId')
+  async deleteComment(
+    @Param('postId') postId: string,
+    @Param('commentId') commentId: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.blogService.deleteComment(postId, commentId, user);
+  }
+
   @Get('admin/posts')
   async adminListPosts(@Headers('authorization') authorization?: string) {
     const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);

@@ -83,6 +83,13 @@ cofounder/
  - `GET /api/platform/cards/:id`
  - `GET /api/platform/request-states`
 
+并已接入内容违规词风控能力：
+
+ - 发布与评论文本会经过 `bad-words + fastscan` 风险识别
+ - 中文词库来源为 `Sensitive-lexicon` + 项目本地手工词库
+ - 词库以外部 `txt` 文件维护，支持按需同步更新
+ - 维护说明见：`server/src/config/content-moderation-lexicon/README.md`
+
 并已建立基础实体骨架：
 
  - `users`

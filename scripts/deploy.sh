@@ -48,9 +48,65 @@ die() {
   exit 1
 }
 
+get_file_mtime_epoch() {
+  local file
+  file="$1"
+
+  if stat -f "%m" "$file" >/dev/null 2>&1; then
+    stat -f "%m" "$file"
+    return
+  fi
+
+  if stat -c "%Y" "$file" >/dev/null 2>&1; then
+    stat -c "%Y" "$file"
+    return
+  fi
+
+  echo "0"
+}
+
+check_moderation_lexicon_freshness() {
+  local lexicon_dir
+  lexicon_dir="$PROJECT_ROOT/server/src/config/content-moderation-lexicon/upstream"
+
+  if [[ ! -d "$lexicon_dir" ]]; then
+    die "Missing lexicon dir: $lexicon_dir\n请先执行：\n  cd server\n  npm run moderation:sync-lexicon"
+  fi
+
+  local latest_mtime=0
+  local latest_file=""
+  local file
+
+  for file in "$lexicon_dir"/*.txt; do
+    [[ -f "$file" ]] || continue
+    local mtime
+    mtime="$(get_file_mtime_epoch "$file")"
+    if (( mtime > latest_mtime )); then
+      latest_mtime="$mtime"
+      latest_file="$file"
+    fi
+  done
+
+  if (( latest_mtime == 0 )); then
+    die "No lexicon txt found in $lexicon_dir\n请先执行：\n  cd server\n  npm run moderation:sync-lexicon"
+  fi
+
+  local now
+  now="$(date +%s)"
+  local max_age_seconds=$((30 * 24 * 60 * 60))
+  local age_seconds=$((now - latest_mtime))
+
+  if (( age_seconds > max_age_seconds )); then
+    local age_days=$((age_seconds / 86400))
+    die "内容风控词库已超过30天未更新（最新文件：$latest_file，约 ${age_days} 天前）。\n请先执行以下命令后再部署：\n  cd server\n  npm run moderation:sync-lexicon"
+  fi
+}
+
 if [[ "$MODE" != "frontend" && "$MODE" != "backend" && "$MODE" != "all" ]]; then
   die "Usage: $0 [frontend|backend|all]"
 fi
+
+check_moderation_lexicon_freshness
 
 log "Deploy target: $SSH_TARGET"
 

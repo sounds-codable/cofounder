@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'public_welfare_messages' })
 export class PublicWelfareMessage {
@@ -16,4 +16,7 @@ export class PublicWelfareMessage {
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  deletedAt!: Date | null;
 }

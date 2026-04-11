@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 
 const adminNavItems = [
   { href: '/admin', label: '每日必看', exact: true },
+  { href: '/admin/blog', label: '博客管理' },
   { href: '/admin/messages', label: '留言管理' },
   { href: '/admin/overview', label: '运营概览' },
   { href: '/admin/users', label: '用户查询' },
@@ -66,11 +67,11 @@ type AdminPageShellProps = {
 export function AdminPageShell({ title, description, children }: AdminPageShellProps) {
   const { authenticated, loading, profile } = useAuthState();
   const isAdmin = Boolean(profile?.user.isAdmin);
+  const showAdminSubNav = authenticated;
 
   if (!loading && !authenticated) {
     return (
       <div className="mx-auto w-full max-w-6xl space-y-4">
-        <AdminSubNav />
         <Card className="border-border/70 bg-card/82">
           <CardHeader>
             <CardTitle>请先登录后访问管理后台</CardTitle>
@@ -88,7 +89,7 @@ export function AdminPageShell({ title, description, children }: AdminPageShellP
   if (!loading && authenticated && !isAdmin) {
     return (
       <div className="mx-auto w-full max-w-6xl space-y-4">
-        <AdminSubNav />
+        {showAdminSubNav ? <AdminSubNav /> : null}
         <Card className="border-border/70 bg-card/82">
           <CardHeader>
             <CardTitle>你没有管理员权限</CardTitle>
@@ -102,7 +103,7 @@ export function AdminPageShell({ title, description, children }: AdminPageShellP
   if (!authenticated || !isAdmin) {
     return (
       <div className="mx-auto w-full max-w-6xl space-y-4">
-        <AdminSubNav />
+        {showAdminSubNav ? <AdminSubNav /> : null}
         <Card className="border-border/70 bg-card/82">
           <CardContent className="p-6 text-sm text-muted-foreground">正在校验管理员权限…</CardContent>
         </Card>
@@ -112,7 +113,7 @@ export function AdminPageShell({ title, description, children }: AdminPageShellP
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4">
-      <AdminSubNav />
+      {showAdminSubNav ? <AdminSubNav /> : null}
       <Card className="border-border/70 bg-card/82">
         <CardHeader>
           <CardTitle>{title}</CardTitle>

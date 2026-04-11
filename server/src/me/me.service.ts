@@ -419,7 +419,7 @@ export class MeService {
       ],
     });
 
-    await this.contactMethodRepository.delete({ user: { id: user.id } });
+    await this.contactMethodRepository.softDelete({ user: { id: user.id } });
 
     const nextContacts = this.buildContactMethods(user, body);
 
@@ -480,7 +480,7 @@ export class MeService {
   }
 
   private async syncCardTags(card: Card, tagNames: string[]) {
-    await this.cardTagRepository.delete({ card: { id: card.id } });
+    await this.cardTagRepository.softDelete({ card: { id: card.id } });
 
     const normalizedEntries = Array.from(
       new Map(
@@ -515,14 +515,34 @@ export class MeService {
       tags.push(await this.tagRepository.save(tag));
     }
 
-    await this.cardTagRepository.save(
-      tags.map((tag) =>
+    for (const tag of tags) {
+      const existing = await this.cardTagRepository.findOne({
+        where: {
+          card: { id: card.id },
+          tag: { id: tag.id },
+        },
+        relations: {
+          card: true,
+          tag: true,
+        },
+        withDeleted: true,
+      });
+
+      if (existing) {
+        if (existing.deletedAt) {
+          await this.cardTagRepository.recover(existing);
+        }
+
+        continue;
+      }
+
+      await this.cardTagRepository.save(
         this.cardTagRepository.create({
           card,
           tag,
         }),
-      ),
-    );
+      );
+    }
 
     await this.updateTagUsageCounts();
   }

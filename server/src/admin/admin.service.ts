@@ -243,7 +243,7 @@ export class AdminService {
       throw new NotFoundException('留言不存在');
     }
 
-    await this.publicWelfareMessageRepository.delete({ id: messageId });
+    await this.publicWelfareMessageRepository.softDelete({ id: messageId });
 
     await this.complianceLogService.recordPublishedContent({
       userId: adminUserId,

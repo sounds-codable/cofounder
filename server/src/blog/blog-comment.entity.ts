@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { BlogPost } from './blog-post.entity';
 
 export type BlogCommentStatus = 'pending' | 'approved' | 'rejected';
@@ -10,6 +10,9 @@ export class BlogComment {
 
   @Column({ type: 'uuid' })
   postId!: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  parentCommentId!: string | null;
 
   @ManyToOne(() => BlogPost, (post) => post.comments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'postId' })
@@ -47,4 +50,7 @@ export class BlogComment {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt!: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  deletedAt!: Date | null;
 }

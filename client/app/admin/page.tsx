@@ -2,13 +2,37 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { AdminPageShell, formatAdminDate } from '@/components/admin/admin-page-shell';
-import { extractErrorMessage, fetchAdminDailyFeed, type AdminDailyFeed } from '@/lib/platform-api';
+import {
+  deleteAdminPublicWelfareMessage,
+  extractErrorMessage,
+  fetchAdminDailyFeed,
+  fetchAdminPublicWelfareMessageById,
+  updateAdminPublicWelfareMessage,
+  type AdminDailyFeed,
+} from '@/lib/platform-api';
 
 export default function AdminPage() {
   const [feed, setFeed] = useState<AdminDailyFeed | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [expandedRiskId, setExpandedRiskId] = useState<string | null>(null);
+
+  async function loadFeed() {
+    setLoading(true);
+
+    try {
+      const result = await fetchAdminDailyFeed(20);
+      setFeed(result);
+      setMessage(null);
+    } catch (error) {
+      setMessage(extractErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -36,6 +60,45 @@ export default function AdminPage() {
     };
   }, []);
 
+  async function handleEditRiskMessage(messageId: string) {
+    try {
+      const detail = await fetchAdminPublicWelfareMessageById(messageId);
+      const nextName = window.prompt('称呼（可空）', detail.name || '') ?? (detail.name || '');
+      const nextContact = window.prompt('联系方式', detail.contact) ?? detail.contact;
+      const nextMessage = window.prompt('留言内容', detail.message) ?? detail.message;
+
+      if (!nextContact.trim() || !nextMessage.trim()) {
+        setMessage('联系方式与留言内容不能为空。');
+        return;
+      }
+
+      await updateAdminPublicWelfareMessage(messageId, {
+        name: nextName.trim() || undefined,
+        contact: nextContact,
+        message: nextMessage,
+      });
+
+      await loadFeed();
+      setMessage('违规留言已更新。');
+    } catch (error) {
+      setMessage(extractErrorMessage(error));
+    }
+  }
+
+  async function handleDeleteRiskMessage(messageId: string) {
+    if (!window.confirm('确认删除该留言吗？删除后不可恢复。')) {
+      return;
+    }
+
+    try {
+      await deleteAdminPublicWelfareMessage(messageId);
+      await loadFeed();
+      setMessage('违规留言已删除。');
+    } catch (error) {
+      setMessage(extractErrorMessage(error));
+    }
+  }
+
   return (
     <AdminPageShell
       title="每日必看"
@@ -49,13 +112,53 @@ export default function AdminPage() {
           <CardContent className="space-y-2">
             {loading ? <p className="text-sm text-muted-foreground">加载中…</p> : null}
             {!loading && !feed?.riskQueue.length ? <p className="text-sm text-muted-foreground">暂无高优先级风险内容。</p> : null}
-            {feed?.riskQueue.map((item) => (
-              <div className="rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-xs" key={item.id}>
-                <p>时间：{formatAdminDate(item.operationAt)} · 类型：{item.operationType}</p>
-                <p>等级：{item.riskLevel || 'none'} · 用户：{item.userEmail || item.userId}</p>
-                <p>分类：{item.categories.join('、') || '无'} · 命中词：{item.matchedTerms.join('、') || '无'}</p>
-              </div>
-            ))}
+            {feed?.riskQueue.map((item) => {
+              const contentSnapshot = item.contentSnapshot || {};
+              const messageId =
+                item.operationType === 'public_welfare_message' && typeof contentSnapshot.messageId === 'string'
+                  ? contentSnapshot.messageId
+                  : null;
+
+              return (
+                <div className="rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-xs" key={item.id}>
+                  <p>时间：{formatAdminDate(item.operationAt)} · 类型：{item.operationType}</p>
+                  <p>等级：{item.riskLevel || 'none'} · 用户：{item.userEmail || item.userId}</p>
+                  <p>分类：{item.categories.join('、') || '无'} · 命中词：{item.matchedTerms.join('、') || '无'}</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 px-3')}
+                      onClick={() => setExpandedRiskId((current) => (current === item.id ? null : item.id))}
+                      type="button"
+                    >
+                      {expandedRiskId === item.id ? '收起内容' : '查看内容'}
+                    </button>
+                    {messageId ? (
+                      <>
+                        <button
+                          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 px-3')}
+                          onClick={() => void handleEditRiskMessage(messageId)}
+                          type="button"
+                        >
+                          修改
+                        </button>
+                        <button
+                          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 border-destructive/40 px-3 text-destructive hover:bg-destructive/10')}
+                          onClick={() => void handleDeleteRiskMessage(messageId)}
+                          type="button"
+                        >
+                          删除
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                  {expandedRiskId === item.id ? (
+                    <pre className="mt-2 whitespace-pre-wrap break-all rounded border border-border/50 bg-background/90 px-2 py-1 text-xs text-muted-foreground">
+                      {JSON.stringify(item.contentSnapshot, null, 2)}
+                    </pre>
+                  ) : null}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
 

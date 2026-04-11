@@ -16,6 +16,7 @@ const navItems = [
   { href: '/developers', label: '程序员' },
   { href: '/public-welfare', label: '公益' },
   { href: '/origin', label: '缘起' },
+  { href: '/blog', label: 'Blog' },
 ];
 
 type SiteHeaderProps = {
