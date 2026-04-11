@@ -37,6 +37,23 @@ export class AdminController {
     return this.adminService.getComplianceLogs(limit);
   }
 
+  @Get('daily-feed')
+  async getDailyFeed(@Headers('authorization') authorization?: string, @Query('limit') limit?: string) {
+    await this.getRequiredAdmin(authorization);
+    return this.adminService.getDailyFeed(limit);
+  }
+
+  @Get('public-welfare/messages')
+  async getPublicWelfareMessages(
+    @Headers('authorization') authorization?: string,
+    @Query('query') query?: string,
+    @Query('limit') limit?: string,
+    @Query('riskOnly') riskOnly?: string,
+  ) {
+    await this.getRequiredAdmin(authorization);
+    return this.adminService.getPublicWelfareMessages(query, limit, riskOnly);
+  }
+
   private async getRequiredAdmin(authorization?: string) {
     const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
 

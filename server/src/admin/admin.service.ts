@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
+import { ILike, In, IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { CardEngagementType } from '../common/enums/card-engagement-type.enum';
 import { DetailRequestStatus } from '../common/enums/detail-request-status.enum';
 import { UserRole } from '../common/enums/user-role.enum';
@@ -10,6 +10,7 @@ import { ContactMethod } from '../contacts/contact-method.entity';
 import { CardEngagement } from '../platform/card-engagement.entity';
 import { Card } from '../platform/card.entity';
 import { DetailRequest } from '../platform/detail-request.entity';
+import { PublicWelfareMessage } from '../public-welfare/public-welfare-message.entity';
 import { RewardTransaction } from '../rewards/reward-transaction.entity';
 import { User } from '../users/user.entity';
 
@@ -32,7 +33,124 @@ export class AdminService {
     private readonly publishedContentRecordRepository: Repository<PublishedContentRecord>,
     @InjectRepository(OperationAuditLog)
     private readonly operationAuditLogRepository: Repository<OperationAuditLog>,
+    @InjectRepository(PublicWelfareMessage)
+    private readonly publicWelfareMessageRepository: Repository<PublicWelfareMessage>,
   ) {}
+
+  async getDailyFeed(rawLimit?: string) {
+    const limit = this.parseLimit(rawLimit, 20, 5, 100);
+
+    const [riskQueue, recentMessages, recentCards, recentUsers, messageRiskRecords] = await Promise.all([
+      this.publishedContentRecordRepository.find({
+        where: { reviewRequired: true },
+        order: { operationAt: 'DESC' },
+        take: limit,
+      }),
+      this.publicWelfareMessageRepository.find({
+        order: { createdAt: 'DESC' },
+        take: limit,
+      }),
+      this.cardRepository.find({
+        relations: { owner: true },
+        order: { createdAt: 'DESC' },
+        take: limit,
+      }),
+      this.userRepository.find({
+        order: { createdAt: 'DESC' },
+        take: limit,
+      }),
+      this.publishedContentRecordRepository.find({
+        where: { operationType: 'public_welfare_message' },
+        order: { operationAt: 'DESC' },
+        take: Math.max(limit * 3, 60),
+      }),
+    ]);
+
+    const riskMap = this.buildPublicWelfareRiskMap(messageRiskRecords);
+
+    return {
+      riskQueue: riskQueue.map((item) => ({
+        id: item.id,
+        operationType: item.operationType,
+        operationAt: item.operationAt,
+        riskLevel: item.riskLevel,
+        categories: item.riskCategories || [],
+        matchedTerms: item.riskMatchedTerms || [],
+        confirmedToPublish: item.confirmedToPublish,
+        userId: item.userId,
+        userEmail: item.userEmail,
+        contentSnapshot: item.contentSnapshot,
+      })),
+      recentMessages: recentMessages.map((item) => ({
+        id: item.id,
+        name: item.name,
+        contact: item.contact,
+        message: item.message,
+        createdAt: item.createdAt,
+        risk: riskMap.get(item.id) || null,
+      })),
+      recentCards: recentCards.map((item) => ({
+        id: item.id,
+        slug: item.slug,
+        role: item.role,
+        headline: item.headline,
+        city: item.city,
+        ownerId: item.owner.id,
+        ownerName: item.owner.displayName,
+        ownerEmail: item.owner.email,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      })),
+      recentUsers: recentUsers.map((item) => ({
+        id: item.id,
+        displayName: item.displayName,
+        email: item.email,
+        createdAt: item.createdAt,
+        lastLoginAt: item.lastLoginAt,
+        isAdmin: item.isAdmin,
+      })),
+    };
+  }
+
+  async getPublicWelfareMessages(rawQuery?: string, rawLimit?: string, rawRiskOnly?: string) {
+    const query = rawQuery?.trim() || '';
+    const limit = this.parseLimit(rawLimit, 50, 10, 200);
+    const riskOnly = rawRiskOnly === 'true';
+
+    const where = query
+      ? [
+          { name: ILike(`%${query}%`) },
+          { contact: ILike(`%${query}%`) },
+          { message: ILike(`%${query}%`) },
+        ]
+      : undefined;
+
+    const messages = await this.publicWelfareMessageRepository.find({
+      where,
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
+
+    const messageRiskRecords = await this.publishedContentRecordRepository.find({
+      where: { operationType: 'public_welfare_message' },
+      order: { operationAt: 'DESC' },
+      take: Math.max(messages.length * 4, 120),
+    });
+
+    const riskMap = this.buildPublicWelfareRiskMap(messageRiskRecords);
+    const items = messages.map((item) => ({
+      id: item.id,
+      name: item.name,
+      contact: item.contact,
+      message: item.message,
+      createdAt: item.createdAt,
+      risk: riskMap.get(item.id) || null,
+    }));
+
+    return {
+      items: riskOnly ? items.filter((item) => item.risk?.reviewRequired) : items,
+    };
+  }
 
   async getComplianceLogs(rawLimit?: string) {
     const parsedLimit = Number(rawLimit || 50);
@@ -526,5 +644,41 @@ export class AdminService {
       acc[item.userId] = (acc[item.userId] || 0) + item.points;
       return acc;
     }, {});
+  }
+
+  private buildPublicWelfareRiskMap(records: PublishedContentRecord[]) {
+    const riskMap = new Map<
+      string,
+      {
+        reviewRequired: boolean;
+        riskLevel: 'none' | 'medium' | 'high' | null;
+        categories: string[];
+        matchedTerms: string[];
+        confirmedToPublish: boolean;
+      }
+    >();
+
+    records.forEach((record) => {
+      const messageId = record.contentSnapshot?.messageId;
+
+      if (typeof messageId !== 'string' || riskMap.has(messageId)) {
+        return;
+      }
+
+      riskMap.set(messageId, {
+        reviewRequired: record.reviewRequired,
+        riskLevel: record.riskLevel,
+        categories: record.riskCategories || [],
+        matchedTerms: record.riskMatchedTerms || [],
+        confirmedToPublish: record.confirmedToPublish,
+      });
+    });
+
+    return riskMap;
+  }
+
+  private parseLimit(rawLimit: string | undefined, fallback: number, min: number, max: number) {
+    const parsedLimit = Number(rawLimit || fallback);
+    return Number.isFinite(parsedLimit) ? Math.min(Math.max(Math.floor(parsedLimit), min), max) : fallback;
   }
 }

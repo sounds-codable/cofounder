@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Filter } from 'bad-words';
 
 type ModerationField = {
   field: string;
@@ -64,12 +63,10 @@ const riskRules: RiskRule[] = [
   },
 ];
 
+const englishAbuseTerms = ['fuck', 'shit', 'bitch', 'asshole', 'bastard', 'dick', 'motherfucker'];
+
 @Injectable()
 export class ContentModerationService {
-  private readonly englishFilter = new Filter({
-    placeHolder: '*',
-  });
-
   evaluate(fields: ModerationField[]): ModerationResult {
     const detections: DetectedRisk[] = [];
 
@@ -82,7 +79,7 @@ export class ContentModerationService {
 
       const normalized = rawContent.toLowerCase();
 
-      if (this.englishFilter.isProfane(normalized)) {
+      if (this.containsEnglishProfanity(normalized)) {
         detections.push({
           category: 'abuse',
           matchedTerm: '[bad-words]profanity',
@@ -142,5 +139,12 @@ export class ContentModerationService {
     }
 
     return result;
+  }
+
+  private containsEnglishProfanity(content: string) {
+    return englishAbuseTerms.some((term) => {
+      const pattern = new RegExp(`\\b${term}\\b`, 'i');
+      return pattern.test(content);
+    });
   }
 }

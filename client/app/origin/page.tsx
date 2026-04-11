@@ -7,10 +7,10 @@ export default function OriginPage() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-52 bg-[radial-gradient(circle_at_12%_0%,rgba(19,191,168,0.2),transparent_50%),radial-gradient(circle_at_90%_10%,rgba(76,200,255,0.16),transparent_45%)]" />
       <section className="relative space-y-3 rounded-2xl border border-border/70 bg-card/84 p-5 shadow-[0_18px_44px_rgba(73,101,163,0.14)] backdrop-blur-sm">
         <span className="inline-flex w-fit rounded-full bg-secondary/80 px-3 py-1 text-xs text-secondary-foreground">缘起</span>
-        <h1 className="text-3xl font-semibold leading-tight md:text-4xl">我们为什么要做这个站。</h1>
+        <h1 className="text-3xl font-semibold leading-tight md:text-4xl">我们为什么要做这个站</h1>
         <p>
-          这件事说起来不复杂。2025 年开始，AI 在互联网行业的替代速度明显加快，而且看起来还会继续蔓延到更多行业。
-          很多人焦虑，但又不知道该怎么动。
+          这件事说起来不复杂。<br/>2025 年开始，AI 在互联网行业的替代速度明显加快，而且看起来会快速蔓延到更多行业。
+          很多人焦虑，但又不知道该怎么办。
         </p>
       </section>
 
@@ -20,11 +20,11 @@ export default function OriginPage() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm leading-7 text-muted-foreground">
           <p>
-            70、80、90 后在各行各业积累了很深的行业经验，知道什么问题是真需求、有人愿意付费。
-            这些经验如果变成应用、软件、平台，不只是能创业，也能提升社会效率。
+            很多 70、80、90 后在各行各业积累了很深的行业经验，知道什么场景有真需求、有人已经在/肯定会付费。
+            这些经验如果变成应用、软件、平台，能赚钱能创业。
           </p>
           <p>
-            另一边，程序员借助 AI，确实能比以前更快做出产品。但程序员最缺的，往往不是技术，而是细分行业理解和真实资源。
+            另一边，程序员借助 AI，能比以前更快做出更强的产品。但程序员最缺的，往往不是技术，而是细分行业理解和客户资源。
           </p>
         </CardContent>
       </Card>
@@ -39,7 +39,7 @@ export default function OriginPage() {
             对很多程序员来说，技术越来越强，但找不到长期靠谱的业务场景。
           </p>
           <p>
-            所以把这两边匹配起来，可能是更现实的路：一个人带来真实场景，一个人负责把东西做出来，先跑 MVP，再慢慢迭代。
+            所以把这两边匹配起来，可能是更成立的路径：一个人带来真实场景，一个人负责把东西做出来，先跑 MVP，再迅速迭代。
           </p>
         </CardContent>
       </Card>
@@ -58,7 +58,7 @@ export default function OriginPage() {
             {' '}
             <Link className="text-primary underline underline-offset-4" href="/public-welfare">公益页</Link>
             {' '}
-            留言，告诉我们你想一起怎么共建。
+            留言，一起来共建！
           </p>
         </CardContent>
       </Card>

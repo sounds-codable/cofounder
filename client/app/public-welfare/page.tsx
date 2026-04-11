@@ -1,7 +1,6 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -72,24 +71,28 @@ export default function PublicWelfarePage() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_0%_0%,rgba(19,191,168,0.18),transparent_48%),radial-gradient(circle_at_100%_20%,rgba(76,200,255,0.16),transparent_50%)]" />
       <section className="relative space-y-3 rounded-2xl border border-border/70 bg-card/84 p-5 shadow-[0_18px_44px_rgba(73,101,163,0.14)] backdrop-blur-sm">
         <span className="inline-flex w-fit rounded-full bg-secondary/80 px-3 py-1 text-xs text-secondary-foreground">公益</span>
-        <h1 className="text-3xl font-semibold leading-tight md:text-4xl">这是一个纯公益的协作社区。</h1>
+        <h1 className="text-3xl font-semibold leading-tight md:text-4xl">这是一个纯公益的协作社区</h1>
         <p>
-          我们不做收费门槛，不做中间抽成。希望大家在这里互相帮一把：项目方把真实需求拿出来，程序员把真实能力拿出来，
-          一起把想法做成能跑起来的东西。
+          我们不做收费门槛，不做中间抽成。这是创业者的乌托邦。
         </p>
         <p>
-          这也是一种面对 AI 替代焦虑的自救方式：别空想，先合作，先做出一个小而真的 MVP。
+          失业的程序员，中年危机的行业专家，在AI替代传统岗位的时代浪潮时，转换思路，危机中创造机遇。
+        </p>
+        <p>
+          得益于 vibe coding，本站是由 Tanjieyu 和 Peter 业余时间共同搭建的。希望能够给需要的人带来一些阳光，利他即是利已。
         </p>
       </section>
 
       <Card className="border-border/70 bg-card/85 shadow-[0_14px_36px_rgba(73,101,163,0.14)]">
         <CardHeader>
-          <CardTitle>我们在招募志愿者 / 共建者</CardTitle>
+          <CardTitle>我们在招募志愿者 / 共建者 / 赞助者</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm leading-7 text-muted-foreground">
           <p>
-            如果你愿意一起参与，欢迎律师、投资人、财务、运营、产品、设计、销售等朋友加入。
-            你可以直接留言，也可以写信到
+            如果你愿意一起参与，就太欢迎了！现在只有两个程序员在业余打理，急需更多伙伴共建！<br/>如果你是律师、投资人、财务、运营、产品、设计、销售，或者对这个创业社群有热情，欢迎一起做公益。
+          </p>
+          <p>当前，我们最缺的是社区的运营者，快来！一起组织线下活动，维护社区群/氛围，在社媒上宣传本站。
+            <br/>你可以直接留言，也可以写信到
             {' '}
             <a className="text-primary underline underline-offset-4" href="mailto:cofounder@cofounder.icu">cofounder@cofounder.icu</a>
             。
@@ -100,7 +103,7 @@ export default function PublicWelfarePage() {
         </CardContent>
       </Card>
 
-      <Card className="mx-auto w-full max-w-3xl border-border/70 bg-card/88 shadow-[0_16px_40px_rgba(73,101,163,0.16)]">
+      <Card className="w-full border-border/70 bg-card/88 shadow-[0_16px_40px_rgba(73,101,163,0.16)]">
         <CardHeader className="space-y-3">
           <span className="inline-flex w-fit rounded-full bg-secondary/80 px-3 py-1 text-xs text-secondary-foreground">留言</span>
           <CardTitle>给我们留个言</CardTitle>
@@ -110,11 +113,11 @@ export default function PublicWelfarePage() {
         <CardContent className="space-y-4">
           <form className="space-y-4" onSubmit={(event) => void handleSubmit(event)}>
             <label className="grid gap-1.5 text-sm text-foreground">
-              你的称呼（选填）
+              你的称呼
               <Input maxLength={120} onChange={(event) => setName(event.target.value)} placeholder="例如：老王 / 杭州做供应链的刘老师" value={name} />
             </label>
             <label className="grid gap-1.5 text-sm text-foreground">
-              联系方式（必填）
+              联系方式
               <Input
                 maxLength={200}
                 onChange={(event) => setContact(event.target.value)}
@@ -124,11 +127,11 @@ export default function PublicWelfarePage() {
               />
             </label>
             <label className="grid gap-1.5 text-sm text-foreground">
-              留言内容（必填）
+              留言内容
               <Textarea
                 maxLength={3000}
                 onChange={(event) => setMessage(event.target.value)}
-                placeholder="例如：我能提供的帮助、我想找什么资源、我目前卡在哪一步……"
+                placeholder="例如：我能提供的帮助、对平台的建议……"
                 required
                 rows={8}
                 value={message}
@@ -138,9 +141,6 @@ export default function PublicWelfarePage() {
               <button className={buttonVariants()} disabled={submitting} type="submit">
                 {submitting ? '提交中…' : '提交留言'}
               </button>
-              <Link className={buttonVariants({ variant: 'outline' })} href="/projects">
-                先看项目库
-              </Link>
             </div>
           </form>
 

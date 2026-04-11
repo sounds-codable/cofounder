@@ -275,8 +275,8 @@ function DevelopersPageContent() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <span className="inline-flex rounded-full bg-secondary/80 px-3 py-1 text-xs text-secondary-foreground">程序员库</span>
-              <h1 className="mt-3 text-2xl font-semibold leading-tight text-foreground md:text-3xl">技术能力先对齐，再推进下一步沟通。</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">展示你能做的技术方向和真实经验，项目方会先看到你的基础信息，再决定是否开放项目详情与深入沟通。</p>
+              <h1 className="mt-3 text-2xl font-semibold leading-tight text-foreground md:text-3xl">技术能力先对齐，双向了解再沟通</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">程序员先公开展示技术能力和项目经验，程序员与意向项目方私密沟通详请后再决定是否交换联系方式，站外自行联系。</p>
             </div>
             <div className="w-full md:w-auto md:min-w-[220px]">
               <Link className={buttonVariants({ size: 'lg' })} href="/login?next=%2Fdevelopers">

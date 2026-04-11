@@ -220,6 +220,72 @@ export type AdminUserDetail = {
   };
 };
 
+export type AdminDailyFeed = {
+  riskQueue: Array<{
+    id: string;
+    operationType: string;
+    operationAt: string;
+    riskLevel: 'none' | 'medium' | 'high' | null;
+    categories: string[];
+    matchedTerms: string[];
+    confirmedToPublish: boolean;
+    userId: string;
+    userEmail: string | null;
+    contentSnapshot: Record<string, unknown>;
+  }>;
+  recentMessages: Array<{
+    id: string;
+    name: string | null;
+    contact: string;
+    message: string;
+    createdAt: string;
+    risk: {
+      reviewRequired: boolean;
+      riskLevel: 'none' | 'medium' | 'high' | null;
+      categories: string[];
+      matchedTerms: string[];
+      confirmedToPublish: boolean;
+    } | null;
+  }>;
+  recentCards: Array<{
+    id: string;
+    slug: string;
+    role: UserRole;
+    headline: string;
+    city: string;
+    ownerId: string;
+    ownerName: string;
+    ownerEmail: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  recentUsers: Array<{
+    id: string;
+    displayName: string;
+    email: string | null;
+    createdAt: string;
+    lastLoginAt: string | null;
+    isAdmin: boolean;
+  }>;
+};
+
+export type AdminPublicWelfareMessages = {
+  items: Array<{
+    id: string;
+    name: string | null;
+    contact: string;
+    message: string;
+    createdAt: string;
+    risk: {
+      reviewRequired: boolean;
+      riskLevel: 'none' | 'medium' | 'high' | null;
+      categories: string[];
+      matchedTerms: string[];
+      confirmedToPublish: boolean;
+    } | null;
+  }>;
+};
+
 export type AdminComplianceLogs = {
   operationLogs: Array<{
     id: string;
@@ -387,10 +453,6 @@ export type TagSuggestion = {
 
 function getDefaultApiBaseUrl() {
   if (typeof window !== 'undefined') {
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:3010/api';
-    }
-
     return '/api';
   }
 
@@ -409,15 +471,25 @@ type RequestOptions = {
 
 async function requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = Object.prototype.hasOwnProperty.call(options, 'token') ? options.token : getStoredAccessToken();
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    method: options.method ?? 'GET',
-    headers: {
-      Accept: 'application/json',
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    ...(options.body ? { body: JSON.stringify(options.body) } : {}),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${getApiBaseUrl()}${path}`, {
+      method: options.method ?? 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...(options.body ? { body: JSON.stringify(options.body) } : {}),
+    });
+  } catch (error) {
+    if (error instanceof Error && /failed to fetch/i.test(error.message)) {
+      throw new Error('网络请求失败：请确认后端服务已启动（默认端口 3010），然后刷新页面重试。');
+    }
+
+    throw error;
+  }
 
   if (!response.ok) {
     const text = await response.text();
@@ -754,4 +826,26 @@ export async function fetchAdminComplianceLogs(limit = 50) {
   const searchParams = new URLSearchParams();
   searchParams.set('limit', String(limit));
   return requestJson<AdminComplianceLogs>(`/admin/compliance-logs?${searchParams.toString()}`);
+}
+
+export async function fetchAdminDailyFeed(limit = 20) {
+  const searchParams = new URLSearchParams();
+  searchParams.set('limit', String(limit));
+  return requestJson<AdminDailyFeed>(`/admin/daily-feed?${searchParams.toString()}`);
+}
+
+export async function fetchAdminPublicWelfareMessages(options?: { query?: string; limit?: number; riskOnly?: boolean }) {
+  const searchParams = new URLSearchParams();
+
+  if (options?.query?.trim()) {
+    searchParams.set('query', options.query.trim());
+  }
+
+  searchParams.set('limit', String(options?.limit ?? 50));
+
+  if (options?.riskOnly) {
+    searchParams.set('riskOnly', 'true');
+  }
+
+  return requestJson<AdminPublicWelfareMessages>(`/admin/public-welfare/messages?${searchParams.toString()}`);
 }

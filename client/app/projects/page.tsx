@@ -324,8 +324,8 @@ function ProjectsPageContent() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <span className="inline-flex rounded-full bg-secondary/80 px-3 py-1 text-xs text-secondary-foreground">项目库</span>
-              <h1 className="mt-3 text-2xl font-semibold leading-tight text-foreground md:text-3xl">真实场景先公开，合作筛选再深入。</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">你有真实场景，我帮你快速匹配靠谱程序员。现在就发一个项目，先把合作机会打开。</p>
+              <h1 className="mt-3 text-2xl font-semibold leading-tight text-foreground md:text-3xl">真实场景先公开，深入了解再联络</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">项目方先公开项目简介，项目方与意向程序员私密沟通详请后再决定是否交换联系方式，站外自行联系。</p>
             </div>
             <div className="w-full md:w-auto md:min-w-[220px]">
               <Link className={buttonVariants({ size: 'lg' })} href="/login?next=%2Fprojects">
