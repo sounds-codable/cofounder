@@ -176,7 +176,7 @@ export default function BlogDetailPage() {
 
       <section className="relative space-y-3 rounded-2xl border border-border/70 bg-card/84 p-5 shadow-[0_18px_44px_rgba(73,101,163,0.14)] backdrop-blur-sm">
         <span className="inline-flex w-fit rounded-full bg-secondary/80 px-3 py-1 text-xs text-secondary-foreground">Blog</span>
-        <h1 className="text-3xl font-semibold leading-tight md:text-4xl">这里记录本站的故事与活动</h1>
+        <h1 className="text-3xl font-semibold leading-tight md:text-4xl">叩饭（Cofound）的故事</h1>
         <p className="text-sm leading-7 text-muted-foreground md:text-base">每一篇内容都来自社区真实实践、产品进展和成员反馈。</p>
         <div>
           <Link className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8')} href="/blog">
@@ -221,7 +221,6 @@ export default function BlogDetailPage() {
       <Card className="border-border/70 bg-card/85 shadow-[0_14px_36px_rgba(73,101,163,0.14)]">
         <CardHeader>
           <CardTitle>评论</CardTitle>
-          <p className="text-sm text-muted-foreground">评论提交后先仅自己可见，管理员审核通过后才会对所有人公开。</p>
         </CardHeader>
         <CardContent className="space-y-3">
           {authenticated ? (
@@ -243,7 +242,7 @@ export default function BlogDetailPage() {
             </Link>
           )}
 
-          {!detail?.comments.length ? <p className="text-sm text-muted-foreground">暂无可见评论。</p> : null}
+          {!detail?.comments.length ? <p className="text-sm text-muted-foreground">暂无评论</p> : null}
           {commentTree.map((comment) => {
             const replyDraft = replyDraftByCommentId[comment.id] || '';
 

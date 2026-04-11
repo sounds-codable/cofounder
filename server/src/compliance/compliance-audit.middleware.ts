@@ -54,10 +54,11 @@ export class ComplianceAuditMiddleware implements NestMiddleware {
     try {
       const authorization = this.readSingleHeader(req.headers.authorization);
       const user = await this.authService.getOptionalUserFromAuthorizationHeader(authorization);
+      const inferredOperationType = this.inferOperationType(req.method, requestPath);
 
       await this.complianceLogService.recordOperationAudit({
         user,
-        operationType: this.inferOperationType(req.method, requestPath),
+        operationType: this.truncate(inferredOperationType, 255) ?? 'unknown_operation',
         requestMethod: this.truncate(req.method, 16) ?? req.method,
         requestPath: this.truncate(requestPath, 500) ?? requestPath,
         statusCode: Number.isFinite(statusCode) ? statusCode : null,

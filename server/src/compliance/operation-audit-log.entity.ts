@@ -11,7 +11,7 @@ export class OperationAuditLog {
   @Column({ type: 'varchar', length: 160, nullable: true })
   userEmail!: string | null;
 
-  @Column({ type: 'varchar', length: 120 })
+  @Column({ type: 'varchar', length: 255 })
   operationType!: string;
 
   @Column({ type: 'varchar', length: 16 })
