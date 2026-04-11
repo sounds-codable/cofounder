@@ -6,6 +6,7 @@ import { CardEngagementActions } from '@/components/card-engagement-actions';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { buildCardPathFromCard, buildCardShareCodeMap, buildPublicCardCode, isShareCodeSegment } from '@/lib/card-url';
 import { formatBeijingDateTime } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import {
@@ -16,6 +17,7 @@ import {
   extractErrorMessage,
   extractRiskReview,
   fetchCardById,
+  fetchCards,
   fetchMyRequests,
   markExchangeReviewing,
   rejectDetailRequest,
@@ -56,7 +58,7 @@ function getProjectFieldLabel(role?: UserRole | null) {
 }
 
 function getProjectFieldPlaceholder(role?: UserRole | null) {
-  return role === 'developer' ? '补充你做过的项目、产品或代表作品' : '补充项目细节、成果或能力证明';
+  return role === 'developer' ? '请概要介绍你做过的具体项目、产品或代表作品。' : '补充项目细节、成果或能力证明';
 }
 
 function getRoleSpecificProjectDetail(detailProfile: DetailProfileLike | null | undefined, role?: UserRole | null) {
@@ -346,6 +348,60 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   const [processedActionAtByRequestId, setProcessedActionAtByRequestId] = useState<Record<string, string>>({});
   const [expandedCommunicationInfoById, setExpandedCommunicationInfoById] = useState<Record<string, boolean>>({});
   const [collapsedIncomingCommunicationByRequestId, setCollapsedIncomingCommunicationByRequestId] = useState<Record<string, boolean>>({});
+  const [sharePath, setSharePath] = useState<string | null>(null);
+  const detailPath = useMemo(
+    () => (card ? buildCardPathFromCard({ id: card.id, role: card.role, headline: card.headline }) : ''),
+    [card],
+  );
+  const publicCardCode = useMemo(() => {
+    if (!card || !sharePath) {
+      return card?.id || '';
+    }
+
+    const shareCode = sharePath.replace(/^\/+/, '');
+
+    if (!isShareCodeSegment(shareCode)) {
+      return card.id;
+    }
+
+    return buildPublicCardCode(card.role, shareCode);
+  }, [card, sharePath]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSharePath() {
+      if (!card) {
+        setSharePath(null);
+        return;
+      }
+
+      try {
+        const allCards = await fetchCards();
+        const shareCodeMap = buildCardShareCodeMap(
+          allCards.map((item) => ({
+            id: item.id,
+            updatedAt: item.updatedAt,
+          })),
+        );
+        const shareCode = shareCodeMap[card.id];
+
+        if (!cancelled) {
+          setSharePath(shareCode ? `/${shareCode}` : null);
+        }
+      } catch {
+        if (!cancelled) {
+          setSharePath(null);
+        }
+      }
+    }
+
+    void loadSharePath();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [card]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1092,7 +1148,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         </div>
         <h1 className="text-2xl font-semibold leading-tight text-foreground md:text-3xl">{card.headline}</h1>
         <p className="text-xs text-muted-foreground">{formatPublishedAt(card.updatedAt, card.ownerName)}</p>
-        <p className="text-xs text-muted-foreground">编号：{card.id}</p>
+        <p className="text-xs text-muted-foreground">编号：{publicCardCode}</p>
         <p className="text-sm leading-7 text-muted-foreground">{card.basicSummary}</p>
         <div className="flex flex-wrap gap-2">
           {card.strengths.map((strength) => (
@@ -1104,10 +1160,10 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         <div className="rounded-xl border border-border/60 bg-background/74 p-4">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
-              <CardEngagementActions cardId={id} />
+              <CardEngagementActions card={{ id: card.id, role: card.role, headline: card.headline }} sharePath={sharePath} />
             </div>
             {!authenticated ? (
-              <Link className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'ml-auto')} href={`/login?next=/cards/${id}`}>
+              <Link className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'ml-auto')} href={`/login?next=${encodeURIComponent(detailPath)}`}>
                 询问更多信息
               </Link>
             ) : card.viewerState ? (
@@ -1492,7 +1548,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                           setFieldErrors((previous) => ({ ...previous, intro: getDetailFieldError('intro', event.target.value) }));
                         }}
                         rows={3}
-                        placeholder="介绍你的背景和协作方式"
+                        placeholder="请避免泄漏个人隐私及联系方式。"
                         value={intro}
                       />
                       {fieldErrors.intro ? <span className="text-xs text-destructive">{fieldErrors.intro}</span> : null}
@@ -1507,7 +1563,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                           setFieldErrors((previous) => ({ ...previous, education: getDetailFieldError('education', event.target.value) }));
                         }}
                         rows={2}
-                        placeholder="学校、专业"
+                        placeholder="请概要介绍下学校、专业等情况，或许能遇到校友。"
                         value={education}
                       />
                       {fieldErrors.education ? <span className="text-xs text-destructive">{fieldErrors.education}</span> : null}
@@ -1522,7 +1578,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                           setFieldErrors((previous) => ({ ...previous, experience: getDetailFieldError('experience', event.target.value) }));
                         }}
                         rows={3}
-                        placeholder="做过哪些业务和职责"
+                        placeholder="请概要介绍工作经历和职责，这对创业伙伴了解你非常重要。"
                         value={experience}
                       />
                       {fieldErrors.experience ? <span className="text-xs text-destructive">{fieldErrors.experience}</span> : null}
@@ -1599,7 +1655,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                         setFieldErrors((previous) => ({ ...previous, intro: getDetailFieldError('intro', event.target.value) }));
                       }}
                       rows={3}
-                      placeholder="介绍你的背景和协作方式"
+                      placeholder="请避免泄漏个人隐私及联系方式。"
                       value={intro}
                     />
                     {fieldErrors.intro ? <span className="text-xs text-destructive">{fieldErrors.intro}</span> : null}
@@ -1614,7 +1670,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                         setFieldErrors((previous) => ({ ...previous, education: getDetailFieldError('education', event.target.value) }));
                       }}
                       rows={2}
-                      placeholder="学校、专业"
+                      placeholder="请概要介绍下学校、专业等情况，或许能遇到校友。"
                       value={education}
                     />
                     {fieldErrors.education ? <span className="text-xs text-destructive">{fieldErrors.education}</span> : null}
@@ -1629,7 +1685,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                         setFieldErrors((previous) => ({ ...previous, experience: getDetailFieldError('experience', event.target.value) }));
                       }}
                       rows={3}
-                      placeholder="做过哪些业务和职责"
+                      placeholder="请概要介绍工作经历和职责，这对创业伙伴了解你非常重要。"
                       value={experience}
                     />
                     {fieldErrors.experience ? <span className="text-xs text-destructive">{fieldErrors.experience}</span> : null}
@@ -2021,7 +2077,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                             setFieldErrors((previous) => ({ ...previous, intro: getDetailFieldError('intro', event.target.value) }));
                           }}
                           rows={3}
-                          placeholder="介绍你的背景和协作方式"
+                          placeholder="请避免泄漏个人隐私及联系方式。"
                           value={intro}
                         />
                         {fieldErrors.intro ? <span className="text-xs text-destructive">{fieldErrors.intro}</span> : null}
@@ -2036,7 +2092,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                             setFieldErrors((previous) => ({ ...previous, education: getDetailFieldError('education', event.target.value) }));
                           }}
                           rows={2}
-                          placeholder="学校、专业"
+                          placeholder="请概要介绍下学校、专业等情况，或许能遇到校友。"
                           value={education}
                         />
                         {fieldErrors.education ? <span className="text-xs text-destructive">{fieldErrors.education}</span> : null}
@@ -2051,7 +2107,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                             setFieldErrors((previous) => ({ ...previous, experience: getDetailFieldError('experience', event.target.value) }));
                           }}
                           rows={3}
-                          placeholder="做过哪些业务和职责"
+                          placeholder="请概要介绍工作经历和职责，这对创业伙伴了解你非常重要。"
                           value={experience}
                         />
                         {fieldErrors.experience ? <span className="text-xs text-destructive">{fieldErrors.experience}</span> : null}
@@ -2122,7 +2178,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                         setFieldErrors((previous) => ({ ...previous, intro: getDetailFieldError('intro', event.target.value) }));
                       }}
                       rows={3}
-                      placeholder="介绍你的背景和协作方式"
+                      placeholder="请避免泄漏个人隐私及联系方式。"
                       value={intro}
                     />
                     {fieldErrors.intro ? <span className="text-xs text-destructive">{fieldErrors.intro}</span> : null}
@@ -2137,7 +2193,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                         setFieldErrors((previous) => ({ ...previous, education: getDetailFieldError('education', event.target.value) }));
                       }}
                       rows={2}
-                      placeholder="学校、专业"
+                      placeholder="请概要介绍下学校、专业等情况，或许能遇到校友。"
                       value={education}
                     />
                     {fieldErrors.education ? <span className="text-xs text-destructive">{fieldErrors.education}</span> : null}
@@ -2152,7 +2208,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                         setFieldErrors((previous) => ({ ...previous, experience: getDetailFieldError('experience', event.target.value) }));
                       }}
                       rows={3}
-                      placeholder="做过哪些业务和职责"
+                      placeholder="请概要介绍工作经历和职责，这对创业伙伴了解你非常重要。"
                       value={experience}
                     />
                     {fieldErrors.experience ? <span className="text-xs text-destructive">{fieldErrors.experience}</span> : null}

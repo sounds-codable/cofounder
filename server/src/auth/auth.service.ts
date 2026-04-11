@@ -35,7 +35,7 @@ export class AuthService {
         if (!normalizedInviteCode) {
           throw new BadRequestException({
             code: 'INVITE_CODE_REQUIRED',
-            message: '还不是系统用户，需要邀请码才能注册，请输入邀请码。',
+            message: '本站邀请制，请输入邀请码继续使用。',
           });
         }
 

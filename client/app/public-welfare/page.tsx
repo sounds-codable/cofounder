@@ -25,7 +25,7 @@ export default function PublicWelfarePage() {
         contact,
         message,
       });
-      setResultMessage('留言已收到，感谢你愿意一起共建。');
+      setResultMessage('感谢！留言已收到，我们会认真阅读并回复。');
       setName('');
       setContact('');
       setMessage('');
@@ -94,7 +94,7 @@ export default function PublicWelfarePage() {
           <p>当前，我们最缺的是社区的运营者，快来！一起组织线下活动，维护社区群/氛围，在社媒上宣传本站。
             <br/>你可以直接留言，也可以写信到
             {' '}
-            <a className="text-primary underline underline-offset-4" href="mailto:cofounder@cofounder.icu">cofounder@cofounder.icu</a>
+            <a className="text-primary underline underline-offset-4" href="mailto:x@cofounder.icu">x@cofounder.icu</a>
             。
           </p>
           <p>
@@ -114,7 +114,7 @@ export default function PublicWelfarePage() {
           <form className="space-y-4" onSubmit={(event) => void handleSubmit(event)}>
             <label className="grid gap-1.5 text-sm text-foreground">
               你的称呼
-              <Input maxLength={120} onChange={(event) => setName(event.target.value)} placeholder="例如：老王 / 杭州做供应链的刘老师" value={name} />
+              <Input maxLength={120} onChange={(event) => setName(event.target.value)} placeholder="例如：小王 / 杭州做手熟尔AI+化妆应用的老谭" value={name} />
             </label>
             <label className="grid gap-1.5 text-sm text-foreground">
               联系方式

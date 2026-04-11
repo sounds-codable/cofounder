@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { buildCardPath } from '@/lib/card-url';
 import { formatBeijingDateTime } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import {
@@ -426,7 +427,11 @@ type IncomingRequestCardProps = {
 };
 
 function IncomingRequestCard({ orderNumber, onRequesterFilter, request, requesterFilterActive }: IncomingRequestCardProps) {
-  const detailHref = `/cards/${request.targetCard.id}`;
+  const detailHref = buildCardPath({
+    id: request.targetCard.id,
+    role: request.targetCard.role,
+    headline: request.targetCard.headline,
+  });
   const requesterName = request.requester.displayName?.trim() || '未知用户';
 
   return (
@@ -472,7 +477,11 @@ function OutgoingRequestCard({
   orderNumber,
   request,
 }: OutgoingRequestCardProps) {
-  const detailHref = `/cards/${request.targetCard.id}`;
+  const detailHref = buildCardPath({
+    id: request.targetCard.id,
+    role: request.targetCard.role,
+    headline: request.targetCard.headline,
+  });
   const ownerName = request.targetCard.ownerName?.trim() || '未知发布者';
 
   return (

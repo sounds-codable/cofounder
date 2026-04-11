@@ -141,9 +141,9 @@ export function LoginForm() {
             </Button>
           </div>
             </label>
-            <InfoDisclosure title="收不到验证码怎么办" compact>
-              <p>请先检查垃圾邮件箱。</p>
-              {devCode ? <p>当前本地环境调试验证码：{devCode}</p> : <p>如果本地开发未配置邮件服务，可稍后查看开发环境提示。</p>}
+            <InfoDisclosure title="收不到验证码？" compact>
+              <p>请稍等1-2分钟，同时检查垃圾邮件箱，或者更换邮箱尝试；如果仍未收到，请联系我们 x@cofounder.icu</p>
+              {devCode ? <p>当前本地环境调试验证码：{devCode}</p> : null}
             </InfoDisclosure>
             {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
             <Button className="w-full sm:w-auto" disabled={submitting || !email || !code} type="submit">
@@ -166,8 +166,8 @@ export function LoginForm() {
           />
           <div className="relative z-10 flex min-h-full items-start justify-center py-2 md:items-center">
             <section className="w-full max-w-lg space-y-4 rounded-2xl border border-border/70 bg-card/96 p-5 shadow-[0_18px_42px_rgba(79,108,163,0.24)] backdrop-blur-md">
-              <h2 className="text-xl font-semibold text-foreground">还不是系统用户，需要邀请码注册</h2>
-              <p className="text-sm text-muted-foreground">请输入邀请码后，再发送验证码完成注册。</p>
+              <h2 className="text-xl font-semibold text-foreground">本站邀请制，请输入邀请码</h2>
+              <p className="text-sm text-muted-foreground">本站目前仅对受邀用户开放</p>
 
               <label className="grid gap-2 text-sm font-medium text-foreground">
                 邀请码
@@ -179,7 +179,7 @@ export function LoginForm() {
                   <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-sky-300 text-xs font-semibold">i</span>
                   <strong>如何获得邀请码</strong>
                 </div>
-                <p className="mt-2 leading-6">可以去小红书上查找叩饭 Cofounder，也可以向网站现有用户索要邀请码。</p>
+                <p className="mt-2 leading-6">本站现有用户可提供邀请码。可在 小红书上查找『叩饭 邀请码』或『Cofounder 邀请码』。邀请码是免费的，无需付费。</p>
               </div>
 
               {inviteModalMessage ? <p className="text-sm text-destructive">{inviteModalMessage}</p> : null}
