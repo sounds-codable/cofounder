@@ -1,4 +1,4 @@
-import { Controller, ForbiddenException, Get, Headers, Param, Query } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Headers, Param, Put, Query } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import { AdminService } from './admin.service';
 
@@ -52,6 +52,28 @@ export class AdminController {
   ) {
     await this.getRequiredAdmin(authorization);
     return this.adminService.getPublicWelfareMessages(query, limit, riskOnly);
+  }
+
+  @Get('public-welfare/messages/:messageId')
+  async getPublicWelfareMessageById(@Headers('authorization') authorization: string | undefined, @Param('messageId') messageId: string) {
+    await this.getRequiredAdmin(authorization);
+    return this.adminService.getPublicWelfareMessageById(messageId);
+  }
+
+  @Put('public-welfare/messages/:messageId')
+  async updatePublicWelfareMessage(
+    @Headers('authorization') authorization: string | undefined,
+    @Param('messageId') messageId: string,
+    @Body() body: { name?: string; contact: string; message: string; riskConfirmed?: boolean },
+  ) {
+    const user = await this.getRequiredAdmin(authorization);
+    return this.adminService.updatePublicWelfareMessage(user.id, messageId, body);
+  }
+
+  @Delete('public-welfare/messages/:messageId')
+  async deletePublicWelfareMessage(@Headers('authorization') authorization: string | undefined, @Param('messageId') messageId: string) {
+    const user = await this.getRequiredAdmin(authorization);
+    return this.adminService.deletePublicWelfareMessage(user.id, messageId);
   }
 
   private async getRequiredAdmin(authorization?: string) {

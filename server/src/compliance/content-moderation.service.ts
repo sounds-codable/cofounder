@@ -1,15 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { Filter } from 'bad-words';
+import { highRiskCategories, RiskCategory } from '../config/content-moderation.config';
+import { CnLexiconFastscanService } from './cn-lexicon-fastscan.service';
 
 type ModerationField = {
   field: string;
   content: string | null | undefined;
-};
-
-type RiskCategory = 'pornography' | 'politics' | 'violence' | 'fraud' | 'illegal_goods' | 'abuse';
-
-type RiskRule = {
-  category: RiskCategory;
-  terms: string[];
 };
 
 type DetectedRisk = {
@@ -34,39 +30,12 @@ type EnsureReviewInput = {
   operationType: string;
 };
 
-const highRiskCategories = new Set<RiskCategory>(['pornography', 'politics', 'violence', 'illegal_goods']);
-
-const riskRules: RiskRule[] = [
-  {
-    category: 'pornography',
-    terms: ['约炮', '开房', '成人视频', '淫秽', '裸聊', '性交易', '嫖娼', '援交', '色图'],
-  },
-  {
-    category: 'politics',
-    terms: ['反共', '颠覆国家政权', '分裂国家', '台独', '港独', '疆独', '藏独', '煽动颠覆', '推翻政府'],
-  },
-  {
-    category: 'violence',
-    terms: ['爆炸物', '炸药', '枪支', '刀战', '恐袭', '制作炸弹', '屠杀', '报复社会'],
-  },
-  {
-    category: 'fraud',
-    terms: ['刷单', '洗钱', '套现', '黑产', '网赌代理', '灰产', '诈骗教程', '骗贷'],
-  },
-  {
-    category: 'illegal_goods',
-    terms: ['冰毒', '海洛因', '毒品', '迷药', '违禁药', '枪支弹药', '身份证代办'],
-  },
-  {
-    category: 'abuse',
-    terms: ['去死', '狗东西', '傻逼', '脑残', '废物', '滚开'],
-  },
-];
-
-const englishAbuseTerms = ['fuck', 'shit', 'bitch', 'asshole', 'bastard', 'dick', 'motherfucker'];
-
 @Injectable()
 export class ContentModerationService {
+  private readonly badWordsFilter = new Filter();
+
+  constructor(private readonly cnLexiconFastscanService: CnLexiconFastscanService) {}
+
   evaluate(fields: ModerationField[]): ModerationResult {
     const detections: DetectedRisk[] = [];
 
@@ -79,7 +48,7 @@ export class ContentModerationService {
 
       const normalized = rawContent.toLowerCase();
 
-      if (this.containsEnglishProfanity(normalized)) {
+      if (this.badWordsFilter.isProfane(normalized)) {
         detections.push({
           category: 'abuse',
           matchedTerm: '[bad-words]profanity',
@@ -87,15 +56,17 @@ export class ContentModerationService {
         });
       }
 
-      riskRules.forEach((rule) => {
-        rule.terms.forEach((term) => {
-          if (normalized.includes(term.toLowerCase())) {
-            detections.push({
-              category: rule.category,
-              matchedTerm: term,
-              field: field.field,
-            });
-          }
+      const lexiconMatches = this.cnLexiconFastscanService.search(normalized);
+
+      lexiconMatches.forEach(([, matchedTerm]) => {
+        const categories = this.cnLexiconFastscanService.getCategoriesByTerm(matchedTerm);
+
+        categories.forEach((category) => {
+          detections.push({
+            category,
+            matchedTerm,
+            field: field.field,
+          });
         });
       });
     }
@@ -112,7 +83,7 @@ export class ContentModerationService {
       matchedTerms,
       hitFields,
       detections,
-      provider: 'bad-words+cn-rules-v1',
+      provider: this.cnLexiconFastscanService.getProviderLabel(),
     };
   }
 
@@ -139,12 +110,5 @@ export class ContentModerationService {
     }
 
     return result;
-  }
-
-  private containsEnglishProfanity(content: string) {
-    return englishAbuseTerms.some((term) => {
-      const pattern = new RegExp(`\\b${term}\\b`, 'i');
-      return pattern.test(content);
-    });
   }
 }

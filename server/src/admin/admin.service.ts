@@ -4,6 +4,8 @@ import { ILike, In, IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { CardEngagementType } from '../common/enums/card-engagement-type.enum';
 import { DetailRequestStatus } from '../common/enums/detail-request-status.enum';
 import { UserRole } from '../common/enums/user-role.enum';
+import { ContentModerationService } from '../compliance/content-moderation.service';
+import { ComplianceLogService } from '../compliance/compliance-log.service';
 import { OperationAuditLog } from '../compliance/operation-audit-log.entity';
 import { PublishedContentRecord } from '../compliance/published-content-record.entity';
 import { ContactMethod } from '../contacts/contact-method.entity';
@@ -17,6 +19,8 @@ import { User } from '../users/user.entity';
 @Injectable()
 export class AdminService {
   constructor(
+    private readonly complianceLogService: ComplianceLogService,
+    private readonly contentModerationService: ContentModerationService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Card)
@@ -150,6 +154,109 @@ export class AdminService {
     return {
       items: riskOnly ? items.filter((item) => item.risk?.reviewRequired) : items,
     };
+  }
+
+  async getPublicWelfareMessageById(messageId: string) {
+    const message = await this.publicWelfareMessageRepository.findOne({ where: { id: messageId } });
+
+    if (!message) {
+      throw new NotFoundException('留言不存在');
+    }
+
+    const messageRiskRecords = await this.publishedContentRecordRepository.find({
+      where: { operationType: 'public_welfare_message' },
+      order: { operationAt: 'DESC' },
+      take: 500,
+    });
+
+    const riskMap = this.buildPublicWelfareRiskMap(messageRiskRecords);
+
+    return {
+      id: message.id,
+      name: message.name,
+      contact: message.contact,
+      message: message.message,
+      createdAt: message.createdAt,
+      risk: riskMap.get(message.id) || null,
+    };
+  }
+
+  async updatePublicWelfareMessage(
+    adminUserId: string,
+    messageId: string,
+    body: { name?: string; contact: string; message: string; riskConfirmed?: boolean },
+  ) {
+    const message = await this.publicWelfareMessageRepository.findOne({ where: { id: messageId } });
+
+    if (!message) {
+      throw new NotFoundException('留言不存在');
+    }
+
+    const moderationResult = this.contentModerationService.ensureReviewed({
+      operationType: 'public_welfare_message',
+      riskConfirmed: body.riskConfirmed,
+      fields: [
+        { field: 'name', content: body.name },
+        { field: 'contact', content: body.contact },
+        { field: 'message', content: body.message },
+      ],
+    });
+
+    message.name = body.name?.trim() || null;
+    message.contact = body.contact.trim();
+    message.message = body.message.trim();
+    const saved = await this.publicWelfareMessageRepository.save(message);
+
+    await this.complianceLogService.recordPublishedContent({
+      userId: adminUserId,
+      operationType: 'public_welfare_message',
+      riskReview: {
+        reviewRequired: moderationResult.hasRisk,
+        riskLevel: moderationResult.riskLevel,
+        categories: moderationResult.categories,
+        matchedTerms: moderationResult.matchedTerms,
+        confirmedToPublish: Boolean(body.riskConfirmed),
+        provider: moderationResult.provider,
+      },
+      contentSnapshot: {
+        messageId: saved.id,
+        name: saved.name,
+        contact: saved.contact,
+        message: saved.message,
+        adminEdited: true,
+      },
+    });
+
+    return {
+      id: saved.id,
+      name: saved.name,
+      contact: saved.contact,
+      message: saved.message,
+      createdAt: saved.createdAt,
+    };
+  }
+
+  async deletePublicWelfareMessage(adminUserId: string, messageId: string) {
+    const message = await this.publicWelfareMessageRepository.findOne({ where: { id: messageId } });
+
+    if (!message) {
+      throw new NotFoundException('留言不存在');
+    }
+
+    await this.publicWelfareMessageRepository.delete({ id: messageId });
+
+    await this.complianceLogService.recordPublishedContent({
+      userId: adminUserId,
+      operationType: 'public_welfare_message_delete',
+      contentSnapshot: {
+        messageId: message.id,
+        name: message.name,
+        contact: message.contact,
+        message: message.message,
+      },
+    });
+
+    return { ok: true };
   }
 
   async getComplianceLogs(rawLimit?: string) {

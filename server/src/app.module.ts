@@ -6,9 +6,15 @@ import { AdminService } from './admin/admin.service';
 import { AuthController } from './auth/auth.controller';
 import { MailService } from './auth/mail.service';
 import { AuthService } from './auth/auth.service';
+import { BlogComment } from './blog/blog-comment.entity';
+import { BlogController } from './blog/blog.controller';
+import { BlogLike } from './blog/blog-like.entity';
+import { BlogPost } from './blog/blog-post.entity';
+import { BlogService } from './blog/blog.service';
 import { ComplianceAuditMiddleware } from './compliance/compliance-audit.middleware';
 import { ContentModerationService } from './compliance/content-moderation.service';
 import { ComplianceLogService } from './compliance/compliance-log.service';
+import { CnLexiconFastscanService } from './compliance/cn-lexicon-fastscan.service';
 import { OperationAuditLog } from './compliance/operation-audit-log.entity';
 import { PublishedContentRecord } from './compliance/published-content-record.entity';
 import { ContactMethod } from './contacts/contact-method.entity';
@@ -66,9 +72,21 @@ import { User } from './users/user.entity';
       CardEngagement,
       OperationAuditLog,
       PublishedContentRecord,
+      BlogPost,
+      BlogComment,
+      BlogLike,
     ]),
   ],
-  controllers: [HealthController, PlatformController, AuthController, MeController, RequestsController, PublicWelfareController, AdminController],
+  controllers: [
+    HealthController,
+    PlatformController,
+    AuthController,
+    MeController,
+    RequestsController,
+    PublicWelfareController,
+    AdminController,
+    BlogController,
+  ],
   providers: [
     PlatformService,
     SeedService,
@@ -80,8 +98,10 @@ import { User } from './users/user.entity';
     RewardService,
     AdminService,
     ComplianceLogService,
+    CnLexiconFastscanService,
     ContentModerationService,
     ComplianceAuditMiddleware,
+    BlogService,
   ],
 })
 export class AppModule implements NestModule {

@@ -13,6 +13,7 @@
     "migration:create": "npm run typeorm -- migration:create src/database/migrations/ManualMigration",
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
+    "moderation:sync-lexicon": "node ./scripts/sync-sensitive-lexicon.mjs",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json"
@@ -26,6 +27,7 @@
     "bad-words": "^4.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "fastscan": "^1.2.0",
     "nodemailer": "^8.0.4",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
