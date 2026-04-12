@@ -2,10 +2,45 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import './globals.css';
 import { AppShell } from '@/components/app-shell';
+import { getSiteUrl, seoDefaults } from '@/lib/seo';
 
 export const metadata: Metadata = {
-  title: '叩饭 Cofounder',
-  description: '行业专家与程序员双向授权协作平台。先公开最少信息，再在需要时逐步开放详细资料与联系方式。',
+  metadataBase: new URL(getSiteUrl()),
+  title: {
+    default: '叩饭 Cofounder',
+    template: `%s | ${seoDefaults.siteName}`,
+  },
+  description: seoDefaults.defaultDescription,
+  applicationName: seoDefaults.siteName,
+  keywords: seoDefaults.defaultKeywords,
+  alternates: {
+    canonical: '/',
+  },
+  manifest: '/manifest.webmanifest',
+  openGraph: {
+    type: 'website',
+    locale: 'zh_CN',
+    url: getSiteUrl(),
+    siteName: seoDefaults.siteName,
+    title: seoDefaults.siteName,
+    description: seoDefaults.defaultDescription,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: seoDefaults.siteName,
+    description: seoDefaults.defaultDescription,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
 };
 
 export const viewport: Viewport = {

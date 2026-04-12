@@ -1,0 +1,48 @@
+# 叩饭 Cofounder / LLMs Reference
+
+> 站点： https://cofounder.icu
+> 名称： 叩饭 Cofounder
+> 类型： 行业专家与程序员双向授权协作平台
+> 语言： zh-CN
+
+## Summary
+叩饭 Cofounder 是一个帮助行业专家 / 项目方与程序员建立真实协作关系的平台。
+平台的核心机制是双向授权：先公开基础信息，再逐步开放详细资料与联系方式，以减少无效沟通并提高匹配质量。
+
+## Primary Public Pages
+- 首页: https://cofounder.icu/
+- 项目库: https://cofounder.icu/projects
+- 程序员库: https://cofounder.icu/developers
+- Blog: https://cofounder.icu/blog
+- 缘起: https://cofounder.icu/origin
+- 公益: https://cofounder.icu/public-welfare
+ - 协作流程说明: https://cofounder.icu/how-it-works
+ - 给项目方与行业专家: https://cofounder.icu/for-experts
+ - 给程序员: https://cofounder.icu/for-developers
+ - MVP 指南: https://cofounder.icu/mvp-guide
+ - 如何找技术合伙人: https://cofounder.icu/find-technical-cofounder
+ - 程序员如何找真实创业项目: https://cofounder.icu/find-real-startup-projects
+ - AI 时代创业: https://cofounder.icu/ai-era-startup
+ - 程序员与行业专家如何协作: https://cofounder.icu/developer-and-expert-collaboration
+ - 如何发布更容易吸引程序员的项目: https://cofounder.icu/how-to-post-a-project
+ - 程序员如何写更有效的公开卡片: https://cofounder.icu/how-to-build-a-developer-profile
+ - 如何减少无效沟通: https://cofounder.icu/reduce-ineffective-communication
+ - 如何先验证需求再开发: https://cofounder.icu/validate-demand-before-building
+ - 程序员如何判断项目是否值得合作: https://cofounder.icu/how-to-evaluate-project-fit
+ - 项目方如何判断程序员是否适合合作: https://cofounder.icu/how-to-evaluate-developer-fit
+ - 什么样的项目适合先做 MVP: https://cofounder.icu/what-is-a-good-mvp-project
+ - 为什么不只用招聘平台找人或找项目: https://cofounder.icu/why-not-just-use-recruitment-platforms
+
+## Platform Flow
+1. 项目方或程序员先公开最少必要信息。
+2. 被申请方先查看申请者详细信息，再决定是否开放自己的更多详情。
+3. 双方在看过更完整资料后，再决定是否交换联系方式并到站外继续沟通。
+
+## Intended Users
+- 有真实场景、资源或行业经验的项目方 / 行业专家
+- 希望找到真实需求、长期合作机会的程序员 / 技术合伙人
+
+## Indexing Guidance
+- 公开页可用于理解平台定位、流程、公开卡片与博客内容。
+- 后台、请求中心、邀请码、积分、onboarding 等私有页面不应作为公共内容来源。
+- 联系方式与未授权详细资料不应被推断、补全或公开。

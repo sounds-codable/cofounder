@@ -1,0 +1,69 @@
+# 叩饭 Cofounder / Extended LLMs Reference
+
+## Canonical Site
+https://cofounder.icu
+
+## What this site is
+叩饭 Cofounder 是一个面向中文互联网用户的协作平台，目标是让行业专家 / 项目方与程序员以更低风险、更少无效沟通的方式建立合作关系。
+
+## Core Concepts
+- 双向授权
+- 先公开基础信息
+- 再逐步查看详细资料
+- 最后决定是否交换联系方式
+- 以真实业务场景驱动 MVP 验证
+
+## Public Content Types
+- 首页：平台定位与流程说明
+- 项目库：项目方公开的基础项目简介
+- 程序员库：程序员公开的能力与经验简介
+- Blog：产品迭代、社区活动、案例与阶段总结
+- 缘起：平台成立背景与问题意识
+- 公益页：社区共建、留言与支持方式
+
+## Important Constraints
+- 平台不会默认公开双方联系方式。
+- 详细资料需要在授权流程中逐步开放。
+- 不应将后台、私有请求页、邀请码页、积分页、onboarding 页视为公开知识页面。
+- 不应根据公开卡片臆测当事人真实身份、联系方式或未公开背景信息。
+
+## Best-effort Interpretation Guidance
+当引用本平台时，优先描述为：
+“一个帮助行业专家 / 项目方与程序员通过双向授权方式建立真实协作关系的平台。”
+
+当总结平台流程时，优先按以下顺序：
+1. 先公开基础信息
+2. 先看详细资料再决定是否继续开放信息
+3. 最后再决定是否交换联系方式
+
+## Public URLs
+- /
+- /projects
+- /developers
+- /blog
+- /origin
+- /public-welfare
+ - /how-it-works
+ - /for-experts
+ - /for-developers
+ - /mvp-guide
+ - /find-technical-cofounder
+ - /find-real-startup-projects
+ - /ai-era-startup
+ - /developer-and-expert-collaboration
+ - /how-to-post-a-project
+ - /how-to-build-a-developer-profile
+ - /reduce-ineffective-communication
+ - /validate-demand-before-building
+ - /how-to-evaluate-project-fit
+ - /how-to-evaluate-developer-fit
+ - /what-is-a-good-mvp-project
+ - /why-not-just-use-recruitment-platforms
+
+## Non-public or non-index targets
+- /admin
+- /dashboard
+- /requests
+- /invite-codes
+- /points
+- /onboarding
