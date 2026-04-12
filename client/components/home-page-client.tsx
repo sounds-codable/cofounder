@@ -148,6 +148,16 @@ function renderTextWithMvp(text: string) {
   ));
 }
 
+function SectionGlowDivider({ className }: { className?: string }) {
+  return (
+    <div aria-hidden="true" className={cn('relative h-20 overflow-hidden md:h-28', className)}>
+      <div className="absolute inset-x-0 top-1/2 h-full -translate-y-1/2 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.08)_22%,rgba(255,255,255,0.14)_50%,rgba(255,255,255,0.08)_78%,rgba(255,255,255,0)_100%)]" />
+      <div className="absolute inset-x-[4%] top-1/2 h-14 -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,rgba(91,210,255,0)_0%,rgba(91,210,255,0.03)_12%,rgba(91,210,255,0.08)_28%,rgba(91,210,255,0.14)_50%,rgba(91,210,255,0.08)_72%,rgba(91,210,255,0.03)_88%,rgba(91,210,255,0)_100%)] blur-3xl md:inset-x-[8%] md:h-20 md:blur-[56px]" />
+      <div className="absolute inset-x-[18%] top-1/2 h-8 -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,rgba(19,191,168,0)_0%,rgba(19,191,168,0.02)_16%,rgba(115,226,255,0.08)_34%,rgba(115,226,255,0.14)_50%,rgba(115,226,255,0.08)_66%,rgba(19,191,168,0.02)_84%,rgba(19,191,168,0)_100%)] blur-2xl md:inset-x-[20%] md:h-10 md:blur-[40px]" />
+    </div>
+  );
+}
+
 export function HomePageClient() {
   const [activeFlowScenario, setActiveFlowScenario] = useState<FlowScenario['key']>('developer_to_expert');
   const currentFlowScenario = flowScenarios.find((scenario) => scenario.key === activeFlowScenario) ?? flowScenarios[0];
@@ -251,6 +261,8 @@ export function HomePageClient() {
         </div>
       </section>
 
+      <SectionGlowDivider />
+
       <section className="relative flex min-h-[92vh] items-center py-8 md:py-12" style={deferredSectionStyle}>
         <div className="pointer-events-none absolute inset-0 opacity-90">
           <div className="home-fx-orb home-fx-orb--wide absolute -right-24 top-12 h-[42vh] w-[42vh] rounded-full bg-[radial-gradient(circle,rgba(72,137,255,0.25)_0%,rgba(72,137,255,0)_72%)] [animation:driftOrbit_24s_ease-in-out_infinite_reverse] motion-reduce:[animation:none]" />
@@ -295,6 +307,8 @@ export function HomePageClient() {
         </div>
       </section>
 
+      <SectionGlowDivider />
+
       <section className="relative flex min-h-[92vh] items-center py-8 md:py-12" style={deferredSectionStyle}>
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(196,230,255,0.2)_40%,rgba(203,214,255,0.15)_100%)]" />
         <div className="home-fx-sweep home-fx-sweep--wide absolute -left-[18vw] top-[18vh] h-[34vh] w-[60vw] rotate-[-12deg] bg-[linear-gradient(90deg,transparent_0%,rgba(19,191,168,0.2)_48%,transparent_100%)] [animation:sweepX_8s_linear_infinite] motion-reduce:[animation:none]" />
@@ -333,6 +347,8 @@ export function HomePageClient() {
           </div>
         </div>
       </section>
+
+      <SectionGlowDivider />
 
       <section className="relative flex min-h-[90vh] items-center py-8 md:py-12" style={deferredSectionStyle}>
         <div className="pointer-events-none absolute inset-0">
@@ -388,6 +404,8 @@ export function HomePageClient() {
           </Card>
         </div>
       </section>
+
+      <SectionGlowDivider className="-mt-2 md:-mt-3" />
 
       <section className="relative flex min-h-[76vh] items-center pb-14 pt-8 md:pt-12" style={deferredSectionStyle}>
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_8%,rgba(19,191,168,0.22),transparent_55%),radial-gradient(circle_at_90%_90%,rgba(76,200,255,0.26),transparent_48%)]" />
