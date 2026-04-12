@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatBeijingDateTime } from '@/lib/time';
 import { useAuthState } from '@/lib/use-auth';
 import { cn } from '@/lib/utils';
 
@@ -28,7 +29,7 @@ export function formatAdminDate(value: string | null | undefined) {
     return value;
   }
 
-  return date.toLocaleString('zh-CN');
+  return formatBeijingDateTime(value, value);
 }
 
 function AdminSubNav() {

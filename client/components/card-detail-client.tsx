@@ -1475,7 +1475,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         <div className="fixed inset-0 z-50 overflow-y-auto p-4" role="dialog" aria-modal="true" aria-label="询问更多信息">
           <button className="fixed inset-0 bg-foreground/30" onClick={() => setRequestModalOpen(false)} type="button" aria-label="关闭弹框" />
           <div className="relative z-10 flex min-h-full items-start justify-center py-2 md:items-center">
-            <section className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-border/70 bg-card/96 p-5 shadow-[0_18px_42px_rgba(79,108,163,0.24)] backdrop-blur-md">
+            <section className="max-h-[calc(100vh-2rem)] supports-[height:100dvh]:max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-border/70 bg-card/96 p-5 shadow-[0_18px_42px_rgba(79,108,163,0.24)] backdrop-blur-md">
             <h2 className="text-xl font-semibold text-foreground">询问更多信息</h2>
             <div className="request-modal-alert">
               <p className="request-modal-alert-text">
@@ -1822,7 +1822,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         <div className="fixed inset-0 z-[70] overflow-y-auto p-4" role="dialog" aria-modal="true" aria-label="风险提示">
           <button className="fixed inset-0 bg-foreground/35" onClick={() => setRiskNoticeModalOpen(false)} type="button" aria-label="关闭风险提示弹框" />
           <div className="relative z-10 flex min-h-full items-start justify-center py-2 md:items-center">
-            <section className="relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-amber-300/70 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,247,237,0.98))] p-5 shadow-[0_18px_42px_rgba(180,83,9,0.2)] backdrop-blur-md">
+            <section className="relative max-h-[calc(100vh-2rem)] supports-[height:100dvh]:max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-amber-300/70 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,247,237,0.98))] p-5 shadow-[0_18px_42px_rgba(180,83,9,0.2)] backdrop-blur-md">
               <button
                 aria-label="关闭风险提示弹框"
                 className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-300/70 bg-white text-xl leading-none text-amber-900 shadow-[0_8px_18px_rgba(180,83,9,0.2)] transition-colors hover:bg-amber-100"
@@ -1872,7 +1872,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         <div className="fixed inset-0 z-[70] overflow-y-auto p-4" role="dialog" aria-modal="true" aria-label="MVP建议">
           <button className="fixed inset-0 bg-foreground/35" onClick={() => setMvpGuideModalOpen(false)} type="button" aria-label="关闭MVP建议弹框" />
           <div className="relative z-10 flex min-h-full items-start justify-center py-2 md:items-center">
-            <section className="relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-sky-300/70 bg-[linear-gradient(180deg,rgba(239,246,255,0.98),rgba(236,253,245,0.98))] p-5 shadow-[0_18px_42px_rgba(14,116,144,0.18)] backdrop-blur-md">
+            <section className="relative max-h-[calc(100vh-2rem)] supports-[height:100dvh]:max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-sky-300/70 bg-[linear-gradient(180deg,rgba(239,246,255,0.98),rgba(236,253,245,0.98))] p-5 shadow-[0_18px_42px_rgba(14,116,144,0.18)] backdrop-blur-md">
               <button
                 aria-label="关闭MVP建议弹框"
                 className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-sky-300/70 bg-white text-xl leading-none text-sky-900 shadow-[0_8px_18px_rgba(14,116,144,0.2)] transition-colors hover:bg-sky-100"
@@ -2008,7 +2008,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
             aria-label="关闭弹框"
           />
           <div className="relative z-10 flex min-h-full items-start justify-center py-2 md:items-center">
-            <section className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-border/70 bg-card/96 p-5 shadow-[0_18px_42px_rgba(79,108,163,0.24)] backdrop-blur-md">
+            <section className="max-h-[calc(100vh-2rem)] supports-[height:100dvh]:max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-border/70 bg-card/96 p-5 shadow-[0_18px_42px_rgba(79,108,163,0.24)] backdrop-blur-md">
               <h2 className="text-xl font-semibold text-foreground">和Ta聊聊</h2>
               <div className="request-modal-alert">
                 <p className="request-modal-alert-text">

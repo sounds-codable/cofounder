@@ -7,10 +7,7 @@ import {
   fetchBlogPosts,
   type BlogPostListResult,
 } from '@/lib/platform-api';
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString('zh-CN');
-}
+import { formatBeijingDate } from '@/lib/time';
 
 export default function BlogPage() {
   const [loading, setLoading] = useState(true);
@@ -68,7 +65,7 @@ export default function BlogPage() {
               <span>·</span>
               <span>{post.authorDisplayName}</span>
               <span>·</span>
-              <span>{formatDate(post.updatedAt)}</span>
+              <span>{formatBeijingDate(post.updatedAt)}</span>
             </div>
             <h2 className="text-xl font-semibold leading-8 text-foreground">{post.title}</h2>
             <p className="mt-2 line-clamp-2 text-sm leading-7 text-muted-foreground">{post.summary}</p>

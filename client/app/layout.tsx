@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import './globals.css';
 import { AppShell } from '@/components/app-shell';
@@ -6,6 +6,12 @@ import { AppShell } from '@/components/app-shell';
 export const metadata: Metadata = {
   title: '叩饭 Cofounder',
   description: '行业专家与程序员双向授权协作平台。先公开最少信息，再在需要时逐步开放详细资料与联系方式。',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

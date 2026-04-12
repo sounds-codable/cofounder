@@ -7,6 +7,7 @@ import { buildCardPathFromCard } from '@/lib/card-url';
 import { useCardEngagement } from '@/lib/card-engagement';
 import { type PublicCard } from '@/lib/site-data';
 import { useAuthState } from '@/lib/use-auth';
+import { copyTextToClipboard } from '@/lib/utils';
 
 type CardEngagementActionsProps = {
   card: Pick<PublicCard, 'id' | 'role' | 'headline'>;
@@ -64,21 +65,14 @@ export function CardEngagementActions({ card, sharePath }: CardEngagementActions
 
   async function handleCopyShareText() {
     try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareText);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = shareText;
-        textarea.setAttribute('readonly', 'true');
-        textarea.style.position = 'fixed';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
+      const copied = await copyTextToClipboard(shareText);
+
+      if (!copied) {
+        setCopyMessage('复制失败，请手动选择文案后复制。');
+        return;
       }
 
-      setCopyMessage('已复制，可直接粘贴到微信/小红书/微博/知乎。');
+      setCopyMessage('已复制，可直接粘贴到微信/小红书/微博/知乎等社交媒体。');
     } catch {
       setCopyMessage('复制失败，请手动选择文案后复制。');
     }

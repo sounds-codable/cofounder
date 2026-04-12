@@ -79,7 +79,7 @@ export default function Index6() {
 
       <View className='risk-grid'>
         <View className='panel'>
-          <Text className='kicker'>给项目方 / 专业人士</Text>
+          <Text className='kicker'>To: 项目方 / 专业人士</Text>
           <Text className='panel-title'>两件事会很快发生</Text>
           <View className='panel-list'>
             <View className='panel-item'>
@@ -95,7 +95,7 @@ export default function Index6() {
         </View>
 
         <View className='panel'>
-          <Text className='kicker'>给程序员</Text>
+          <Text className='kicker'>To: 程序员</Text>
           <Text className='panel-title'>现实已经很明确</Text>
           <View className='panel-list'>
             <View className='panel-item'>

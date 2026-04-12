@@ -5,6 +5,8 @@ import { useAuthState } from '@/lib/use-auth';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { extractErrorMessage, fetchInviteOverview, type InviteOverview } from '@/lib/platform-api';
+import { formatBeijingDateTime } from '@/lib/time';
+import { copyTextToClipboard } from '@/lib/utils';
 
 export default function InviteCodesPage() {
   const { authenticated, loading } = useAuthState();
@@ -41,8 +43,8 @@ export default function InviteCodesPage() {
       return;
     }
 
-    await navigator.clipboard.writeText(data.shareText);
-    setMessage('分享文案已复制，你可以直接发到朋友圈/小红书。');
+    const copied = await copyTextToClipboard(data.shareText);
+    setMessage(copied ? '分享文案已复制，你可以直接发到朋友圈/小红书。' : '复制失败，请手动长按或选择文本后复制。');
   }
 
   if (!loading && !authenticated) {
@@ -92,7 +94,7 @@ export default function InviteCodesPage() {
               <div className="flex items-center justify-between rounded-lg border border-border/60 bg-background/70 px-3 py-2" key={user.id}>
                 <div>
                   <p className="text-sm text-foreground">{user.displayName || '未命名用户'}</p>
-                  <p className="text-xs text-muted-foreground">注册时间：{new Date(user.registeredAt).toLocaleString('zh-CN')}</p>
+                  <p className="text-xs text-muted-foreground">注册时间：{formatBeijingDateTime(user.registeredAt)}</p>
                 </div>
               </div>
             ))

@@ -150,7 +150,7 @@ function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['
 
 function DashboardPinIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
+    <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
       <path d="M8 4h8M10 4v5l-3 3h10l-3-3V4M12 12v8" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
     </svg>
   );
@@ -158,7 +158,7 @@ function DashboardPinIcon() {
 
 function DashboardKebabIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
+    <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
       <circle cx="6" cy="12" r="1.8" fill="currentColor" />
       <circle cx="12" cy="12" r="1.8" fill="currentColor" />
       <circle cx="18" cy="12" r="1.8" fill="currentColor" />
@@ -168,7 +168,7 @@ function DashboardKebabIcon() {
 
 function DashboardCloseIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
+    <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
       <path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
     </svg>
   );
@@ -177,7 +177,7 @@ function DashboardCloseIcon() {
 function DashboardToggleIcon({ mobile, expanded }: { mobile: boolean; expanded: boolean }) {
   if (mobile) {
     return (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
         <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
       </svg>
     );
@@ -185,14 +185,14 @@ function DashboardToggleIcon({ mobile, expanded }: { mobile: boolean; expanded: 
 
   if (expanded) {
     return (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
         <path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
       </svg>
     );
   }
 
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
+    <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
       <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
     </svg>
   );
@@ -294,14 +294,22 @@ function AppShellContent({ children }: AppShellProps) {
 
     syncViewport(mediaQuery.matches);
 
-    function handleChange(event: MediaQueryListEvent) {
+    const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
       syncViewport(event.matches);
+    };
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+
+      return () => {
+        mediaQuery.removeEventListener('change', handleChange);
+      };
     }
 
-    mediaQuery.addEventListener('change', handleChange);
+    mediaQuery.addListener(handleChange);
 
     return () => {
-      mediaQuery.removeEventListener('change', handleChange);
+      mediaQuery.removeListener(handleChange);
     };
   }, []);
 

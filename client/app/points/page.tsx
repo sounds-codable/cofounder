@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { extractErrorMessage, fetchPointsOverview, type PointsOverview } from '@/lib/platform-api';
+import { formatBeijingDateTime } from '@/lib/time';
 import { useAuthState } from '@/lib/use-auth';
 
 export default function PointsPage() {
@@ -70,7 +71,7 @@ export default function PointsPage() {
                   {item.action === 'invite_user' && item.relatedUserDisplayName ? (
                     <p className="text-xs text-muted-foreground">邀请用户：{item.relatedUserDisplayName}</p>
                   ) : null}
-                  <p className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString('zh-CN')}</p>
+                  <p className="text-xs text-muted-foreground">{formatBeijingDateTime(item.createdAt)}</p>
                 </div>
                 <span className="text-sm font-medium text-foreground">+{item.points}</span>
               </div>

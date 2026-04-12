@@ -14,12 +14,9 @@ import {
   toggleBlogLike,
   type BlogPostDetail,
 } from '@/lib/platform-api';
+import { formatBeijingDateTime } from '@/lib/time';
 import { useAuthState } from '@/lib/use-auth';
 import { cn } from '@/lib/utils';
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleString('zh-CN');
-}
 
 type BlogDetailClientProps = {
   postId: string;
@@ -192,7 +189,7 @@ export function BlogDetailClient({ postId }: BlogDetailClientProps) {
           <CardTitle>{detail?.title || '正在加载...'}</CardTitle>
           {detail ? (
             <p className="text-sm text-muted-foreground">
-              作者：{detail.authorDisplayName} · 更新时间：{formatDate(detail.updatedAt)}
+              作者：{detail.authorDisplayName} · 更新时间：{formatBeijingDateTime(detail.updatedAt)}
             </p>
           ) : null}
         </CardHeader>
@@ -312,7 +309,7 @@ export function BlogDetailClient({ postId }: BlogDetailClientProps) {
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span>{comment.authorDisplayName}</span>
                   <span>·</span>
-                  <span>{formatDate(comment.createdAt)}</span>
+                  <span>{formatBeijingDateTime(comment.createdAt)}</span>
                   {comment.status !== 'approved' ? <span className="text-amber-700">待审核（仅你可见）</span> : null}
                 </div>
                 <p className="mt-1 whitespace-pre-wrap break-words text-sm">{comment.content}</p>
@@ -370,7 +367,7 @@ export function BlogDetailClient({ postId }: BlogDetailClientProps) {
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                           <span>{reply.authorDisplayName}</span>
                           <span>·</span>
-                          <span>{formatDate(reply.createdAt)}</span>
+                          <span>{formatBeijingDateTime(reply.createdAt)}</span>
                           {reply.status !== 'approved' ? <span className="text-amber-700">待审核（仅你可见）</span> : null}
                         </div>
                         <p className="mt-1 whitespace-pre-wrap break-words text-sm">{reply.content}</p>
