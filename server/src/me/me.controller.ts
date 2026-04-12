@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Post, Put, Query } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import { SaveBasicProfileDto } from './dto/save-basic-profile.dto';
 import { SaveContactMethodsDto } from './dto/save-contact-methods.dto';
@@ -42,6 +42,15 @@ export class MeController {
   async saveDisplayName(@Headers('authorization') authorization: string | undefined, @Body() body: SaveDisplayNameDto) {
     const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
     return this.meService.saveDisplayName(user.id, body);
+  }
+
+  @Get('display-name-availability')
+  async getDisplayNameAvailability(
+    @Headers('authorization') authorization: string | undefined,
+    @Query('displayName') displayName?: string,
+  ) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.meService.getDisplayNameAvailability(user.id, displayName || '');
   }
 
   @Get('invites')

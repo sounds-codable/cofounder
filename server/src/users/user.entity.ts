@@ -13,7 +13,7 @@ export class User {
   @Column({ type: 'varchar', length: 160, unique: true, nullable: true })
   email!: string | null;
 
-  @Column({ type: 'varchar', length: 120 })
+  @Column({ type: 'varchar', length: 120, unique: true })
   displayName!: string;
 
   @Column({ type: 'jsonb', nullable: true })

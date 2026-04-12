@@ -10,6 +10,7 @@ import { UserRole } from '../common/enums/user-role.enum';
 import { ComplianceLogService } from '../compliance/compliance-log.service';
 import { RewardService } from '../rewards/reward.service';
 import { User } from '../users/user.entity';
+import { normalizeDisplayName } from '../users/display-name.util';
 import { CardEngagement } from '../platform/card-engagement.entity';
 import { Card } from '../platform/card.entity';
 import { CardTag } from '../platform/card-tag.entity';
@@ -138,6 +139,10 @@ export class MeService {
     });
 
     return this.getProfile(userId);
+  }
+
+  async getDisplayNameAvailability(userId: string, rawDisplayName: string) {
+    return this.checkDisplayNameAvailability(userId, rawDisplayName);
   }
 
   async getInviteOverview(userId: string) {
@@ -271,7 +276,13 @@ export class MeService {
       fields: [{ field: 'displayName', content: body.displayName }],
     });
 
-    user.displayName = body.displayName.trim();
+    const availability = await this.checkDisplayNameAvailability(userId, body.displayName);
+
+    if (!availability.available) {
+      throw new BadRequestException(availability.message || '昵称已被使用，请换一个');
+    }
+
+    user.displayName = availability.normalizedDisplayName;
     await this.userRepository.save(user);
 
     await this.complianceLogService.recordPublishedContent({
@@ -613,12 +624,59 @@ export class MeService {
 
   private createDetailPreviewFallback() {
     return {
-      intro: '待补充详细信息',
-      education: '待补充教育背景',
-      experience: '待补充工作背景',
+      intro: '',
+      education: '',
+      experience: '',
       expertProjectDetail: '待补充项目详情',
       developerProjectExperience: '待补充做过的项目/产品',
       projectDetail: '待补充项目介绍',
+    };
+  }
+
+  private async checkDisplayNameAvailability(userId: string, rawDisplayName: string) {
+    const displayName = normalizeDisplayName(rawDisplayName);
+
+    if (!displayName) {
+      return {
+        available: false,
+        normalizedDisplayName: displayName,
+        message: '昵称不能为空',
+      };
+    }
+
+    if (displayName.length < 2) {
+      return {
+        available: false,
+        normalizedDisplayName: displayName,
+        message: '昵称至少需要 2 个字符',
+      };
+    }
+
+    if (displayName.length > 120) {
+      return {
+        available: false,
+        normalizedDisplayName: displayName,
+        message: '昵称不能超过 120 个字符',
+      };
+    }
+
+    const existingUser = await this.userRepository
+      .createQueryBuilder('user')
+      .where('LOWER(user.displayName) = LOWER(:displayName)', { displayName })
+      .getOne();
+
+    if (!existingUser || existingUser.id === userId) {
+      return {
+        available: true,
+        normalizedDisplayName: displayName,
+        message: null,
+      };
+    }
+
+    return {
+      available: false,
+      normalizedDisplayName: displayName,
+      message: '昵称已被使用，请换一个',
     };
   }
 

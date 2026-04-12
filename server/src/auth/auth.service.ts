@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { RewardService } from '../rewards/reward.service';
 import { MailService } from './mail.service';
 import { User } from '../users/user.entity';
+import { normalizeDisplayName, resolveUniqueDisplayName } from '../users/display-name.util';
 
 type AuthTokenPayload = {
   exp: number;
@@ -51,9 +52,19 @@ export class AuthService {
         invitedByUserId = inviter.id;
       }
 
+      const baseDisplayName = normalizeDisplayName(normalizedEmail.split('@')[0] || '新用户');
+      const displayName = await resolveUniqueDisplayName(baseDisplayName, async (candidate) => {
+        const existingUser = await this.userRepository
+          .createQueryBuilder('user')
+          .where('LOWER(user.displayName) = LOWER(:displayName)', { displayName: candidate })
+          .getOne();
+
+        return Boolean(existingUser);
+      });
+
       user = this.userRepository.create({
         email: normalizedEmail,
-        displayName: normalizedEmail.split('@')[0] || '新用户',
+        displayName,
         detailedProfile: null,
         detailedProfileCompletedAt: null,
         loginCode: null,

@@ -7,7 +7,7 @@ import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { SmartTooltip } from '@/components/smart-tooltip';
 import { buttonVariants } from '@/components/ui/button';
-import { extractErrorMessage, extractRiskReview, fetchOverview, saveDisplayName, type LogoVariant } from '@/lib/platform-api';
+import { extractErrorMessage, extractRiskReview, fetchDisplayNameAvailability, fetchOverview, saveDisplayName, type LogoVariant } from '@/lib/platform-api';
 import { cn } from '@/lib/utils';
 import { clearStoredAccessToken } from '@/lib/session';
 import { useAuthState } from '@/lib/use-auth';
@@ -133,7 +133,7 @@ function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['
   return (
     <svg aria-hidden="true" className={navIconClassName} viewBox="0 0 24 24">
       <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M6 19c1.1-2.9 3.1-4.3 6-4.3s4.9 1.4 6 4.3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M6 19c1.1-2.9 3.1-4.3 6-4.3s4.9 1.4 6 4.3" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
     </svg>
   );
 }
@@ -245,6 +245,8 @@ function AppShellContent({ children }: AppShellProps) {
   const [displayNameDraft, setDisplayNameDraft] = useState('');
   const [savingDisplayName, setSavingDisplayName] = useState(false);
   const [displayNameMessage, setDisplayNameMessage] = useState<string | null>(null);
+  const [displayNameAvailable, setDisplayNameAvailable] = useState<boolean | null>(null);
+  const [checkingDisplayName, setCheckingDisplayName] = useState(false);
   const [desktopViewport, setDesktopViewport] = useState(false);
   const [pending, startTransition] = useTransition();
   const { authenticated, profile, refresh } = useAuthState();
@@ -331,7 +333,76 @@ function AppShellContent({ children }: AppShellProps) {
   }, [profile?.user.displayName]);
 
   useEffect(() => {
+    if (!editingDisplayName) {
+      setCheckingDisplayName(false);
+      setDisplayNameAvailable(null);
+      return;
+    }
+
+    const nextName = displayNameDraft.trim();
+    const currentName = profile?.user.displayName?.trim() || '';
+
+    if (!nextName) {
+      setCheckingDisplayName(false);
+      setDisplayNameAvailable(null);
+      setDisplayNameMessage(null);
+      return;
+    }
+
+    if (nextName.length < 2) {
+      setCheckingDisplayName(false);
+      setDisplayNameAvailable(false);
+      setDisplayNameMessage('昵称至少需要 2 个字符。');
+      return;
+    }
+
+    if (nextName === currentName) {
+      setCheckingDisplayName(false);
+      setDisplayNameAvailable(true);
+      setDisplayNameMessage(null);
+      return;
+    }
+
+    let cancelled = false;
+    setCheckingDisplayName(true);
+    setDisplayNameAvailable(null);
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const result = await fetchDisplayNameAvailability(nextName);
+
+        if (cancelled) {
+          return;
+        }
+
+        setDisplayNameAvailable(result.available);
+        setDisplayNameMessage(result.available ? '昵称可用。' : result.message || '昵称已被使用，请换一个。');
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setDisplayNameAvailable(null);
+        setDisplayNameMessage(extractErrorMessage(error));
+      } finally {
+        if (!cancelled) {
+          setCheckingDisplayName(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [displayNameDraft, editingDisplayName, profile?.user.displayName]);
+
+  useEffect(() => {
     if (!userMenuOpen) {
+      setEditingDisplayName(false);
+      setDisplayNameMessage(null);
+      setDisplayNameAvailable(null);
+      setCheckingDisplayName(false);
       return;
     }
 
@@ -379,6 +450,17 @@ function AppShellContent({ children }: AppShellProps) {
 
     if (nextName.length < 2) {
       setDisplayNameMessage('昵称至少需要 2 个字符。');
+      setDisplayNameAvailable(false);
+      return;
+    }
+
+    if (checkingDisplayName) {
+      setDisplayNameMessage('正在检查昵称是否可用，请稍候。');
+      return;
+    }
+
+    if (displayNameAvailable === false) {
+      setDisplayNameMessage('昵称已被使用，请换一个。');
       return;
     }
 
@@ -501,6 +583,7 @@ function AppShellContent({ children }: AppShellProps) {
                             onClick={() => {
                               setEditingDisplayName((current) => !current);
                               setDisplayNameMessage(null);
+                              setDisplayNameAvailable(null);
                             }}
                           >
                             <svg aria-hidden="true" className="size-3.5" viewBox="0 0 24 24">
@@ -529,6 +612,7 @@ function AppShellContent({ children }: AppShellProps) {
                             }}
                           />
                         </label>
+                        {checkingDisplayName ? <p className="text-xs text-muted-foreground">正在检查昵称是否重复…</p> : null}
                         <div className="flex gap-2">
                           <button className={cn(buttonVariants({ size: 'sm' }), 'h-8')} disabled={savingDisplayName} type="button" onClick={() => void handleSaveDisplayName()}>
                             {savingDisplayName ? '保存中…' : '保存'}
@@ -541,12 +625,14 @@ function AppShellContent({ children }: AppShellProps) {
                               setEditingDisplayName(false);
                               setDisplayNameDraft(profile.user.displayName || '');
                               setDisplayNameMessage(null);
+                              setDisplayNameAvailable(null);
+                              setCheckingDisplayName(false);
                             }}
                           >
                             取消
                           </button>
                         </div>
-                        {displayNameMessage ? <p className="text-xs text-destructive">{displayNameMessage}</p> : null}
+                        {displayNameMessage ? <p className={cn('text-xs', displayNameAvailable ? 'text-emerald-600' : 'text-destructive')}>{displayNameMessage}</p> : null}
                       </div>
                     ) : null}
                     <div className="overflow-hidden rounded-xl border border-border/70 bg-background/82">

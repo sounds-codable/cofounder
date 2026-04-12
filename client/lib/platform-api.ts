@@ -881,6 +881,17 @@ export async function saveContactMethods(body: {
   });
 }
 
+export async function fetchDisplayNameAvailability(displayName: string) {
+  const searchParams = new URLSearchParams();
+  searchParams.set('displayName', displayName);
+
+  return requestJson<{
+    available: boolean;
+    normalizedDisplayName: string;
+    message: string | null;
+  }>(`/me/display-name-availability?${searchParams.toString()}`);
+}
+
 export async function saveDisplayName(displayName: string, riskConfirmed?: boolean) {
   return requestJson<MeProfile>('/me/display-name', {
     method: 'PUT',
