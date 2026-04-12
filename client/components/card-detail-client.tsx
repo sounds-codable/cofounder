@@ -1746,7 +1746,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">还没有录入详细信息，请先录入详细信息。</p>
+                <p className="text-sm text-muted-foreground">还没有录入详细信息，请先录入。</p>
                 <form className="space-y-3" onSubmit={(event) => event.preventDefault()}>
                   <label className="grid gap-1 text-sm text-foreground">
                     个人简介
