@@ -1,6 +1,6 @@
 import { fallbackPublicCards, type PublicCard } from '@/lib/site-data';
 
-export type CardRouteItem = Pick<PublicCard, 'id' | 'role' | 'headline' | 'updatedAt'>;
+export type CardRouteItem = Pick<PublicCard, 'id' | 'role' | 'headline' | 'updatedAt' | 'titleSlug'>;
 
 function getCardApiBaseUrl() {
   return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3010/api';
@@ -15,6 +15,7 @@ export async function getStaticCards(): Promise<CardRouteItem[]> {
       role: card.role,
       headline: card.headline,
       updatedAt: card.updatedAt,
+      titleSlug: card.titleSlug,
     });
   });
 

@@ -53,7 +53,7 @@ export class RequestsService {
 
   async createRequest(user: User, cardId: string) {
     let card = await this.cardRepository.findOne({
-      where: { slug: cardId },
+      where: { publicCode: cardId },
       relations: {
         owner: true,
       },
@@ -174,7 +174,7 @@ export class RequestsService {
       userId,
       userEmail: request.publisher.email,
       cardId: request.targetCard.id,
-      cardSlug: request.targetCard.slug,
+      cardPublicCode: request.targetCard.publicCode,
       operationType: 'reject_detail_request',
       riskReview: {
         reviewRequired: moderationResult.hasRisk,
@@ -313,7 +313,7 @@ export class RequestsService {
       userId,
       userEmail: request.requester.email,
       cardId: request.targetCard.id,
-      cardSlug: request.targetCard.slug,
+      cardPublicCode: request.targetCard.publicCode,
       operationType: 'decline_contact_by_requester',
       riskReview: {
         reviewRequired: moderationResult.hasRisk,
@@ -423,7 +423,7 @@ export class RequestsService {
 
   private toTargetCard(request: DetailRequest) {
     return {
-      id: request.targetCard.slug,
+      id: request.targetCard.publicCode,
       headline: request.targetCard.headline,
       city: request.targetCard.city,
       role: request.targetCard.role,

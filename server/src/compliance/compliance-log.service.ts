@@ -35,7 +35,7 @@ type PublishedRecordPayload = {
   userId: string;
   userEmail?: string | null;
   cardId?: string | null;
-  cardSlug?: string | null;
+  cardPublicCode?: string | null;
   operationType: string;
   operationAt?: Date;
   riskReview?: {
@@ -102,7 +102,7 @@ export class ComplianceLogService implements OnModuleInit, OnModuleDestroy {
       userId: payload.userId,
       userEmail: payload.userEmail ?? null,
       cardId: payload.cardId ?? null,
-      cardSlug: payload.cardSlug ?? null,
+      cardPublicCode: payload.cardPublicCode ?? null,
       operationType: payload.operationType,
       reviewRequired: payload.riskReview?.reviewRequired ?? false,
       riskLevel: payload.riskReview?.riskLevel ?? null,

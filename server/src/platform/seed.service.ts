@@ -113,7 +113,7 @@ export class SeedService implements OnModuleInit {
     ]);
 
     const expertMedicalCard = this.cardRepository.create({
-      slug: 'expert-medical-chain',
+      publicCode: 'p-00001',
       owner: expertMedical,
       role: UserRole.EXPERT,
       headline: '做基层医疗供应链效率平台，已验证线下需求，想找能一起做 MVP 的程序员',
@@ -132,7 +132,7 @@ export class SeedService implements OnModuleInit {
     });
 
     const expertBrandCard = this.cardRepository.create({
-      slug: 'expert-cross-border-brand',
+      publicCode: 'p-00002',
       owner: expertBrand,
       role: UserRole.EXPERT,
       headline: '跨境品牌出海项目寻找全栈程序员，希望一起快速验证 AI 增长工具方向',
@@ -151,7 +151,7 @@ export class SeedService implements OnModuleInit {
     });
 
     const developerGrowthCard = this.cardRepository.create({
-      slug: 'developer-growth-fullstack',
+      publicCode: 'd-00001',
       owner: developerGrowth,
       role: UserRole.DEVELOPER,
       headline: 'React / Next.js / NestJS 全栈，做过增长与内容产品，想找能快速试错的真实业务方',
@@ -170,7 +170,7 @@ export class SeedService implements OnModuleInit {
     });
 
     const developerDataCard = this.cardRepository.create({
-      slug: 'developer-data-ai',
+      publicCode: 'd-00002',
       owner: developerData,
       role: UserRole.DEVELOPER,
       headline: '数据工程 + AI 应用开发，做过推荐与智能分析，希望参与更懂行业问题的项目',
@@ -212,6 +212,9 @@ export class SeedService implements OnModuleInit {
         contactExchangedAt: null,
       }),
     ]);
+
+    await this.cardRepository.query(`SELECT setval('cards_public_code_expert_seq', 2, true)`);
+    await this.cardRepository.query(`SELECT setval('cards_public_code_developer_seq', 2, true)`);
 
     this.logger.log('Seeded initial cofounder demo data');
   }

@@ -4,6 +4,7 @@ export type PublicCard = {
   id: string;
   role: UserRole;
   updatedAt?: string;
+  titleSlug?: string;
   ownerId?: string;
   ownerName?: string;
   headline: string;
@@ -34,9 +35,10 @@ export const roleLabels: Record<UserRole, string> = {
 
 export const fallbackPublicCards: PublicCard[] = [
   {
-    id: 'expert-medical-chain',
+    id: 'p-00001',
     role: 'expert',
     updatedAt: '2026-03-29T09:30:00.000Z',
+    titleSlug: '做基层医疗供应链效率平台',
     headline: '做基层医疗供应链效率平台，已验证线下需求，想找能一起做 MVP 的程序员',
     city: '杭州',
     basicSummary: '已跑通若干真实商户场景，现希望和愿意长期协作的技术合伙人一起做第一版。',
@@ -51,9 +53,10 @@ export const fallbackPublicCards: PublicCard[] = [
     },
   },
   {
-    id: 'expert-cross-border-brand',
+    id: 'p-00002',
     role: 'expert',
     updatedAt: '2026-03-25T13:10:00.000Z',
+    titleSlug: '跨境品牌出海项目寻找全栈程序员',
     headline: '跨境品牌出海项目寻找全栈程序员，希望一起快速验证 AI 增长工具方向',
     city: '深圳',
     basicSummary: '供应链和渠道资源较成熟，希望在内容生产、广告投放、CRM 自动化之间找到最小切口。',
@@ -68,9 +71,10 @@ export const fallbackPublicCards: PublicCard[] = [
     },
   },
   {
-    id: 'developer-growth-fullstack',
+    id: 'd-00001',
     role: 'developer',
     updatedAt: '2026-03-20T03:20:00.000Z',
+    titleSlug: 'react-nextjs-nestjs-全栈',
     headline: 'React / Next.js / NestJS 全栈，做过增长与内容产品，想找能快速试错的真实业务方',
     city: '上海',
     basicSummary: '擅长把模糊需求快速拆成 MVP，偏好内容、AI 工具、效率平台方向。',
@@ -86,9 +90,10 @@ export const fallbackPublicCards: PublicCard[] = [
     },
   },
   {
-    id: 'developer-data-ai',
+    id: 'd-00002',
     role: 'developer',
     updatedAt: '2026-03-17T18:40:00.000Z',
+    titleSlug: '数据工程-ai-应用开发',
     headline: '数据工程 + AI 应用开发，做过推荐与智能分析，希望参与更懂行业问题的项目',
     city: '北京',
     basicSummary: '偏后端和数据方向，喜欢把行业 know-how 结构化成真正能跑的产品。',

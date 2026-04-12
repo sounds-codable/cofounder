@@ -88,7 +88,7 @@ export class PlatformService {
 
   async getCardById(id: string, viewerUserId?: string | null) {
     let card = await this.cardRepository.findOne({
-      where: { slug: id },
+      where: { publicCode: id },
       relations: {
         owner: {
           contactMethods: true,
@@ -208,7 +208,7 @@ export class PlatformService {
 
   private toPublicCard(card: Card) {
     return {
-      id: card.slug,
+      id: card.publicCode,
       role: card.role,
       updatedAt: card.updatedAt.toISOString(),
       ownerId: card.owner.id,

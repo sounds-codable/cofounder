@@ -13,6 +13,7 @@ import { User } from '../users/user.entity';
 import { CardEngagement } from '../platform/card-engagement.entity';
 import { Card } from '../platform/card.entity';
 import { CardTag } from '../platform/card-tag.entity';
+import { buildCardPublicCode } from '../platform/public-code';
 import { Tag } from '../platform/tag.entity';
 import { SaveBasicProfileDto } from './dto/save-basic-profile.dto';
 import { SaveContactMethodsDto } from './dto/save-contact-methods.dto';
@@ -84,7 +85,7 @@ export class MeService {
 
     const card = this.cardRepository.create({
       owner: user,
-      slug: this.createCardSlug(user.id, body.role, user.displayName),
+      publicCode: await this.createNextCardPublicCode(body.role),
       detailPreview: this.createDetailPreviewFallback(),
       strengths: [],
     });
@@ -108,7 +109,7 @@ export class MeService {
       `${body.role === UserRole.EXPERT ? RewardAction.PUBLISH_PROJECT : RewardAction.REGISTER_DEVELOPER}:${user.id}:${savedCard.id}`,
       {
         cardId: savedCard.id,
-        cardSlug: savedCard.slug,
+        cardPublicCode: savedCard.publicCode,
         role: body.role,
       },
     );
@@ -116,7 +117,7 @@ export class MeService {
       userId: user.id,
       userEmail: user.email,
       cardId: savedCard.id,
-      cardSlug: savedCard.slug,
+      cardPublicCode: savedCard.publicCode,
       operationType: 'publish_card_basic_profile',
       riskReview: {
         reviewRequired: moderationResult.hasRisk,
@@ -160,7 +161,7 @@ export class MeService {
 
     return engagements.reduce<{ favorites: Record<string, true>; likes: Record<string, true> }>(
       (acc, item) => {
-        const cardId = item.card.slug;
+        const cardId = item.card.publicCode;
 
         if (item.type === CardEngagementType.FAVORITE) {
           acc.favorites[cardId] = true;
@@ -181,7 +182,7 @@ export class MeService {
 
   async toggleCardEngagement(userId: string, cardId: string, type: CardEngagementType, active: boolean) {
     let card = await this.cardRepository.findOne({
-      where: { slug: cardId },
+      where: { publicCode: cardId },
       relations: {
         owner: true,
       },
@@ -240,12 +241,12 @@ export class MeService {
       const action = type === CardEngagementType.LIKE ? RewardAction.LIKE_CARD : RewardAction.FAVORITE_CARD;
       await this.rewardService.awardPoints(userId, action, `engagement:${type}:${userId}:${card.id}`, {
         cardId: card.id,
-        cardSlug: card.slug,
+        cardPublicCode: card.publicCode,
       });
     }
 
     return {
-      cardId: card.slug,
+      cardId: card.publicCode,
       type,
       active: savedEngagement.active,
     };
@@ -372,7 +373,7 @@ export class MeService {
             userId: user.id,
             userEmail: user.email,
             cardId: card.id,
-            cardSlug: card.slug,
+            cardPublicCode: card.publicCode,
             operationType: 'update_card_detail_profile',
             riskReview: {
               reviewRequired: moderationResult.hasRisk,
@@ -579,7 +580,7 @@ export class MeService {
       },
       card: card
         ? {
-            id: card.slug,
+            id: card.publicCode,
             role: card.role,
             headline: card.headline,
             city: card.city,
@@ -602,16 +603,12 @@ export class MeService {
     };
   }
 
-  private createCardSlug(userId: string, role: Card['role'], displayName: string) {
-    const normalizedName = displayName
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    const nowToken = Date.now().toString(36);
-    const randomToken = Math.random().toString(36).slice(2, 6);
-    return `${role}-${normalizedName || 'member'}-${userId.slice(0, 8)}-${nowToken}${randomToken}`;
+  private async createNextCardPublicCode(role: Card['role']) {
+    const sequenceName = role === UserRole.EXPERT ? 'cards_public_code_expert_seq' : 'cards_public_code_developer_seq';
+    const rows: Array<{ value: string | number }> = await this.cardRepository.query(`SELECT nextval('${sequenceName}') AS value`);
+    const [row] = rows;
+    const sequenceNumber = Number(row?.value ?? 0);
+    return buildCardPublicCode(role, sequenceNumber);
   }
 
   private createDetailPreviewFallback() {

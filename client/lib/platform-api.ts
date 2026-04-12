@@ -148,7 +148,7 @@ export type AdminOverview = {
     userId: string;
     userEmail: string | null;
     cardId: string | null;
-    cardSlug: string | null;
+    cardPublicCode: string | null;
     operationType: string;
     operationAt: string;
     riskLevel: 'none' | 'medium' | 'high' | null;
@@ -205,7 +205,7 @@ export type AdminUserDetail = {
   };
   cards: Array<{
     id: string;
-    slug: string;
+    publicCode: string;
     role: UserRole;
     headline: string;
     city: string;
@@ -230,7 +230,7 @@ export type AdminUserDetail = {
     likes: Array<{
       id: string;
       cardId: string;
-      cardSlug: string;
+      cardPublicCode: string;
       cardHeadline: string;
       link: string;
       firstActivatedAt: string | null;
@@ -239,7 +239,7 @@ export type AdminUserDetail = {
     favorites: Array<{
       id: string;
       cardId: string;
-      cardSlug: string;
+      cardPublicCode: string;
       cardHeadline: string;
       link: string;
       firstActivatedAt: string | null;
@@ -256,7 +256,7 @@ export type AdminUserDetail = {
       updatedAt: string;
       targetCard: {
         id: string;
-        slug: string;
+        publicCode: string;
         headline: string;
         link: string;
       };
@@ -318,7 +318,7 @@ export type AdminDailyFeed = {
   }>;
   recentCards: Array<{
     id: string;
-    slug: string;
+    publicCode: string;
     role: UserRole;
     headline: string;
     city: string;
@@ -378,7 +378,7 @@ export type AdminComplianceLogs = {
     userId: string;
     userEmail: string | null;
     cardId: string | null;
-    cardSlug: string | null;
+    cardPublicCode: string | null;
     operationType: string;
     reviewRequired: boolean;
     riskLevel: 'none' | 'medium' | 'high' | null;

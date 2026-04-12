@@ -72,7 +72,7 @@ export default function AdminCompliancePage() {
             {logs?.publishedRecords.map((item) => (
               <div className="rounded-md border border-border/60 bg-background/80 px-3 py-2 text-xs" key={item.id}>
                 <p>时间：{formatAdminDate(item.operationAt)} · 用户：{item.userEmail || item.userId}</p>
-                <p>类型：{item.operationType} · 卡片：{item.cardSlug || item.cardId || '—'}</p>
+                <p>类型：{item.operationType} · 卡片：{item.cardPublicCode || item.cardId || '—'}</p>
                 <p>风险：{item.reviewRequired ? '需审核' : '无需审核'} · 等级：{item.riskLevel || 'none'} · 人工确认：{item.confirmedToPublish ? '是' : '否'}</p>
                 <p>分类：{item.riskCategories.join('、') || '无'} · 命中词：{item.riskMatchedTerms.join('、') || '无'}</p>
                 <pre className="mt-1 whitespace-pre-wrap break-all rounded border border-border/50 bg-background/90 px-2 py-1 text-xs text-muted-foreground">

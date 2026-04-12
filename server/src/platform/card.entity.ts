@@ -10,8 +10,8 @@ export class Card {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ length: 160, unique: true })
-  slug!: string;
+  @Column({ type: 'varchar', length: 7, unique: true })
+  publicCode!: string;
 
   @ManyToOne(() => User, (user) => user.cards, { onDelete: 'CASCADE' })
   owner!: User;

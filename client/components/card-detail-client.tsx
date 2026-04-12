@@ -6,7 +6,7 @@ import { CardEngagementActions } from '@/components/card-engagement-actions';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { buildCardPathFromCard, buildCardShareCodeMap, buildPublicCardCode, isShareCodeSegment } from '@/lib/card-url';
+import { buildCardPathFromCard } from '@/lib/card-url';
 import { formatBeijingDateTime } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import {
@@ -17,7 +17,6 @@ import {
   extractErrorMessage,
   extractRiskReview,
   fetchCardById,
-  fetchCards,
   fetchMyRequests,
   markExchangeReviewing,
   rejectDetailRequest,
@@ -354,18 +353,8 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
     [card],
   );
   const publicCardCode = useMemo(() => {
-    if (!card || !sharePath) {
-      return card?.id || '';
-    }
-
-    const shareCode = sharePath.replace(/^\/+/, '');
-
-    if (!isShareCodeSegment(shareCode)) {
-      return card.id;
-    }
-
-    return buildPublicCardCode(card.role, shareCode);
-  }, [card, sharePath]);
+    return card?.id || '';
+  }, [card]);
 
   useEffect(() => {
     let cancelled = false;
@@ -376,23 +365,14 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         return;
       }
 
-      try {
-        const allCards = await fetchCards();
-        const shareCodeMap = buildCardShareCodeMap(
-          allCards.map((item) => ({
-            id: item.id,
-            updatedAt: item.updatedAt,
-          })),
-        );
-        const shareCode = shareCodeMap[card.id];
+      const nextSharePath = buildCardPathFromCard({
+        id: card.id,
+        role: card.role,
+        headline: card.headline,
+      });
 
-        if (!cancelled) {
-          setSharePath(shareCode ? `/${shareCode}` : null);
-        }
-      } catch {
-        if (!cancelled) {
-          setSharePath(null);
-        }
+      if (!cancelled) {
+        setSharePath(nextSharePath);
       }
     }
 

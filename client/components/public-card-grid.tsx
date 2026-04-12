@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { CardEngagementActions } from '@/components/card-engagement-actions';
 import { SmartTooltip } from '@/components/smart-tooltip';
 import { buttonVariants } from '@/components/ui/button';
-import { buildCardPathFromCard, buildCardShareCodeMap, buildPublicCardCode } from '@/lib/card-url';
+import { buildCardPathFromCard } from '@/lib/card-url';
 import { formatBeijingDateTime } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import { PublicCard, roleLabels } from '@/lib/site-data';
@@ -86,16 +86,6 @@ export function PublicCardGrid({
   const activeCitySet = useMemo(() => new Set(activeCities), [activeCities]);
   const activeTagSet = useMemo(() => new Set(activeTags), [activeTags]);
   const activeOwnerSet = useMemo(() => new Set(activeOwners), [activeOwners]);
-  const shareCodeMap = useMemo(
-    () =>
-      buildCardShareCodeMap(
-        cards.map((card) => ({
-          id: card.id,
-          updatedAt: card.updatedAt,
-        })),
-      ),
-    [cards],
-  );
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -106,8 +96,7 @@ export function PublicCardGrid({
         const requestStatusLabel = incomingCount > 0 ? `已收到 ${incomingCount} 条申请` : requestStatus ? requestStatusLabels[requestStatus] || requestStatus : '';
         const ownerName = card.ownerName?.trim() || '未知发布者';
         const ownerFilterable = ownerName !== '未知发布者';
-        const shareCode = shareCodeMap[card.id];
-        const publicCardCode = shareCode ? buildPublicCardCode(card.role, shareCode) : card.id;
+        const publicCardCode = card.id;
 
         return (
           <article
@@ -221,7 +210,7 @@ export function PublicCardGrid({
           )}
           <div className="mt-auto flex min-h-10 items-end gap-3">
             <div className="flex items-center gap-2">
-              <CardEngagementActions card={card} sharePath={shareCodeMap[card.id] ? `/${shareCodeMap[card.id]}` : null} />
+              <CardEngagementActions card={card} />
             </div>
             <div className="ml-auto flex flex-col items-end gap-2">
               {requestStatus ? (

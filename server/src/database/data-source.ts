@@ -1,6 +1,11 @@
 import 'dotenv/config';
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
+import { BlogComment } from '../blog/blog-comment.entity';
+import { BlogLike } from '../blog/blog-like.entity';
+import { BlogPost } from '../blog/blog-post.entity';
+import { OperationAuditLog } from '../compliance/operation-audit-log.entity';
+import { PublishedContentRecord } from '../compliance/published-content-record.entity';
 import { ContactMethod } from '../contacts/contact-method.entity';
 import { CardEngagement } from '../platform/card-engagement.entity';
 import { CardTag } from '../platform/card-tag.entity';
@@ -18,7 +23,22 @@ export default new DataSource({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_DATABASE || 'cofounder_new',
-  entities: [User, ContactMethod, Card, DetailRequest, Tag, CardTag, PublicWelfareMessage, RewardTransaction, CardEngagement],
+  entities: [
+    User,
+    ContactMethod,
+    Card,
+    DetailRequest,
+    Tag,
+    CardTag,
+    PublicWelfareMessage,
+    RewardTransaction,
+    CardEngagement,
+    OperationAuditLog,
+    PublishedContentRecord,
+    BlogPost,
+    BlogComment,
+    BlogLike,
+  ],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   synchronize: false,
   logging: process.env.DB_LOGGING === 'true',

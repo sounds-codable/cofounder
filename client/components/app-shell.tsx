@@ -199,7 +199,7 @@ function DashboardToggleIcon({ mobile, expanded }: { mobile: boolean; expanded: 
 }
 
 function isDashboardRoute(pathname: string) {
-  const dashboardRoutes = ['/dashboard', '/projects', '/developers', '/requests', '/invite-codes', '/points', '/onboarding', '/cards', '/admin'];
+  const dashboardRoutes = ['/dashboard', '/projects', '/developers', '/requests', '/invite-codes', '/points', '/onboarding', '/admin'];
   return dashboardRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
@@ -234,10 +234,6 @@ function getPageTitle(pathname: string) {
 
   if (pathname.startsWith('/points')) {
     return '积分';
-  }
-
-  if (pathname.startsWith('/cards')) {
-    return '详情';
   }
 
   if (pathname.startsWith('/admin')) {

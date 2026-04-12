@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { CardDetailClient } from '@/components/card-detail-client';
-import { buildCardShareCodeMap, isShareCodeSegment, parseShareCodeToIndex, resolveCardIdByShareCode } from '@/lib/card-url';
+import { isCardPublicCode } from '@/lib/card-url';
 import { getStaticCards } from '@/lib/card-route-data';
 
 type ShareCardPageProps = {
@@ -11,26 +11,16 @@ type ShareCardPageProps = {
 
 export async function generateStaticParams() {
   const cards = await getStaticCards();
-  const shareCodeMap = buildCardShareCodeMap(cards);
 
-  return Object.values(shareCodeMap)
-    .sort((a, b) => (parseShareCodeToIndex(a) ?? Number.MAX_SAFE_INTEGER) - (parseShareCodeToIndex(b) ?? Number.MAX_SAFE_INTEGER))
-    .map((role) => ({ role }));
+  return cards.map((card) => ({ role: card.id }));
 }
 
 export default async function ShareCardPage({ params }: ShareCardPageProps) {
   const { role } = await params;
 
-  if (!isShareCodeSegment(role)) {
+  if (!isCardPublicCode(role)) {
     notFound();
   }
 
-  const cards = await getStaticCards();
-  const cardId = resolveCardIdByShareCode(role, cards);
-
-  if (!cardId) {
-    notFound();
-  }
-
-  return <CardDetailClient id={cardId} />;
+  return <CardDetailClient id={role} />;
 }

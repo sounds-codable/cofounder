@@ -15,7 +15,7 @@ export class PublishedContentRecord {
   cardId!: string | null;
 
   @Column({ type: 'varchar', length: 160, nullable: true })
-  cardSlug!: string | null;
+  cardPublicCode!: string | null;
 
   @Column({ type: 'varchar', length: 255 })
   operationType!: string;
