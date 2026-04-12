@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Headers, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Param, Post, Put, Query } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import { SaveBasicProfileDto } from './dto/save-basic-profile.dto';
 import { SaveContactMethodsDto } from './dto/save-contact-methods.dto';
+import { UpdateCardBasicDto } from './dto/update-card-basic.dto';
 import { SaveDetailProfileDto } from './dto/save-detail-profile.dto';
 import { SaveDisplayNameDto } from './dto/save-display-name.dto';
 import { ToggleCardEngagementDto } from './dto/toggle-card-engagement.dto';
@@ -30,6 +31,22 @@ export class MeController {
   async saveDetail(@Headers('authorization') authorization: string | undefined, @Body() body: SaveDetailProfileDto) {
     const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
     return this.meService.saveDetailProfile(user.id, body);
+  }
+
+  @Put('card/:cardId')
+  async updateCardBasic(
+    @Headers('authorization') authorization: string | undefined,
+    @Param('cardId') cardId: string,
+    @Body() body: UpdateCardBasicDto,
+  ) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.meService.updateCardBasic(user.id, cardId, body);
+  }
+
+  @Delete('card/:cardId')
+  async deleteCard(@Headers('authorization') authorization: string | undefined, @Param('cardId') cardId: string) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.meService.deleteCard(user.id, cardId);
   }
 
   @Put('contacts')

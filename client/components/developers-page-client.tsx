@@ -46,11 +46,14 @@ function DevelopersPageContent() {
   const engagement = useCardEngagementState();
   const [cards, setCards] = useState(fallbackPublicCards.filter((card) => card.role === 'developer'));
   const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [publishBlockedMessage, setPublishBlockedMessage] = useState<string | null>(null);
   const [requestMetaByCardId, setRequestMetaByCardId] = useState<Record<string, RequestCardMeta>>({});
   const view = searchParams.get('view') || 'all';
   const activeCities = useMemo(() => parseFilters(searchParams.get('cities')), [searchParams]);
   const activeTags = useMemo(() => parseFilters(searchParams.get('tags')), [searchParams]);
   const activeOwners = useMemo(() => parseFilters(searchParams.get('owners')), [searchParams]);
+  const hasPublishedCard = authenticated && Boolean(profile?.card);
+  const myDeveloperCardId = profile?.card?.role === 'developer' ? profile.card.id : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -254,6 +257,13 @@ function DevelopersPageContent() {
   }
 
   visibleCards = [...visibleCards].sort((a, b) => {
+    const aIsMine = Boolean(myDeveloperCardId && a.id === myDeveloperCardId);
+    const bIsMine = Boolean(myDeveloperCardId && b.id === myDeveloperCardId);
+
+    if (aIsMine !== bIsMine) {
+      return aIsMine ? -1 : 1;
+    }
+
     const aRequested = Boolean(requestMetaByCardId[a.id]);
     const bRequested = Boolean(requestMetaByCardId[b.id]);
 
@@ -266,6 +276,16 @@ function DevelopersPageContent() {
 
   const hasFilters = activeCities.length > 0 || activeTags.length > 0 || activeOwners.length > 0;
   const hasScopedView = view !== 'all';
+
+  function handlePublishButtonClick() {
+    if (hasPublishedCard) {
+      setPublishBlockedMessage('你已登记过资料，每个账号仅可登记一次。若需更新，请直接修改你当前的资料。');
+      return;
+    }
+
+    setPublishBlockedMessage(null);
+    setPublishModalOpen(true);
+  }
 
   return (
     <div className="relative mx-auto w-full max-w-6xl space-y-5 overflow-visible px-4 py-6 md:px-6 md:py-8">
@@ -288,8 +308,13 @@ function DevelopersPageContent() {
       ) : null}
       {authenticated ? (
         <div className="relative flex flex-wrap gap-2">
-          <button className={buttonVariants()} type="button" onClick={() => setPublishModalOpen(true)}>
-            登记程序员
+          <button
+            className={cn(buttonVariants(), hasPublishedCard ? 'cursor-not-allowed opacity-60' : undefined)}
+            type="button"
+            aria-disabled={hasPublishedCard}
+            onClick={handlePublishButtonClick}
+          >
+            登记程序员信息
           </button>
           <Link className={buttonVariants({ variant: 'outline' })} href="/developers?view=favorited">
             我收藏的程序员
@@ -297,6 +322,7 @@ function DevelopersPageContent() {
           <Link className={buttonVariants({ variant: 'outline' })} href="/developers?view=liked">
             我点赞的程序员
           </Link>
+          {publishBlockedMessage ? <p className="w-full text-sm text-muted-foreground">{publishBlockedMessage}</p> : null}
         </div>
       ) : null}
       {publishModalOpen
@@ -356,6 +382,8 @@ function DevelopersPageContent() {
           activeCities={activeCities}
           activeTags={activeTags}
           activeOwners={activeOwners}
+          currentUserCardId={myDeveloperCardId}
+          currentUserRoleLabel="自己"
           requestMetaByCardId={requestMetaByCardId}
           onCityFilter={addCityFilter}
           onTagFilter={addTagFilter}

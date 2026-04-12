@@ -101,7 +101,7 @@ export default function Index7() {
             </View>
             <View className='how-card'>
               <Text className='how-num'>2</Text>
-              <Text className='how-text'>程序员发布能力与兴趣</Text>
+              <Text className='how-text'>程序员发布能力与项目意向</Text>
             </View>
             <View className='how-card'>
               <Text className='how-num'>3</Text>

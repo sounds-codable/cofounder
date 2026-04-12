@@ -6,12 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { extractErrorMessage, extractRiskReview, fetchTagSuggestions, saveBasicProfile, type TagSuggestion } from '@/lib/platform-api';
+import { extractErrorMessage, extractRiskReview, fetchTagSuggestions, saveBasicProfile, updateMyCardBasic, type TagSuggestion } from '@/lib/platform-api';
 import type { UserRole } from '@/lib/site-data';
 import { useAuthState } from '@/lib/use-auth';
 
 type CardPublishFormProps = {
   role: UserRole;
+  mode?: 'create' | 'edit';
+  cardId?: string;
+  initialValues?: {
+    headline: string;
+    basicSummary: string;
+    city: string;
+    strengths: string[];
+  };
   loginNext: string;
   successRedirect: string;
   onCancel?: () => void;
@@ -31,20 +39,20 @@ const roleCopy: Record<UserRole, { badge: string; title: string; description: st
   expert: {
     badge: '发布项目',
     title: '填写项目信息',
-    description: '以下填写的信息将公开展示哦，建议先大致介绍项目方向，太多细节就等匹配上了合适的小伙伴再聊。',
+    description: '以下填写的信息将公开展示哦，建议先大致介绍项目方向，更多细节就等匹配上了合适的小伙伴再单聊。',
     submitText: '发布项目',
     headlineLabel: '项目名称',
     summaryLabel: '项目描述',
-    summaryPlaceholder: '用最少的话说明最重要的价值。输入 # 可以添加标签，例如 #MVP #医疗SaaS',
+    summaryPlaceholder: '简要介绍您的项目方向及需要寻找什么样的技术合伙人。输入 # 可以添加标签，例如 #教育app #医疗SaaS',
   },
   developer: {
-    badge: '发布程序员卡片',
-    title: '填写程序员卡片信息',
-    description: '仅填写会显示在程序员卡片里的公开信息，不需要先填基础信息页。',
-    submitText: '发布程序员卡片',
-    headlineLabel: '标题',
-    summaryLabel: '能力描述',
-    summaryPlaceholder: '用最少的话说明最重要的价值。输入 # 可以添加标签，例如 #Next.js #AI工具',
+    badge: '程序员',
+    title: '登记程序员信息',
+    description: '以下填写的信息将公开展示哦，建议先大致介绍您的技术能力及项目经验，更多细节就等匹配上了合适的小伙伴再单聊。',
+    submitText: '登记程序员信息',
+    headlineLabel: '关于我',
+    summaryLabel: '能力与项目意向',
+    summaryPlaceholder: '简要介绍您的技术栈、项目经验及目前关注的领域。输入 # 可以添加标签，例如 #全栈 #法律',
   },
 };
 
@@ -76,6 +84,15 @@ function extractTagsFromText(text: string) {
   return uniqueTags(matches);
 }
 
+function appendMissingTagsToSummary(summary: string, strengths: string[]) {
+  const summaryFromProfile = summary.trim();
+  const summaryTags = extractTagsFromText(summaryFromProfile);
+  const missingTags = uniqueTags(strengths).filter((tag) => !summaryTags.some((summaryTag) => summaryTag.toLowerCase() === tag.toLowerCase()));
+  const appendableTags = missingTags.slice(0, Math.max(0, MAX_TAG_COUNT - summaryTags.length));
+  const tagsSuffix = appendableTags.length > 0 ? `\n\n${appendableTags.map((tag) => `#${tag}`).join(' ')}` : '';
+  return `${summaryFromProfile}${tagsSuffix}`.trim();
+}
+
 function findActiveTagToken(content: string, caret: number): ActiveTagToken | null {
   if (caret < 0 || caret > content.length) {
     return null;
@@ -98,7 +115,7 @@ function findActiveTagToken(content: string, caret: number): ActiveTagToken | nu
   };
 }
 
-export function CardPublishForm({ role, loginNext, successRedirect, onCancel, onSuccess, presentation = 'page' }: CardPublishFormProps) {
+export function CardPublishForm({ role, mode = 'create', cardId, initialValues, loginNext, successRedirect, onCancel, onSuccess, presentation = 'page' }: CardPublishFormProps) {
   const router = useRouter();
   const { authenticated, loading, profile, refresh } = useAuthState();
   const summaryTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -112,23 +129,26 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
   const [message, setMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<'headline' | 'summary' | 'city', string>>>({});
   const [submitting, setSubmitting] = useState(false);
+  const isEditMode = mode === 'edit';
+  const copy = roleCopy[role];
   const selectedTags = useMemo(() => extractTagsFromText(basicSummary), [basicSummary]);
 
   useEffect(() => {
+    if (isEditMode && initialValues) {
+      setHeadline(initialValues.headline || '');
+      setBasicSummary(appendMissingTagsToSummary(initialValues.basicSummary || '', initialValues.strengths || []));
+      setCity(initialValues.city || '');
+      return;
+    }
+
     if (!profile) {
       return;
     }
 
     setHeadline(profile.card?.headline || '');
-    const summaryFromProfile = profile.card?.basicSummary || '';
-    const profileTags = profile.card?.strengths || [];
-    const summaryTags = extractTagsFromText(summaryFromProfile);
-    const missingTags = uniqueTags(profileTags).filter((tag) => !summaryTags.some((summaryTag) => summaryTag.toLowerCase() === tag.toLowerCase()));
-    const appendableTags = missingTags.slice(0, Math.max(0, MAX_TAG_COUNT - summaryTags.length));
-    const tagsSuffix = appendableTags.length > 0 ? `\n\n${appendableTags.map((tag) => `#${tag}`).join(' ')}` : '';
-    setBasicSummary(`${summaryFromProfile}${tagsSuffix}`.trim());
+    setBasicSummary(appendMissingTagsToSummary(profile.card?.basicSummary || '', profile.card?.strengths || []));
     setCity(profile.card?.city || '');
-  }, [profile, role]);
+  }, [initialValues, isEditMode, profile, role]);
 
   useEffect(() => {
     if (!activeTagToken) {
@@ -246,7 +266,7 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
         summary: normalizedBasicSummary ? '' : `${copy.summaryLabel}不能为空`,
         city: normalizedCity ? '' : '城市不能为空',
       });
-      setMessage('请先填写标题、描述和城市后再发布。');
+      setMessage('请先填写 关于我、能力与项目意向、城市后再发布。');
       return;
     }
 
@@ -259,13 +279,26 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
         await refresh();
       }
 
-      await saveBasicProfile({
-        role,
-        headline: normalizedHeadline,
-        basicSummary: normalizedBasicSummary,
-        city: normalizedCity,
-        strengths: normalizedStrengths,
-      });
+      if (isEditMode) {
+        if (!cardId) {
+          throw new Error('缺少卡片标识，无法修改。');
+        }
+
+        await updateMyCardBasic(cardId, {
+          headline: normalizedHeadline,
+          basicSummary: normalizedBasicSummary,
+          city: normalizedCity,
+          strengths: normalizedStrengths,
+        });
+      } else {
+        await saveBasicProfile({
+          role,
+          headline: normalizedHeadline,
+          basicSummary: normalizedBasicSummary,
+          city: normalizedCity,
+          strengths: normalizedStrengths,
+        });
+      }
 
       await refresh();
       if (onSuccess) {
@@ -283,14 +316,28 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
 
         if (confirmed) {
           try {
-            await saveBasicProfile({
-              role,
-              headline: normalizedHeadline,
-              basicSummary: normalizedBasicSummary,
-              city: normalizedCity,
-              strengths: normalizedStrengths,
-              riskConfirmed: true,
-            });
+            if (isEditMode) {
+              if (!cardId) {
+                throw new Error('缺少卡片标识，无法修改。');
+              }
+
+              await updateMyCardBasic(cardId, {
+                headline: normalizedHeadline,
+                basicSummary: normalizedBasicSummary,
+                city: normalizedCity,
+                strengths: normalizedStrengths,
+                riskConfirmed: true,
+              });
+            } else {
+              await saveBasicProfile({
+                role,
+                headline: normalizedHeadline,
+                basicSummary: normalizedBasicSummary,
+                city: normalizedCity,
+                strengths: normalizedStrengths,
+                riskConfirmed: true,
+              });
+            }
             await refresh();
             if (onSuccess) {
               onSuccess();
@@ -340,8 +387,6 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
     );
   }
 
-  const copy = roleCopy[role];
-
   return (
     <section className={cn('mx-auto w-full max-w-3xl px-4 py-6 md:px-6 md:py-8', presentation === 'modal' ? 'px-0 py-0 md:px-0 md:py-0' : undefined)}>
       <Card className="border-border/70 bg-card/80">
@@ -370,7 +415,7 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
                     setFieldErrors((previous) => ({ ...previous, headline: '' }));
                   }
                 }}
-                placeholder="一句话介绍项目"
+                placeholder="用一句话描述"
                 rows={2}
                 value={headline}
               />
@@ -486,7 +531,7 @@ export function CardPublishForm({ role, loginNext, successRedirect, onCancel, on
             {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
             <div className="flex flex-wrap gap-2">
               <Button className="w-full sm:w-auto" disabled={submitting} type="submit">
-                {submitting ? '发布中…' : copy.submitText}
+                {submitting ? (isEditMode ? '保存中…' : '发布中…') : isEditMode ? '保存修改' : copy.submitText}
               </Button>
               {onCancel ? (
                 <Button className="w-full sm:w-auto" disabled={submitting} onClick={onCancel} type="button" variant="outline">

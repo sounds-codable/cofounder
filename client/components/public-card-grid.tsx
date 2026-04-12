@@ -23,6 +23,8 @@ type PublicCardGridProps = {
   activeCities?: string[];
   activeTags?: string[];
   activeOwners?: string[];
+  currentUserCardId?: string | null;
+  currentUserRoleLabel?: string;
   requestMetaByCardId?: Record<string, RequestCardMeta>;
   onCityFilter?: (city: string) => void;
   onTagFilter?: (tag: string) => void;
@@ -77,6 +79,8 @@ export function PublicCardGrid({
   activeCities = [],
   activeTags = [],
   activeOwners = [],
+  currentUserCardId = null,
+  currentUserRoleLabel = '自己',
   requestMetaByCardId = {},
   onCityFilter,
   onTagFilter,
@@ -97,6 +101,7 @@ export function PublicCardGrid({
         const ownerName = card.ownerName?.trim() || '未知发布者';
         const ownerFilterable = ownerName !== '未知发布者';
         const publicCardCode = card.id;
+        const roleLabel = currentUserCardId && currentUserCardId === card.id ? currentUserRoleLabel : roleLabels[card.role];
 
         return (
           <article
@@ -116,7 +121,7 @@ export function PublicCardGrid({
           >
           <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-[var(--motion-normal)] ease-[var(--motion-ease)] group-hover:opacity-100 bg-[radial-gradient(circle_at_0%_0%,rgba(19,191,168,0.16),transparent_42%),radial-gradient(circle_at_100%_100%,rgba(76,200,255,0.16),transparent_40%)]" />
           <div className="flex items-start justify-between gap-2">
-            <span className="inline-flex rounded-full bg-secondary px-2.5 py-1 text-xs text-secondary-foreground">{roleLabels[card.role]}</span>
+            <span className="inline-flex rounded-full bg-secondary px-2.5 py-1 text-xs text-secondary-foreground">{roleLabel}</span>
             <SmartTooltip content={`点击可查看更多「${card.city}」的${subjectLabel}`}>
               <button
                 aria-label={`点击可查看更多${card.city}的${subjectLabel}`}

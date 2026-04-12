@@ -46,8 +46,8 @@ export class RequestsService {
     ]);
 
     return {
-      incoming: incoming.map((request) => this.toIncomingRequestItem(request)),
-      outgoing: outgoing.map((request) => this.toOutgoingRequestItem(request)),
+      incoming: incoming.filter((request) => Boolean(request.targetCard?.owner)).map((request) => this.toIncomingRequestItem(request)),
+      outgoing: outgoing.filter((request) => Boolean(request.targetCard?.owner)).map((request) => this.toOutgoingRequestItem(request)),
     };
   }
 
@@ -207,6 +207,10 @@ export class RequestsService {
       throw new NotFoundException('请求不存在');
     }
 
+    if (!request.targetCard?.owner) {
+      throw new NotFoundException('目标卡片不存在或已删除');
+    }
+
     if (request.requester.id !== userId) {
       throw new ForbiddenException('只有请求发起方可以发起联系方式交换');
     }
@@ -254,6 +258,10 @@ export class RequestsService {
       throw new NotFoundException('请求不存在');
     }
 
+    if (!request.targetCard?.owner) {
+      throw new NotFoundException('目标卡片不存在或已删除');
+    }
+
     if (request.requester.id !== userId) {
       throw new ForbiddenException('只有请求发起方可以执行该操作');
     }
@@ -284,6 +292,10 @@ export class RequestsService {
 
     if (!request) {
       throw new NotFoundException('请求不存在');
+    }
+
+    if (!request.targetCard?.owner) {
+      throw new NotFoundException('目标卡片不存在或已删除');
     }
 
     if (request.requester.id !== userId) {
@@ -344,6 +356,10 @@ export class RequestsService {
 
     if (!request) {
       throw new NotFoundException('请求不存在');
+    }
+
+    if (!request.targetCard?.owner) {
+      throw new NotFoundException('目标卡片不存在或已删除');
     }
 
     if (request.publisher.id !== userId) {

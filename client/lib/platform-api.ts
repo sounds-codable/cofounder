@@ -852,6 +852,36 @@ export async function saveBasicProfile(body: {
   });
 }
 
+export async function updateMyCardBasic(
+  cardId: string,
+  body: {
+    headline: string;
+    basicSummary: string;
+    city: string;
+    strengths: string[];
+    riskConfirmed?: boolean;
+  },
+) {
+  return requestJson<{
+    id: string;
+    role: UserRole;
+    headline: string;
+    city: string;
+    basicSummary: string;
+    strengths: string[];
+    updatedAt: string;
+  }>(`/me/card/${encodeURIComponent(cardId)}`, {
+    method: 'PUT',
+    body,
+  });
+}
+
+export async function deleteMyCard(cardId: string) {
+  return requestJson<{ ok: boolean }>(`/me/card/${encodeURIComponent(cardId)}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function saveDetailProfile(body: {
   intro: string;
   education: string;

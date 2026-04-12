@@ -18,6 +18,7 @@ import { buildCardPublicCode } from '../platform/public-code';
 import { Tag } from '../platform/tag.entity';
 import { SaveBasicProfileDto } from './dto/save-basic-profile.dto';
 import { SaveContactMethodsDto } from './dto/save-contact-methods.dto';
+import { UpdateCardBasicDto } from './dto/update-card-basic.dto';
 import { SaveDetailProfileDto } from './dto/save-detail-profile.dto';
 import { SaveDisplayNameDto } from './dto/save-display-name.dto';
 
@@ -139,6 +140,128 @@ export class MeService {
     });
 
     return this.getProfile(userId);
+  }
+
+  async updateCardBasic(userId: string, cardId: string, body: UpdateCardBasicDto) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+
+    const moderationResult = this.contentModerationService.ensureReviewed({
+      operationType: 'update_card_basic_profile',
+      riskConfirmed: body.riskConfirmed,
+      fields: [
+        { field: 'headline', content: body.headline },
+        { field: 'basicSummary', content: body.basicSummary },
+        { field: 'city', content: body.city },
+        { field: 'strengths', content: body.strengths.join(' | ') },
+      ],
+    });
+
+    const card = await this.cardRepository.findOne({
+      where: {
+        publicCode: cardId,
+        owner: { id: userId },
+      },
+      relations: {
+        owner: true,
+      },
+    });
+
+    if (!card) {
+      throw new NotFoundException('目标卡片不存在');
+    }
+
+    card.headline = body.headline.trim();
+    card.basicSummary = body.basicSummary.trim();
+    card.city = body.city.trim();
+    card.strengths = body.strengths
+      .map((item) => this.normalizeTagName(item))
+      .filter(Boolean)
+      .slice(0, 8);
+    const savedCard = await this.cardRepository.save(card);
+    await this.syncCardTags(savedCard, savedCard.strengths);
+
+    await this.complianceLogService.recordPublishedContent({
+      userId: user.id,
+      userEmail: user.email,
+      cardId: savedCard.id,
+      cardPublicCode: savedCard.publicCode,
+      operationType: 'update_card_basic_profile',
+      riskReview: {
+        reviewRequired: moderationResult.hasRisk,
+        riskLevel: moderationResult.riskLevel,
+        categories: moderationResult.categories,
+        matchedTerms: moderationResult.matchedTerms,
+        confirmedToPublish: Boolean(body.riskConfirmed),
+        provider: moderationResult.provider,
+      },
+      contentSnapshot: {
+        role: savedCard.role,
+        headline: savedCard.headline,
+        city: savedCard.city,
+        basicSummary: savedCard.basicSummary,
+        strengths: savedCard.strengths,
+      },
+    });
+
+    return {
+      id: savedCard.publicCode,
+      role: savedCard.role,
+      headline: savedCard.headline,
+      city: savedCard.city,
+      basicSummary: savedCard.basicSummary,
+      strengths: savedCard.strengths,
+      updatedAt: savedCard.updatedAt.toISOString(),
+    };
+  }
+
+  async deleteCard(userId: string, cardId: string) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+
+    const card = await this.cardRepository.findOne({
+      where: {
+        publicCode: cardId,
+        owner: { id: userId },
+      },
+      relations: {
+        owner: true,
+      },
+    });
+
+    if (!card) {
+      throw new NotFoundException('目标卡片不存在');
+    }
+
+    const snapshot = {
+      id: card.publicCode,
+      role: card.role,
+      headline: card.headline,
+      city: card.city,
+      basicSummary: card.basicSummary,
+      strengths: card.strengths,
+    };
+
+    await this.cardTagRepository.softDelete({ card: { id: card.id } });
+    await this.updateTagUsageCounts();
+    await this.cardRepository.softDelete({ id: card.id });
+
+    await this.complianceLogService.recordPublishedContent({
+      userId: user.id,
+      userEmail: user.email,
+      cardId: card.id,
+      cardPublicCode: card.publicCode,
+      operationType: 'delete_card_basic_profile',
+      contentSnapshot: snapshot,
+    });
+
+    return { ok: true };
   }
 
   async getDisplayNameAvailability(userId: string, rawDisplayName: string) {

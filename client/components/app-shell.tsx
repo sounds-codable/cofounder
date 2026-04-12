@@ -190,12 +190,25 @@ function DashboardToggleIcon({ mobile, expanded }: { mobile: boolean; expanded: 
 
 function isDashboardRoute(pathname: string) {
   const dashboardRoutes = ['/dashboard', '/projects', '/developers', '/requests', '/invite-codes', '/points', '/onboarding', '/admin'];
-  return dashboardRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+
+  if (dashboardRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
+    return true;
+  }
+
+  return /^\/[pd]-?[012356789]{5}(?:\/|$)/i.test(pathname);
 }
 
 function getPageTitle(pathname: string) {
   if (pathname === '/dashboard') {
     return '请求中心';
+  }
+
+  if (/^\/p-?[012356789]{5}(?:\/|$)/i.test(pathname)) {
+    return '项目';
+  }
+
+  if (/^\/d-?[012356789]{5}(?:\/|$)/i.test(pathname)) {
+    return '程序员';
   }
 
   if (pathname.startsWith('/projects')) {

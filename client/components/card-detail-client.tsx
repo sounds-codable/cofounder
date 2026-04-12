@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { CardPublishForm } from '@/components/card-publish-form';
 import { CardEngagementActions } from '@/components/card-engagement-actions';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +14,7 @@ import { cn } from '@/lib/utils';
 import {
   approveDetailRequest,
   createDetailRequest,
+  deleteMyCard,
   declineContact,
   exchangeContact,
   extractErrorMessage,
@@ -295,6 +298,7 @@ function getIncomingRequestStatusBadgeClass(status: string) {
 }
 
 export function CardDetailClient({ id }: CardDetailClientProps) {
+  const router = useRouter();
   const { authenticated, profile, refresh } = useAuthState();
   const fallbackCard = useMemo(() => fallbackPublicCards.find((item) => item.id === id) ?? null, [id]);
   const [card, setCard] = useState<PlatformCardDetail | null>(
@@ -348,6 +352,9 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   const [expandedCommunicationInfoById, setExpandedCommunicationInfoById] = useState<Record<string, boolean>>({});
   const [collapsedIncomingCommunicationByRequestId, setCollapsedIncomingCommunicationByRequestId] = useState<Record<string, boolean>>({});
   const [sharePath, setSharePath] = useState<string | null>(null);
+  const [editOwnCardModalOpen, setEditOwnCardModalOpen] = useState(false);
+  const [deletingOwnCard, setDeletingOwnCard] = useState(false);
+  const [ownerActionMessage, setOwnerActionMessage] = useState<string | null>(null);
   const detailPath = useMemo(
     () => (card ? buildCardPathFromCard({ id: card.id, role: card.role, headline: card.headline }) : ''),
     [card],
@@ -1109,6 +1116,36 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
     return logs.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
   })();
 
+  function handleEditOwnCard() {
+    setOwnerActionMessage(null);
+    setEditOwnCardModalOpen(true);
+  }
+
+  async function handleDeleteOwnCard() {
+    if (!card) {
+      return;
+    }
+
+    const confirmed = window.confirm(`确认删除「${card.headline}」吗？删除后将无法恢复。`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingOwnCard(true);
+    setOwnerActionMessage(null);
+
+    try {
+      await deleteMyCard(card.id);
+      await refresh();
+      router.replace(backToListHref);
+    } catch (error) {
+      setOwnerActionMessage(extractErrorMessage(error));
+    } finally {
+      setDeletingOwnCard(false);
+    }
+  }
+
   return (
     <div className="relative mx-auto w-full max-w-6xl space-y-6 overflow-hidden px-4 py-6 md:px-6 md:py-8">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_10%_0%,rgba(19,191,168,0.16),transparent_48%),radial-gradient(circle_at_90%_18%,rgba(76,200,255,0.14),transparent_46%)]" />
@@ -1153,7 +1190,31 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                   </button>
                 ) : null}
               </div>
-            ) : isOwnCard ? null : (
+            ) : isOwnCard ? (
+              <div className="ml-auto hidden items-center justify-end gap-2 sm:flex">
+                <button
+                  className={cn(
+                    buttonVariants({ variant: 'outline', size: 'sm' }),
+                    'h-9 rounded-full border-sky-200/80 bg-sky-50/85 px-4 text-sm font-medium text-sky-700 hover:bg-sky-100/90 hover:text-sky-800',
+                  )}
+                  type="button"
+                  onClick={handleEditOwnCard}
+                >
+                  修改
+                </button>
+                <button
+                  className={cn(
+                    buttonVariants({ variant: 'outline', size: 'sm' }),
+                    'h-9 rounded-full border-rose-200/85 bg-rose-50/80 px-4 text-sm font-medium text-rose-600 hover:bg-rose-100/90 hover:text-rose-700',
+                  )}
+                  disabled={deletingOwnCard}
+                  type="button"
+                  onClick={handleDeleteOwnCard}
+                >
+                  {deletingOwnCard ? '删除中…' : '删除'}
+                </button>
+              </div>
+            ) : (
               <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'ml-auto')} disabled={submittingRequest || savingDetail} type="button" onClick={openRequestModal}>
                 {submittingRequest ? '发送中…' : '询问更多信息'}
               </button>
@@ -1161,6 +1222,70 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
           </div>
         </div>
       </section>
+
+      {isOwnCard ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:hidden">
+          <button
+            className={cn(
+              buttonVariants({ variant: 'outline', size: 'sm' }),
+              'h-9 w-full rounded-full border-sky-200/80 bg-sky-50/85 px-3 text-sm font-medium text-sky-700 hover:bg-sky-100/90 hover:text-sky-800',
+            )}
+            type="button"
+            onClick={handleEditOwnCard}
+          >
+            修改
+          </button>
+          <button
+            className={cn(
+              buttonVariants({ variant: 'outline', size: 'sm' }),
+              'h-9 w-full rounded-full border-rose-200/85 bg-rose-50/80 px-3 text-sm font-medium text-rose-600 hover:bg-rose-100/90 hover:text-rose-700',
+            )}
+            disabled={deletingOwnCard}
+            type="button"
+            onClick={handleDeleteOwnCard}
+          >
+            {deletingOwnCard ? '删除中…' : '删除'}
+          </button>
+        </div>
+      ) : null}
+
+      {isOwnCard && ownerActionMessage ? <p className="mt-2 text-xs text-muted-foreground">{ownerActionMessage}</p> : null}
+
+      {isOwnCard && editOwnCardModalOpen && card ? (
+        <div aria-label="修改卡片" aria-modal="true" className="fixed inset-0 z-[130] overflow-y-auto p-4" role="dialog">
+          <button className="fixed inset-0 bg-foreground/30" type="button" aria-label="关闭修改卡片弹框" onClick={() => setEditOwnCardModalOpen(false)} />
+          <div className="relative z-10 flex min-h-full items-start justify-center py-2 md:items-center">
+            <section className="w-full max-w-3xl rounded-2xl border border-border/70 bg-card/96 p-4 shadow-[0_18px_42px_rgba(79,108,163,0.24)] backdrop-blur-md md:p-5">
+              <CardPublishForm
+                role={card.role}
+                mode="edit"
+                cardId={card.id}
+                initialValues={{
+                  headline: card.headline,
+                  basicSummary: card.basicSummary,
+                  city: card.city,
+                  strengths: card.strengths,
+                }}
+                loginNext={detailPath}
+                successRedirect={detailPath}
+                presentation="modal"
+                onCancel={() => setEditOwnCardModalOpen(false)}
+                onSuccess={() => {
+                  setEditOwnCardModalOpen(false);
+                  setOwnerActionMessage('修改已保存。');
+                  void (async () => {
+                    const nextCard = await fetchCardById(id);
+
+                    if (nextCard) {
+                      setCard(nextCard);
+                    }
+                  })();
+                }}
+              />
+            </section>
+          </div>
+        </div>
+      ) : null}
 
       {requestMeta?.status === 'contact_exchanged' ? (
         <section className="space-y-3 rounded-2xl border border-emerald-300/70 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 p-5 shadow-[0_16px_36px_rgba(16,185,129,0.2)]">
