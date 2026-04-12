@@ -538,6 +538,105 @@ type RequestOptions = {
   token?: string | null;
 };
 
+function translateHttpStatusMessage(status: number) {
+  switch (status) {
+    case 400:
+      return '请求参数有误，请检查后重试。';
+    case 401:
+      return '登录状态已失效，请重新登录后重试。';
+    case 403:
+      return '你暂无权限执行此操作。';
+    case 404:
+      return '请求的内容不存在或已失效。';
+    case 409:
+      return '当前操作与现有数据冲突，请刷新后重试。';
+    case 422:
+      return '提交内容不符合要求，请检查后重试。';
+    case 500:
+      return '服务器开小差了，请稍后再试。';
+    default:
+      return `请求失败（状态码 ${status}），请稍后重试。`;
+  }
+}
+
+function translateEnglishErrorMessage(message: string) {
+  const normalized = message.trim();
+
+  if (!normalized) {
+    return '请求失败';
+  }
+
+  if (/[\u4e00-\u9fff]/.test(normalized)) {
+    return normalized;
+  }
+
+  let match = normalized.match(/^Request failed:\s*(\d{3})$/i);
+  if (match) {
+    return translateHttpStatusMessage(Number(match[1]));
+  }
+
+  if (/^Bad Request$/i.test(normalized)) {
+    return '请求参数有误，请检查后重试。';
+  }
+
+  if (/^Unauthorized$/i.test(normalized)) {
+    return '登录状态已失效，请重新登录后重试。';
+  }
+
+  if (/^Forbidden$/i.test(normalized)) {
+    return '你暂无权限执行此操作。';
+  }
+
+  if (/^Not Found$/i.test(normalized)) {
+    return '请求的内容不存在或已失效。';
+  }
+
+  if (/^Internal Server Error$/i.test(normalized)) {
+    return '服务器开小差了，请稍后再试。';
+  }
+
+  match = normalized.match(/^(.+?) must be longer than or equal to (\d+) characters$/i);
+  if (match) {
+    return `${match[1]}不能少于 ${match[2]} 个字符`;
+  }
+
+  match = normalized.match(/^(.+?) must be shorter than or equal to (\d+) characters$/i);
+  if (match) {
+    return `${match[1]}不能超过 ${match[2]} 个字符`;
+  }
+
+  match = normalized.match(/^(.+?) must be equal to (\d+) characters$/i);
+  if (match) {
+    return `${match[1]}长度必须为 ${match[2]} 个字符`;
+  }
+
+  if (/must be an email$/i.test(normalized)) {
+    return '邮箱格式不正确';
+  }
+
+  if (/must be a string$/i.test(normalized)) {
+    return '提交内容格式不正确';
+  }
+
+  if (/must be a boolean value$/i.test(normalized)) {
+    return '提交内容格式不正确';
+  }
+
+  if (/must match/i.test(normalized)) {
+    return '提交内容格式不正确';
+  }
+
+  if (/should not be empty$/i.test(normalized)) {
+    return '请先完善必填内容';
+  }
+
+  if (/failed to fetch/i.test(normalized) || /^Network Error$/i.test(normalized)) {
+    return '网络请求失败，请检查网络或稍后重试。';
+  }
+
+  return '操作失败，请检查输入后重试。';
+}
+
 async function requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = Object.prototype.hasOwnProperty.call(options, 'token') ? options.token : getStoredAccessToken();
   let response: Response;
@@ -600,7 +699,7 @@ async function requestJson<T>(path: string, options: RequestOptions = {}): Promi
       // noop
     }
 
-    throw new Error(text || `Request failed: ${response.status}`);
+    throw new Error(text || translateHttpStatusMessage(response.status));
   }
 
   return (await response.json()) as T;
@@ -675,12 +774,12 @@ export function extractErrorMessage(error: unknown) {
       const parsed = JSON.parse(error.message) as { message?: string | string[] };
 
       if (Array.isArray(parsed.message)) {
-        return parsed.message.join('，');
+        return parsed.message.map((item) => translateEnglishErrorMessage(item)).join('，');
       }
 
-      return parsed.message || error.message;
+      return parsed.message ? translateEnglishErrorMessage(parsed.message) : translateEnglishErrorMessage(error.message);
     } catch {
-      return error.message;
+      return translateEnglishErrorMessage(error.message);
     }
   }
 

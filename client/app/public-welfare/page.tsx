@@ -1,11 +1,58 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { buttonVariants } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { extractErrorMessage, extractRiskReview, submitPublicWelfareMessage } from '@/lib/platform-api';
+import { cn } from '@/lib/utils';
+
+type PublicWelfareField = 'contact' | 'message';
+
+function validatePublicWelfareForm(values: { contact: string; message: string }) {
+  const fieldErrors: Partial<Record<PublicWelfareField, string>> = {};
+  const normalizedContact = values.contact.trim();
+  const normalizedMessage = values.message.trim();
+
+  if (!normalizedContact) {
+    fieldErrors.contact = '请填写联系方式';
+  } else if (normalizedContact.length < 2) {
+    fieldErrors.contact = '联系方式不能少于 2 个字符';
+  }
+
+  if (!normalizedMessage) {
+    fieldErrors.message = '请填写留言内容';
+  } else if (normalizedMessage.length < 10) {
+    fieldErrors.message = '留言内容不能少于 10 个字符';
+  }
+
+  return fieldErrors;
+}
+
+function parsePublicWelfareFieldErrors(message: string) {
+  const normalized = message.trim();
+  const fieldErrors: Partial<Record<PublicWelfareField, string>> = {};
+
+  if (!normalized) {
+    return fieldErrors;
+  }
+
+  if (normalized.includes('contact') || normalized.includes('联系方式')) {
+    fieldErrors.contact = normalized;
+  }
+
+  if (normalized.includes('message') || normalized.includes('留言内容')) {
+    fieldErrors.message = normalized;
+  }
+
+  if (normalized.includes('请先完善必填内容')) {
+    fieldErrors.contact = fieldErrors.contact || '请填写联系方式';
+    fieldErrors.message = fieldErrors.message || '请填写留言内容';
+  }
+
+  return fieldErrors;
+}
 
 export default function PublicWelfarePage() {
   const [name, setName] = useState('');
@@ -13,19 +60,35 @@ export default function PublicWelfarePage() {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<PublicWelfareField, string>>>({});
+  const [successOpen, setSuccessOpen] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const normalizedContact = contact.trim();
+    const normalizedMessage = message.trim();
+    const localFieldErrors = validatePublicWelfareForm({
+      contact: normalizedContact,
+      message: normalizedMessage,
+    });
+
+    if (Object.keys(localFieldErrors).length > 0) {
+      setFieldErrors(localFieldErrors);
+      setResultMessage('请先修正标红字段后再提交。');
+      return;
+    }
+
     setSubmitting(true);
     setResultMessage(null);
+    setFieldErrors({});
 
     try {
       await submitPublicWelfareMessage({
         name: name.trim() || undefined,
-        contact,
-        message,
+        contact: normalizedContact,
+        message: normalizedMessage,
       });
-      setResultMessage('感谢！留言已收到，我们会认真阅读并回复。');
+      setSuccessOpen(true);
       setName('');
       setContact('');
       setMessage('');
@@ -41,17 +104,25 @@ export default function PublicWelfarePage() {
           try {
             await submitPublicWelfareMessage({
               name: name.trim() || undefined,
-              contact,
-              message,
+              contact: normalizedContact,
+              message: normalizedMessage,
               riskConfirmed: true,
             });
-            setResultMessage('留言已按你的确认继续发布，管理员会优先审核风险内容。');
+            setSuccessOpen(true);
             setName('');
             setContact('');
             setMessage('');
             return;
           } catch (retryError) {
-            setResultMessage(extractErrorMessage(retryError));
+            const retryMessage = extractErrorMessage(retryError);
+            const retryFieldErrors = parsePublicWelfareFieldErrors(retryMessage);
+
+            if (Object.keys(retryFieldErrors).length > 0) {
+              setFieldErrors(retryFieldErrors);
+              setResultMessage('请先修正标红字段后再提交。');
+            } else {
+              setResultMessage(retryMessage);
+            }
             return;
           }
         }
@@ -60,7 +131,15 @@ export default function PublicWelfarePage() {
         return;
       }
 
-      setResultMessage(extractErrorMessage(error));
+      const errorMessage = extractErrorMessage(error);
+      const backendFieldErrors = parsePublicWelfareFieldErrors(errorMessage);
+
+      if (Object.keys(backendFieldErrors).length > 0) {
+        setFieldErrors(backendFieldErrors);
+        setResultMessage('请先修正标红字段后再提交。');
+      } else {
+        setResultMessage(errorMessage);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -111,7 +190,7 @@ export default function PublicWelfarePage() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          <form className="space-y-4" onSubmit={(event) => void handleSubmit(event)}>
+          <form className="space-y-4" noValidate onSubmit={(event) => void handleSubmit(event)}>
             <label className="grid gap-1.5 text-sm text-foreground">
               你的称呼
               <Input maxLength={120} onChange={(event) => setName(event.target.value)} placeholder="例如：小王 / 杭州做手熟尔AI+化妆应用的老谭" value={name} />
@@ -119,34 +198,80 @@ export default function PublicWelfarePage() {
             <label className="grid gap-1.5 text-sm text-foreground">
               联系方式
               <Input
+                aria-invalid={fieldErrors.contact ? true : undefined}
+                className={cn(fieldErrors.contact ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
                 maxLength={200}
-                onChange={(event) => setContact(event.target.value)}
+                onChange={(event) => {
+                  setContact(event.target.value);
+                  if (resultMessage) {
+                    setResultMessage(null);
+                  }
+                  if (fieldErrors.contact) {
+                    setFieldErrors((previous) => ({ ...previous, contact: '' }));
+                  }
+                }}
                 placeholder="例如：微信 / 邮箱 / 电话"
-                required
                 value={contact}
               />
+              {fieldErrors.contact ? <p className="text-xs text-destructive">{fieldErrors.contact}</p> : null}
             </label>
             <label className="grid gap-1.5 text-sm text-foreground">
               留言内容
               <Textarea
+                aria-invalid={fieldErrors.message ? true : undefined}
+                className={cn(fieldErrors.message ? 'border-destructive focus-visible:ring-destructive/20' : undefined)}
                 maxLength={3000}
-                onChange={(event) => setMessage(event.target.value)}
+                onChange={(event) => {
+                  setMessage(event.target.value);
+                  if (resultMessage) {
+                    setResultMessage(null);
+                  }
+                  if (fieldErrors.message) {
+                    setFieldErrors((previous) => ({ ...previous, message: '' }));
+                  }
+                }}
                 placeholder="例如：我能提供的帮助、对平台的建议……"
-                required
                 rows={8}
                 value={message}
               />
+              {fieldErrors.message ? <p className="text-xs text-destructive">{fieldErrors.message}</p> : null}
             </label>
+            {resultMessage ? (
+              <div className="rounded-xl border border-destructive/25 bg-destructive/8 px-4 py-3 text-sm text-destructive shadow-sm">
+                {resultMessage}
+              </div>
+            ) : null}
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <button className={buttonVariants()} disabled={submitting} type="submit">
                 {submitting ? '提交中…' : '提交留言'}
               </button>
             </div>
           </form>
-
-          {resultMessage ? <p className="text-sm text-muted-foreground">{resultMessage}</p> : null}
         </CardContent>
       </Card>
+
+      {successOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-border/70 bg-background p-6 shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
+            <div className="space-y-3">
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary/12 text-primary">
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                </svg>
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-xl font-semibold text-foreground">感谢！</h2>
+                <p className="text-sm leading-6 text-muted-foreground">留言已收到，我们会认真阅读并回复。</p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setSuccessOpen(false)} type="button">
+                我知道了
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
