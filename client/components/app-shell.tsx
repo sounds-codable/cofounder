@@ -21,7 +21,7 @@ type DashboardNavGroup = {
   items: Array<{
     href: string;
     label: string;
-    icon: 'dashboard' | 'requests' | 'projects' | 'developers' | 'blog' | 'invite' | 'points' | 'profile' | 'admin';
+    icon: 'requests' | 'projects' | 'developers' | 'blog' | 'invite' | 'points' | 'profile' | 'admin';
     match?: 'exact' | 'prefix';
   }>;
 };
@@ -30,23 +30,21 @@ const dashboardNavGroupsBase: DashboardNavGroup[] = [
   {
     title: '工作台',
     items: [
-      { href: '/dashboard', label: '控制台', icon: 'dashboard', match: 'exact' },
       { href: '/requests', label: '请求中心', icon: 'requests', match: 'prefix' },
     ],
   },
   {
-    title: '内容',
+    title: '数据库',
     items: [
-      { href: '/projects', label: '项目管理', icon: 'projects', match: 'prefix' },
+      { href: '/projects', label: '项目库', icon: 'projects', match: 'prefix' },
       { href: '/developers', label: '程序员', icon: 'developers', match: 'prefix' },
     ],
   },
   {
-    title: '账号',
+    title: '社群贡献',
     items: [
       { href: '/invite-codes', label: '邀请码', icon: 'invite', match: 'prefix' },
       { href: '/points', label: '积分', icon: 'points', match: 'prefix' },
-      { href: '/onboarding/profile', label: '我的资料', icon: 'profile', match: 'prefix' },
     ],
   },
 ];
@@ -67,14 +65,6 @@ function getDashboardNavGroups(isAdmin: boolean): DashboardNavGroup[] {
 
 function DashboardNavIcon({ icon }: { icon: DashboardNavGroup['items'][number]['icon'] }) {
   const navIconClassName = 'h-4 w-4';
-
-  if (icon === 'dashboard') {
-    return (
-      <svg aria-hidden="true" className={navIconClassName} viewBox="0 0 24 24">
-        <path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" fill="currentColor" />
-      </svg>
-    );
-  }
 
   if (icon === 'admin') {
     return (
@@ -205,7 +195,7 @@ function isDashboardRoute(pathname: string) {
 
 function getPageTitle(pathname: string) {
   if (pathname === '/dashboard') {
-    return '控制台';
+    return '请求中心';
   }
 
   if (pathname.startsWith('/projects')) {
@@ -225,7 +215,7 @@ function getPageTitle(pathname: string) {
   }
 
   if (pathname.startsWith('/onboarding')) {
-    return '我的资料';
+    return '详细信息';
   }
 
   if (pathname.startsWith('/invite-codes')) {
@@ -240,7 +230,7 @@ function getPageTitle(pathname: string) {
     return '管理后台';
   }
 
-  return '控制台';
+  return '请求中心';
 }
 
 function AppShellContent({ children }: AppShellProps) {
@@ -449,7 +439,7 @@ function AppShellContent({ children }: AppShellProps) {
         )}
       >
         <div className="relative z-40 flex items-center justify-between overflow-visible rounded-2xl border border-border/70 bg-background/88 px-4 py-3 shadow-[0_14px_34px_rgba(79,108,163,0.12)] backdrop-blur-sm lg:col-span-2">
-          <Link className="inline-flex items-center gap-3" href="/dashboard">
+          <Link className="inline-flex items-center gap-3" href="/requests">
             <span aria-hidden="true" className={`brand-mark brand-mark-${logoVariant}`}>
               <span className="brand-mark-core" />
               <span className="brand-mark-core brand-mark-core-alt" />

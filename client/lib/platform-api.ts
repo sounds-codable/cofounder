@@ -1,3 +1,4 @@
+import { normalizeCardPublicCode } from '@/lib/card-url';
 import { fallbackPublicCards, fallbackRequestStates, type PublicCard, type RequestState, type UserRole } from '@/lib/site-data';
 import { getStoredAccessToken } from '@/lib/session';
 
@@ -744,10 +745,12 @@ export async function fetchTagSuggestions(query: string, limit = 8) {
 }
 
 export async function fetchCardById(id: string) {
+  const normalizedId = normalizeCardPublicCode(id) || id;
+
   try {
-    return await requestJson<PlatformCardDetail>(`/platform/cards/${id}`);
+    return await requestJson<PlatformCardDetail>(`/platform/cards/${normalizedId}`);
   } catch {
-    const fallbackCard = fallbackPublicCards.find((card) => card.id === id) ?? null;
+    const fallbackCard = fallbackPublicCards.find((card) => card.id === normalizedId) ?? null;
 
     if (!fallbackCard) {
       return null;

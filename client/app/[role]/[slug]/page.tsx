@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { CardDetailClient } from '@/components/card-detail-client';
-import { buildCardPathFromCard, isCardPublicCode } from '@/lib/card-url';
+import { buildCardPathFromCard, normalizeCardPublicCode } from '@/lib/card-url';
 import { getStaticCards } from '@/lib/card-route-data';
 
 export async function generateStaticParams() {
@@ -25,13 +25,14 @@ type CardDetailPageProps = {
 
 export default async function CardDetailPage({ params }: CardDetailPageProps) {
   const { role, slug } = await params;
+  const normalizedPublicCode = normalizeCardPublicCode(role);
 
-  if (!isCardPublicCode(role) || !slug.trim()) {
+  if (!normalizedPublicCode || !slug.trim()) {
     notFound();
   }
 
   const cards = await getStaticCards();
-  const matchedCard = cards.find((card) => card.id === role);
+  const matchedCard = cards.find((card) => card.id === normalizedPublicCode);
 
   if (!matchedCard) {
     notFound();

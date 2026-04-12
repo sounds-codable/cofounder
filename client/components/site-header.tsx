@@ -232,7 +232,7 @@ export function SiteHeader({ logoVariant = 'overlap' }: SiteHeaderProps) {
                   <div className="overflow-hidden rounded-xl border border-border/70 bg-background/82">
                     <Link
                       className="inline-flex h-10 w-full items-center justify-center border-b border-border/70 text-sm font-medium text-foreground transition-colors hover:bg-accent/70"
-                      href="/dashboard"
+                      href="/requests"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       进入后台

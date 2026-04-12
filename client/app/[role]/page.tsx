@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { CardDetailClient } from '@/components/card-detail-client';
-import { isCardPublicCode } from '@/lib/card-url';
+import { compactCardPublicCode, normalizeCardPublicCode } from '@/lib/card-url';
 import { getStaticCards } from '@/lib/card-route-data';
 
 type ShareCardPageProps = {
@@ -12,15 +12,16 @@ type ShareCardPageProps = {
 export async function generateStaticParams() {
   const cards = await getStaticCards();
 
-  return cards.map((card) => ({ role: card.id }));
+  return cards.map((card) => ({ role: compactCardPublicCode(card.id) }));
 }
 
 export default async function ShareCardPage({ params }: ShareCardPageProps) {
   const { role } = await params;
+  const normalizedPublicCode = normalizeCardPublicCode(role);
 
-  if (!isCardPublicCode(role)) {
+  if (!normalizedPublicCode) {
     notFound();
   }
 
-  return <CardDetailClient id={role} />;
+  return <CardDetailClient id={normalizedPublicCode} />;
 }

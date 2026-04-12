@@ -99,11 +99,11 @@ export function DashboardOverview() {
         <Card className="border-border/70 bg-card/82 shadow-[0_16px_38px_rgba(79,108,163,0.14)]">
           <CardHeader className="space-y-3">
             <p className="inline-flex w-fit rounded-full bg-secondary px-3 py-1 text-xs font-semibold tracking-wide text-secondary-foreground">需要登录</p>
-            <CardTitle className="text-2xl">请先登录，再进入控制台。</CardTitle>
+            <CardTitle className="text-2xl">请先登录，再进入请求中心。</CardTitle>
             <p className="text-sm text-muted-foreground">登录后即可统一查看项目、程序员、请求和我的信息。</p>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
-            <Link className={buttonVariants()} href="/login?next=/dashboard">
+            <Link className={buttonVariants()} href="/login?next=/requests">
               去登录
             </Link>
             <Link className={buttonVariants({ variant: 'outline' })} href="/projects">
@@ -120,7 +120,7 @@ export function DashboardOverview() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_10%_0%,rgba(19,191,168,0.14),transparent_48%),radial-gradient(circle_at_90%_20%,rgba(76,200,255,0.14),transparent_45%)]" />
       <section className="relative grid gap-4 rounded-2xl border border-border/70 bg-card/82 p-6 shadow-[0_16px_38px_rgba(79,108,163,0.14)] backdrop-blur-sm md:grid-cols-[1fr_auto] md:items-center">
         <div>
-          <span className="inline-flex rounded-full bg-secondary/85 px-3 py-1 text-xs font-semibold tracking-wide text-secondary-foreground">控制台概览</span>
+          <span className="inline-flex rounded-full bg-secondary/85 px-3 py-1 text-xs font-semibold tracking-wide text-secondary-foreground">请求中心概览</span>
           <h2 className="mt-3 text-2xl font-semibold text-foreground">把最常用的协作动作收敛到一个清晰的后台里。</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">这里优先展示请求、收藏、资料状态和常用入口，减少跳转层级，让你更快进入下一步操作。</p>
         </div>
@@ -186,9 +186,6 @@ export function DashboardOverview() {
               </div>
             ))}
             <div className="flex flex-wrap gap-3 pt-1">
-              <Link className={buttonVariants({ variant: 'outline' })} href="/onboarding/profile">
-              我的资料
-            </Link>
               <Link className={buttonVariants()} href="/onboarding/detail">
               详细信息
             </Link>

@@ -120,8 +120,8 @@ export function DetailProfileForm() {
       <Card className="border-border/70 bg-card/80">
         <CardHeader className="space-y-3">
           <p className="inline-flex w-fit rounded-full bg-secondary px-3 py-1 text-xs font-semibold tracking-wide text-secondary-foreground">详细信息</p>
-          <CardTitle className="text-2xl leading-tight">把更完整的背景补充好，后续需要时就可以直接复用。</CardTitle>
-          <p className="text-sm text-muted-foreground">这部分不是默认公开内容，会在后续步骤里按需开放。</p>
+          <CardTitle className="text-2xl leading-tight">详细信息</CardTitle>
+          <p className="text-sm text-muted-foreground">此处的信息不会公开显示，仅用于</p>
           <div>
           <InfoDisclosure title="填写说明" compact>
             <p>详细信息只需要填写一次。</p>

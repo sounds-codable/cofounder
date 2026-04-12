@@ -263,7 +263,7 @@ export function RequestCenterClient() {
         <Card className="border-border/70 bg-card/80 shadow-[0_16px_38px_rgba(79,108,163,0.14)]">
           <CardHeader className="space-y-3">
             <p className="inline-flex w-fit rounded-full bg-secondary px-3 py-1 text-xs font-semibold tracking-wide text-secondary-foreground">请求中心</p>
-            <CardTitle className="text-2xl">登录后才能查看和处理你的请求记录。</CardTitle>
+            <CardTitle className="text-2xl">登录后才能查看和处理你的请求记录</CardTitle>
             <p className="text-sm text-muted-foreground">这里会集中展示你发出的请求和收到的请求。</p>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">

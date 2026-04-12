@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Heart, Share2, Star } from 'lucide-react';
-import { buildCardPathFromCard } from '@/lib/card-url';
+import { buildCardPathFromCard, buildCardSharePathFromCard } from '@/lib/card-url';
 import { useCardEngagement } from '@/lib/card-engagement';
 import { type PublicCard } from '@/lib/site-data';
 import { useAuthState } from '@/lib/use-auth';
@@ -24,7 +24,8 @@ export function CardEngagementActions({ card, sharePath }: CardEngagementActions
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const [nativeShareMessage, setNativeShareMessage] = useState<string | null>(null);
   const cardPath = useMemo(() => buildCardPathFromCard(card), [card]);
-  const resolvedSharePath = sharePath || cardPath;
+  const shortSharePath = useMemo(() => buildCardSharePathFromCard({ id: card.id }), [card.id]);
+  const resolvedSharePath = sharePath || shortSharePath;
 
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -36,7 +37,13 @@ export function CardEngagementActions({ card, sharePath }: CardEngagementActions
     return url.toString();
   }, [resolvedSharePath]);
 
-  const defaultShareText = useMemo(() => `刚在叩饭（Cofounder）看到一个项目，在找技术合伙人。这项目靠谱吗？\n${shareUrl}`, [shareUrl]);
+  const defaultShareText = useMemo(() => {
+    if (card.role === 'developer') {
+      return `刚在叩饭（Cofounder）看到一位程序员，想找细分领域一起做事。有人要看下吗？\n${shareUrl}`;
+    }
+
+    return `刚在叩饭（Cofounder）看到一个项目，在找技术合伙人。这个靠谱吗？\n${shareUrl}`;
+  }, [card.role, shareUrl]);
 
   const canUseNativeShare = useMemo(() => {
     if (typeof navigator === 'undefined') {

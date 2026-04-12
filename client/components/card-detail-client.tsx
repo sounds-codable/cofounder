@@ -6,7 +6,7 @@ import { CardEngagementActions } from '@/components/card-engagement-actions';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { buildCardPathFromCard } from '@/lib/card-url';
+import { buildCardPathFromCard, buildCardSharePathFromCard } from '@/lib/card-url';
 import { formatBeijingDateTime } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import {
@@ -365,10 +365,8 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         return;
       }
 
-      const nextSharePath = buildCardPathFromCard({
+      const nextSharePath = buildCardSharePathFromCard({
         id: card.id,
-        role: card.role,
-        headline: card.headline,
       });
 
       if (!cancelled) {
