@@ -20,7 +20,13 @@ export class RequestsController {
   @Post()
   async create(@Headers('authorization') authorization: string | undefined, @Body() body: CreateDetailRequestDto) {
     const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
-    return this.requestsService.createRequest(user, body.cardId);
+    return this.requestsService.createRequest(user, {
+      cardId: body.cardId,
+      intro: body.intro,
+      education: body.education,
+      experience: body.experience,
+      projectDetail: body.projectDetail,
+    });
   }
 
   @Post(':id/view-requester-detail')

@@ -4,6 +4,8 @@ import { buildAbsoluteUrl } from '@/lib/seo';
 import { buildCardPathFromCard } from '@/lib/card-url';
 import { getStaticCards } from '@/lib/card-route-data';
 
+export const dynamic = 'force-static';
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const routes: MetadataRoute.Sitemap = [

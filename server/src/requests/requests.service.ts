@@ -11,6 +11,26 @@ import { DetailRequest } from '../platform/detail-request.entity';
 import { RewardService } from '../rewards/reward.service';
 import { User } from '../users/user.entity';
 
+type RequestDetailSnapshotInput = {
+  intro?: string;
+  education?: string;
+  experience?: string;
+  projectDetail?: string;
+};
+
+type CreateRequestInput = {
+  cardId: string;
+} & RequestDetailSnapshotInput;
+
+type DetailProfileSnapshot = {
+  intro: string;
+  education: string;
+  experience: string;
+  expertProjectDetail: string;
+  developerProjectExperience: string;
+  projectDetail: string;
+};
+
 @Injectable()
 export class RequestsService {
   constructor(
@@ -51,7 +71,9 @@ export class RequestsService {
     };
   }
 
-  async createRequest(user: User, cardId: string) {
+  async createRequest(user: User, input: CreateRequestInput) {
+    const { cardId, intro, education, experience, projectDetail } = input;
+
     let card = await this.cardRepository.findOne({
       where: { publicCode: cardId },
       relations: {
@@ -105,6 +127,12 @@ export class RequestsService {
       targetCard: card,
       status: DetailRequestStatus.PENDING_REQUEST,
       rejectionReason: null,
+      requesterDetailSnapshot: this.buildRequesterDetailSnapshot(user, {
+        intro,
+        education,
+        experience,
+        projectDetail,
+      }),
       publisherViewedRequesterDetailAt: null,
       approvedAt: null,
       rejectedAt: null,
@@ -369,6 +397,29 @@ export class RequestsService {
     return request;
   }
 
+  private buildRequesterDetailSnapshot(user: User, input: RequestDetailSnapshotInput): DetailProfileSnapshot {
+    const base = user.detailedProfile || {};
+    const intro = input.intro?.trim() || base.intro || '';
+    const education = input.education?.trim() || base.education || '';
+    const experience = input.experience?.trim() || base.experience || '';
+    const projectDetailFromInput = input.projectDetail?.trim() || '';
+    const expertProjectDetail = projectDetailFromInput || base.expertProjectDetail || base.projectDetail || '';
+    const developerProjectExperience = projectDetailFromInput || base.developerProjectExperience || base.projectDetail || '';
+
+    return {
+      intro,
+      education,
+      experience,
+      expertProjectDetail,
+      developerProjectExperience,
+      projectDetail: projectDetailFromInput || base.projectDetail || expertProjectDetail || developerProjectExperience || '',
+    };
+  }
+
+  private resolveRequesterDetailSnapshot(request: DetailRequest) {
+    return request.requesterDetailSnapshot || request.requester.detailedProfile || null;
+  }
+
   private toIncomingRequestItem(request: DetailRequest) {
     const detailViewed = Boolean(request.publisherViewedRequesterDetailAt);
     const approved =
@@ -392,7 +443,7 @@ export class RequestsService {
       requester: {
         id: request.requester.id,
         displayName: request.requester.displayName,
-        detailedProfile: detailViewed || approved ? request.requester.detailedProfile : null,
+        detailedProfile: detailViewed || approved ? this.resolveRequesterDetailSnapshot(request) : null,
         contactMethods: contactVisible ? this.toContactMethods(request.requester.contactMethods) : [],
       },
       actions: {
@@ -423,6 +474,7 @@ export class RequestsService {
       exchangeReviewingAt: request.exchangeReviewingAt,
       requesterDeclinedContactAt: request.requesterDeclinedContactAt,
       targetCard: this.toTargetCard(request),
+      requesterSubmittedDetail: this.resolveRequesterDetailSnapshot(request),
       publisher: {
         id: request.publisher.id,
         displayName: request.publisher.displayName,

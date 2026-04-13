@@ -3,6 +3,15 @@ import { DetailRequestStatus } from '../common/enums/detail-request-status.enum'
 import { User } from '../users/user.entity';
 import { Card } from './card.entity';
 
+type DetailProfileSnapshot = {
+  intro: string;
+  education: string;
+  experience: string;
+  expertProjectDetail: string;
+  developerProjectExperience: string;
+  projectDetail: string;
+};
+
 @Entity({ name: 'detail_requests' })
 export class DetailRequest {
   @PrimaryGeneratedColumn('uuid')
@@ -22,6 +31,9 @@ export class DetailRequest {
 
   @Column({ type: 'text', nullable: true })
   rejectionReason!: string | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  requesterDetailSnapshot!: DetailProfileSnapshot | null;
 
   @Column({ type: 'timestamptz', nullable: true })
   publisherViewedRequesterDetailAt!: Date | null;

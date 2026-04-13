@@ -48,6 +48,12 @@ type DetailProfileLike = Partial<{
   developerProjectExperience: string;
 }>;
 
+type ContactDisplayItem = {
+  id: string;
+  label: string;
+  value: string;
+};
+
 const detailFieldMeta: Record<DetailField, { label: string; minLength: number }> = {
   intro: { label: '个人简介', minLength: 6 },
   education: { label: '教育背景', minLength: 4 },
@@ -59,8 +65,17 @@ function getProjectFieldLabel(role?: UserRole | null) {
   return role === 'developer' ? '做过的项目/产品' : '项目详情';
 }
 
+function buildRequestDetailSnapshotPayload(values: { intro: string; education: string; experience: string; projectDetail: string }) {
+  return {
+    intro: values.intro.trim(),
+    education: values.education.trim(),
+    experience: values.experience.trim(),
+    projectDetail: values.projectDetail.trim(),
+  };
+}
+
 function getProjectFieldPlaceholder(role?: UserRole | null) {
-  return role === 'developer' ? '请概要介绍你做过的具体项目、产品或代表作品。' : '补充项目细节、成果或能力证明';
+  return role === 'developer' ? '请概要介绍你做过的具体项目、产品或代表作品。' : '您想合作的项目的情况，描述越详细，越能吸引此程序员的合作意向。';
 }
 
 function getRoleSpecificProjectDetail(detailProfile: DetailProfileLike | null | undefined, role?: UserRole | null) {
@@ -225,6 +240,65 @@ function formatContactType(type: string) {
   return contactTypeLabels[type.toLowerCase()] || type;
 }
 
+function normalizeContactDisplayItems(contactMethods: ContactMethod[] | undefined, keyPrefix: string): ContactDisplayItem[] {
+  if (!contactMethods || contactMethods.length === 0) {
+    return [];
+  }
+
+  const displayNameItems: ContactDisplayItem[] = [];
+  const otherItems: ContactDisplayItem[] = [];
+
+  contactMethods.forEach((contact) => {
+    if (contact.type.toLowerCase() !== 'other') {
+      otherItems.push({
+        id: `${keyPrefix}-${contact.id}`,
+        label: formatContactType(contact.type),
+        value: contact.value,
+      });
+      return;
+    }
+
+    const parsed = splitOtherContactValue(contact.value);
+
+    if (parsed.displayName) {
+      displayNameItems.push({
+        id: `${keyPrefix}-${contact.id}-displayName`,
+        label: '称呼',
+        value: parsed.displayName,
+      });
+    }
+
+    if (parsed.other) {
+      otherItems.push({
+        id: `${keyPrefix}-${contact.id}-other`,
+        label: '其他联系方式',
+        value: parsed.other,
+      });
+    }
+
+    if (!parsed.displayName && !parsed.other) {
+      otherItems.push({
+        id: `${keyPrefix}-${contact.id}-fallback`,
+        label: '其他联系方式',
+        value: contact.value,
+      });
+    }
+  });
+
+  return [...displayNameItems, ...otherItems];
+}
+
+function maskContactValue(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return '******';
+  }
+
+  const visibleMaskLength = Math.max(6, Math.min(12, trimmed.length));
+  return '•'.repeat(visibleMaskLength);
+}
+
 function getViewerStatusBadgeClass(status?: string | null) {
   if (!status) {
     return 'border-border/80 bg-background/88 text-foreground';
@@ -348,6 +422,9 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   const [justExchangedPublisherContacts, setJustExchangedPublisherContacts] = useState<ContactMethod[]>([]);
   const [riskNoticeModalOpen, setRiskNoticeModalOpen] = useState(false);
   const [mvpGuideModalOpen, setMvpGuideModalOpen] = useState(false);
+  const [contactDisclosureModalOpen, setContactDisclosureModalOpen] = useState(false);
+  const [pendingContactRevealKey, setPendingContactRevealKey] = useState<string | null>(null);
+  const [revealedContactValuesByKey, setRevealedContactValuesByKey] = useState<Record<string, boolean>>({});
   const [processedActionAtByRequestId, setProcessedActionAtByRequestId] = useState<Record<string, string>>({});
   const [expandedCommunicationInfoById, setExpandedCommunicationInfoById] = useState<Record<string, boolean>>({});
   const [collapsedIncomingCommunicationByRequestId, setCollapsedIncomingCommunicationByRequestId] = useState<Record<string, boolean>>({});
@@ -473,7 +550,15 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
       throw new Error('目标卡片不存在');
     }
 
-    await createDetailRequest(card.id);
+    await createDetailRequest(
+      card.id,
+      buildRequestDetailSnapshotPayload({
+        intro,
+        education,
+        experience,
+        projectDetail,
+      }),
+    );
     const nextCard = await fetchCardById(id);
 
     if (nextCard) {
@@ -631,6 +716,12 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   }
 
   function openRequestModal() {
+    const defaultDetail = requestMeta?.requesterSubmittedDetail || profile?.user.detailedProfile || null;
+
+    setIntro(defaultDetail?.intro || '');
+    setEducation(defaultDetail?.education || '');
+    setExperience(defaultDetail?.experience || '');
+    setProjectDetail(getRoleSpecificProjectDetail(defaultDetail, currentUserRole));
     setFieldErrors({});
     setModalMessage(null);
     setContactValidationMessage(null);
@@ -1033,7 +1124,9 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   const projectFieldLabel = getProjectFieldLabel(currentUserRole);
   const projectFieldPlaceholder = getProjectFieldPlaceholder(currentUserRole);
   const hasDetailProfile = Boolean(profile?.completion.hasDetailProfile && profile.user.detailedProfile);
-  const previewRows = buildDetailRows(profile?.user.detailedProfile, currentUserRole, '未填写');
+  const profilePreviewRows = buildDetailRows(profile?.user.detailedProfile, currentUserRole, '未填写');
+  const requestDraftRows = buildDetailRows({ intro, education, experience, projectDetail }, currentUserRole, '未填写');
+  const submittedRequestRows = buildDetailRows(requestMeta?.requesterSubmittedDetail, currentUserRole, '未填写');
   const alertText = hasDetailProfile
     ? '小提醒：先把下面这些信息发给对方，对方会更放心，也更愿意继续聊下去。'
     : '小提醒：先花几分钟把下面的信息补充一下发给对方，对方会更放心，也更愿意继续聊下去。';
@@ -1042,8 +1135,10 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
     ? '对方尚未填写联系方式，暂时无法查看。'
     : '你填写得越清楚，对方越容易判断你们是否合适，也就更可能把更多信息开放给你。';
   const outgoingVisibleContacts = requestMeta?.status === 'contact_exchanged' ? requestMeta.publisher.contactMethods : [];
+  const outgoingVisibleContactItems = normalizeContactDisplayItems(outgoingVisibleContacts, 'outgoing-visible');
   const isOwnCard = Boolean(authenticated && profile?.user.id && card.ownerId && profile.user.id === card.ownerId);
   const incomingRequestsSorted = [...incomingRequestsForCard].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const hasIncomingMatchedSuccess = incomingRequestsSorted.some((request) => request.status === 'contact_exchanged');
   const publisherDetailRows = buildDetailRows(requestMeta?.publisher.detailedProfile, card.role, '暂未开放');
   const communicationLogs = (() => {
     if (!requestMeta) {
@@ -1119,6 +1214,36 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   function handleEditOwnCard() {
     setOwnerActionMessage(null);
     setEditOwnCardModalOpen(true);
+  }
+
+  function handleOpenContactDisclosure(key: string) {
+    setPendingContactRevealKey(key);
+    setContactDisclosureModalOpen(true);
+  }
+
+  function handleAcceptContactDisclosure() {
+    if (!pendingContactRevealKey) {
+      return;
+    }
+
+    setRevealedContactValuesByKey((previous) => ({
+      ...previous,
+      [pendingContactRevealKey]: true,
+    }));
+    setPendingContactRevealKey(null);
+    setContactDisclosureModalOpen(false);
+  }
+
+  function handleCloseContactDisclosure() {
+    setPendingContactRevealKey(null);
+    setContactDisclosureModalOpen(false);
+  }
+
+  function handleHideContactValue(key: string) {
+    setRevealedContactValuesByKey((previous) => ({
+      ...previous,
+      [key]: false,
+    }));
   }
 
   async function handleDeleteOwnCard() {
@@ -1251,6 +1376,33 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
 
       {isOwnCard && ownerActionMessage ? <p className="mt-2 text-xs text-muted-foreground">{ownerActionMessage}</p> : null}
 
+      {isOwnCard && hasIncomingMatchedSuccess ? (
+        <section className="rounded-2xl border border-emerald-300/60 bg-gradient-to-r from-emerald-50/85 via-teal-50/80 to-cyan-50/80 p-3 shadow-[0_10px_24px_rgba(6,95,70,0.12)]">
+          <div className="grid gap-2 md:grid-cols-2">
+            <button
+              className={cn(
+                buttonVariants({ size: 'lg' }),
+                'h-11 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50 to-rose-50 text-sm font-semibold text-amber-900 shadow-[0_8px_20px_rgba(146,64,14,0.14)] transition-transform hover:scale-[1.01] hover:from-amber-100 hover:to-rose-100',
+              )}
+              type="button"
+              onClick={() => setRiskNoticeModalOpen(true)}
+            >
+              ⚠️ 风险提示（必读）
+            </button>
+            <button
+              className={cn(
+                buttonVariants({ size: 'lg' }),
+                'h-11 rounded-xl border border-emerald-300/80 bg-gradient-to-r from-emerald-50 to-teal-50 text-sm font-semibold text-emerald-900 shadow-[0_8px_20px_rgba(6,95,70,0.12)] transition-transform hover:scale-[1.01] hover:from-emerald-100 hover:to-teal-100',
+              )}
+              type="button"
+              onClick={() => setMvpGuideModalOpen(true)}
+            >
+              🚀 MVP建议（推荐）
+            </button>
+          </div>
+        </section>
+      ) : null}
+
       {isOwnCard && editOwnCardModalOpen && card ? (
         <div aria-label="修改卡片" aria-modal="true" className="fixed inset-0 z-[130] overflow-y-auto p-4" role="dialog">
           <button className="fixed inset-0 bg-foreground/30" type="button" aria-label="关闭修改卡片弹框" onClick={() => setEditOwnCardModalOpen(false)} />
@@ -1290,14 +1442,29 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
       {requestMeta?.status === 'contact_exchanged' ? (
         <section className="space-y-3 rounded-2xl border border-emerald-300/70 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 p-5 shadow-[0_16px_36px_rgba(16,185,129,0.2)]">
           <h2 className="text-2xl font-semibold text-emerald-900">🎉 匹配成功：对方联系方式</h2>
-          {outgoingVisibleContacts.length > 0 ? (
+          {outgoingVisibleContactItems.length > 0 ? (
             <div className="grid gap-2">
-              {outgoingVisibleContacts.map((contact) => (
-                <div className="rounded-2xl border border-emerald-200 bg-white/90 px-4 py-3" key={`outgoing-contact-hero-${contact.id}`}>
-                  <strong className="text-base font-semibold text-emerald-900">{formatContactType(contact.type)}</strong>
-                  <p className="mt-1 break-words text-base text-emerald-800">{contact.value}</p>
-                </div>
-              ))}
+              {outgoingVisibleContactItems.map((contact) => {
+                const revealed = revealedContactValuesByKey[contact.id] || false;
+
+                return (
+                  <div className="rounded-2xl border border-emerald-200 bg-white/90 px-4 py-3" key={contact.id}>
+                    <strong className="text-base font-semibold text-emerald-900">{contact.label}</strong>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <p className="break-words text-base text-emerald-800">{revealed ? contact.value : maskContactValue(contact.value)}</p>
+                      {revealed ? (
+                        <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 px-2 text-xs')} type="button" onClick={() => handleHideContactValue(contact.id)}>
+                          隐藏
+                        </button>
+                      ) : (
+                        <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 px-2 text-xs')} type="button" onClick={() => handleOpenContactDisclosure(contact.id)}>
+                          查看
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="rounded-lg border border-amber-300/60 bg-amber-50/80 px-3 py-2 text-sm text-amber-900">{noVisibleContactsHint}</p>
@@ -1344,7 +1511,8 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                 const requestStatusLabel = getIncomingRequestStatusLabel(request.status);
                 const hasViewedRequesterDetail = Boolean(request.publisherViewedRequesterDetailAt);
                 const communicationCollapsed = collapsedIncomingCommunicationByRequestId[request.id] || false;
-                const incomingVisibleContacts = request.status === 'contact_exchanged' ? request.requester.contactMethods : [];
+                const incomingVisibleContactItems =
+                  request.status === 'contact_exchanged' ? normalizeContactDisplayItems(request.requester.contactMethods, `incoming-visible-${request.id}`) : [];
                 const requesterRole: UserRole = request.targetCard.role === 'expert' ? 'developer' : 'expert';
                 const requesterDetailRows = buildDetailRows(request.requester.detailedProfile, requesterRole, '暂未查看');
                 const incomingCommunicationLogs = (() => {
@@ -1384,7 +1552,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                       tone: 'success',
                       text: '你已点击“和Ta聊聊”，并向对方开放了更多信息。',
                       canExpandInfo: true,
-                      detailRows: previewRows,
+                      detailRows: profilePreviewRows,
                     });
                   }
 
@@ -1445,15 +1613,30 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
 
                     {request.status === 'contact_exchanged' ? (
                       <section className="space-y-2 rounded-xl border border-emerald-300/65 bg-emerald-50/80 p-3">
-                        <h3 className="text-sm font-semibold text-emerald-900">对方联系方式（已可直接联系）</h3>
-                        {incomingVisibleContacts.length > 0 ? (
+                        <h3 className="text-sm font-semibold text-emerald-900">对方联系方式</h3>
+                        {incomingVisibleContactItems.length > 0 ? (
                           <div className="grid gap-2 sm:grid-cols-2">
-                            {incomingVisibleContacts.map((contact) => (
-                              <div className="rounded-md border border-emerald-300/60 bg-white/90 px-3 py-2" key={`incoming-visible-contact-${request.id}-${contact.id}`}>
-                                <p className="text-xs font-medium text-emerald-900">{formatContactType(contact.type)}</p>
-                                <p className="mt-1 break-words text-sm text-emerald-800">{contact.value}</p>
-                              </div>
-                            ))}
+                            {incomingVisibleContactItems.map((contact) => {
+                              const revealed = revealedContactValuesByKey[contact.id] || false;
+
+                              return (
+                                <div className="rounded-md border border-emerald-300/60 bg-white/90 px-3 py-2" key={contact.id}>
+                                  <p className="text-xs font-medium text-emerald-900">{contact.label}</p>
+                                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                                    <p className="break-words text-sm text-emerald-800">{revealed ? contact.value : maskContactValue(contact.value)}</p>
+                                    {revealed ? (
+                                      <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 px-2 text-xs')} type="button" onClick={() => handleHideContactValue(contact.id)}>
+                                        隐藏
+                                      </button>
+                                    ) : (
+                                      <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 px-2 text-xs')} type="button" onClick={() => handleOpenContactDisclosure(contact.id)}>
+                                        查看
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         ) : (
                           <p className="rounded-md border border-amber-300/60 bg-amber-50/80 px-3 py-2 text-xs text-amber-900">对方尚未填写联系方式，暂时无法查看。</p>
@@ -1546,7 +1729,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
             {communicationLogs.map((log) => {
               const canExpandInfo = log.id === 'outgoing-approved' || log.id === 'outgoing-created';
               const expanded = expandedCommunicationInfoById[log.id] || false;
-              const detailRowsToShow = log.id === 'outgoing-created' ? previewRows : publisherDetailRows;
+              const detailRowsToShow = log.id === 'outgoing-created' ? submittedRequestRows : publisherDetailRows;
 
               return (
                 <div
@@ -1711,10 +1894,11 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                         disabled={savingDetail || submittingRequest}
                         type="button"
                         onClick={() => {
-                          setIntro(profile?.user.detailedProfile?.intro || '');
-                          setEducation(profile?.user.detailedProfile?.education || '');
-                          setExperience(profile?.user.detailedProfile?.experience || '');
-                          setProjectDetail(getRoleSpecificProjectDetail(profile?.user.detailedProfile, currentUserRole));
+                          const defaultDetail = requestMeta?.requesterSubmittedDetail || profile?.user.detailedProfile || null;
+                          setIntro(defaultDetail?.intro || '');
+                          setEducation(defaultDetail?.education || '');
+                          setExperience(defaultDetail?.experience || '');
+                          setProjectDetail(getRoleSpecificProjectDetail(defaultDetail, currentUserRole));
                           setFieldErrors({});
                           setModalMessage(null);
                           setEditingDetailInRequestModal(false);
@@ -1726,7 +1910,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                   </form>
                 ) : (
                   <div className="grid max-h-72 gap-2 overflow-y-auto rounded-lg border border-border/60 bg-background/50 p-2">
-                    {previewRows.map(([label, value]) => (
+                    {requestDraftRows.map(([label, value]) => (
                       <div className="rounded-lg border border-border/60 bg-background/70 p-3" key={label}>
                         <strong className="text-sm text-foreground">{label}</strong>
                         <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground">{value}</p>
@@ -1746,7 +1930,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">还没有录入详细信息，请先录入。</p>
+                <p className="text-sm text-muted-foreground">还没有录入详细信息，请先录入。这些信息不会被公开显示，只有此程序员能查看。</p>
                 <form className="space-y-3" onSubmit={(event) => event.preventDefault()}>
                   <label className="grid gap-1 text-sm text-foreground">
                     个人简介
@@ -1851,15 +2035,30 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
 
               {exchangeJustCompleted ? (
                 <section className="space-y-3 rounded-xl border border-emerald-300/75 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 p-4">
-                  <h3 className="text-base font-semibold text-emerald-900">交换成功，已立即显示对方联系方式</h3>
+                  <h3 className="text-base font-semibold text-emerald-900">交换成功，对方联系方式如下：</h3>
                   {justExchangedPublisherContacts.length > 0 ? (
                     <div className="grid gap-2 sm:grid-cols-2">
-                      {justExchangedPublisherContacts.map((contact) => (
-                        <div className="rounded-lg border border-emerald-300/65 bg-white/90 px-3 py-2" key={`just-exchanged-contact-${contact.id}`}>
-                          <p className="text-xs font-medium text-emerald-900">{formatContactType(contact.type)}</p>
-                          <p className="mt-1 break-words text-sm text-emerald-800">{contact.value}</p>
-                        </div>
-                      ))}
+                      {normalizeContactDisplayItems(justExchangedPublisherContacts, 'just-exchanged').map((contact) => {
+                        const revealed = revealedContactValuesByKey[contact.id] || false;
+
+                        return (
+                          <div className="rounded-lg border border-emerald-300/65 bg-white/90 px-3 py-2" key={contact.id}>
+                            <p className="text-xs font-medium text-emerald-900">{contact.label}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                              <p className="break-words text-sm text-emerald-800">{revealed ? contact.value : maskContactValue(contact.value)}</p>
+                              {revealed ? (
+                                <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 px-2 text-xs')} type="button" onClick={() => handleHideContactValue(contact.id)}>
+                                  隐藏
+                                </button>
+                              ) : (
+                                <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 px-2 text-xs')} type="button" onClick={() => handleOpenContactDisclosure(contact.id)}>
+                                  查看
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="rounded-md border border-amber-300/60 bg-amber-50/80 px-3 py-2 text-sm text-amber-900">对方尚未填写联系方式，暂时无法查看。</p>
@@ -1977,7 +2176,10 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                 <h3 className="text-sm font-semibold text-rose-900">免责与责任边界</h3>
                 <p className="text-sm leading-6 text-rose-900/95">
                   平台仅提供信息展示与沟通工具，不参与任何线下接触、交易决策、合同签署、资金流转、股权安排或争议处理。
-                  因用户沟通、合作或交易行为引发的任何直接或间接损失、纠纷与法律后果，均由相关用户自行承担，平台不承担担保责任、连带责任或赔偿责任。
+                  用户之间因沟通、合作或交易引发的任何直接或间接损失、纠纷与法律后果，概由相关用户自行承担全部法律责任，平台免除一切担保、连带及赔偿责任。
+                </p>
+                <p className="text-sm font-semibold leading-6 text-rose-900/95">
+                  特别提示：你通过本站获取的联系方式与对方联系，将被视为你已充分阅读、理解并自愿接受上述条款约束。
                 </p>
               </section>
 
@@ -2045,6 +2247,51 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
               <div className="flex justify-end">
                 <button className={buttonVariants()} type="button" onClick={() => setMvpGuideModalOpen(false)}>
                   我知道了，继续沟通
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+      ) : null}
+
+      {contactDisclosureModalOpen ? (
+        <div className="fixed inset-0 z-[80] overflow-y-auto p-4" role="dialog" aria-modal="true" aria-label="联系方式查看条款">
+          <button className="fixed inset-0 bg-foreground/35" onClick={handleCloseContactDisclosure} type="button" aria-label="关闭条款弹框" />
+          <div className="relative z-10 flex min-h-full items-start justify-center py-2 md:items-center">
+            <section className="relative w-full max-w-xl space-y-4 rounded-2xl border border-rose-300/70 bg-[linear-gradient(180deg,rgba(255,251,235,0.99),rgba(255,241,242,0.99))] p-5 shadow-[0_18px_42px_rgba(190,24,93,0.22)] backdrop-blur-md">
+              <button
+                aria-label="关闭联系方式查看条款弹框"
+                className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-300/70 bg-white text-xl leading-none text-rose-900 shadow-[0_8px_18px_rgba(190,24,93,0.2)] transition-colors hover:bg-rose-100"
+                type="button"
+                onClick={handleCloseContactDisclosure}
+              >
+                ×
+              </button>
+              <h2 className="pr-10 text-xl font-semibold text-rose-950">查看联系方式前请确认</h2>
+
+              <section className="space-y-2 rounded-xl border border-rose-300/70 bg-white/90 p-4">
+                <h3 className="text-sm font-semibold text-rose-900">信息真实性声明</h3>
+                <p className="text-sm leading-6 text-rose-900/95">平台上的身份、履历、项目与联系方式均由用户自行填写，平台不做人工核验，也不提供真实性担保。</p>
+              </section>
+
+              <section className="space-y-2 rounded-xl border border-rose-300/70 bg-white/90 p-4">
+                <h3 className="text-sm font-semibold text-rose-900">责任与风险约定</h3>
+                <p className="text-sm leading-6 text-rose-900/95">
+                  你需自行判断并承担由联系、线下会面、交易、转账、签约等行为产生的一切风险与法律后果；如发生争议或损失，由相关用户自行处理，平台不承担担保、连带或赔偿责任。
+                </p>
+              </section>
+
+              <section className="space-y-2 rounded-xl border border-rose-300/70 bg-white/90 p-4">
+                <h3 className="text-sm font-semibold text-rose-900">确认条款</h3>
+                <p className="text-sm leading-6 text-rose-900/95">你点击“接受条款并查看联系方式”，即视为已充分阅读、理解并同意接受上述全部条款约束。</p>
+              </section>
+
+              <div className="flex flex-wrap justify-end gap-2">
+                <button className={buttonVariants({ variant: 'outline' })} type="button" onClick={handleCloseContactDisclosure}>
+                  放弃查看
+                </button>
+                <button className={buttonVariants()} type="button" onClick={handleAcceptContactDisclosure}>
+                  接受条款并查看联系方式
                 </button>
               </div>
             </section>
@@ -2138,6 +2385,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                   小提醒：联系对方前，建议先把你的详细信息发给对方。
                   <br />
                   你写得越具体，对方越容易判断匹配度，也更愿意继续推进。
+                  <br />这些信息不会公开显示，只有对方才能查看。
                 </p>
                 <details className="request-modal-help">
                   <summary aria-label="为什么建议先认真填写这些内容">?</summary>
@@ -2260,7 +2508,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                     </form>
                   ) : (
                     <div className="grid max-h-72 gap-2 overflow-y-auto rounded-lg border border-border/60 bg-background/50 p-2">
-                      {previewRows.map(([label, value]) => (
+                      {profilePreviewRows.map(([label, value]) => (
                         <div className="rounded-lg border border-border/60 bg-background/70 p-3" key={`approve-${label}`}>
                           <strong className="text-sm text-foreground">{label}</strong>
                           <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground">{value}</p>

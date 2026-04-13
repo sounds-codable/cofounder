@@ -448,6 +448,8 @@ export type RequestTargetCard = {
   ownerName: string;
 };
 
+export type RequesterDetailSnapshot = PublicCard['detailPreview'];
+
 export type OutgoingRequest = {
   id: string;
   status: string;
@@ -460,6 +462,7 @@ export type OutgoingRequest = {
   exchangeReviewingAt?: string | null;
   requesterDeclinedContactAt?: string | null;
   targetCard: RequestTargetCard;
+  requesterSubmittedDetail: RequesterDetailSnapshot | null;
   publisher: {
     id: string;
     displayName: string;
@@ -933,10 +936,28 @@ export async function fetchMyRequests() {
   return requestJson<RequestCenterResponse>('/requests');
 }
 
-export async function createDetailRequest(cardId: string) {
+export async function createDetailRequest(
+  cardId: string,
+  detailProfile?: {
+    intro: string;
+    education: string;
+    experience: string;
+    projectDetail: string;
+  },
+) {
   return requestJson<OutgoingRequest>('/requests', {
     method: 'POST',
-    body: { cardId },
+    body: {
+      cardId,
+      ...(detailProfile
+        ? {
+            intro: detailProfile.intro,
+            education: detailProfile.education,
+            experience: detailProfile.experience,
+            projectDetail: detailProfile.projectDetail,
+          }
+        : {}),
+    },
   });
 }
 
