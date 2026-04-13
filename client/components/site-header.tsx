@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
+import { CommunityRecruitmentEntry } from '@/components/community-recruitment-entry';
 import { MvpTerm } from '@/components/mvp-term';
 import { buttonVariants } from '@/components/ui/button';
 import { extractErrorMessage, extractRiskReview, saveDisplayName } from '@/lib/platform-api';
@@ -154,6 +155,7 @@ export function SiteHeader({ logoVariant = 'overlap' }: SiteHeaderProps) {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-2 md:ml-0">
+          <CommunityRecruitmentEntry />
           {authenticated && profile ? (
             <div className="relative" ref={userMenuRef}>
               <button

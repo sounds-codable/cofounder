@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, type ReactNode, useEffect, useRef, useState, useTransition } from 'react';
+import { CommunityRecruitmentEntry } from '@/components/community-recruitment-entry';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { SmartTooltip } from '@/components/smart-tooltip';
@@ -561,6 +562,7 @@ function AppShellContent({ children }: AppShellProps) {
             </div>
           </Link>
           <div className="ml-auto flex items-center gap-2">
+            <CommunityRecruitmentEntry />
             <button
               aria-label="打开导航菜单"
               aria-expanded={!desktopViewport && sidebarOpen}
