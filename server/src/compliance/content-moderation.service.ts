@@ -7,6 +7,14 @@ type BadWordsFilterLike = {
 };
 
 const fallbackProfanityPattern = /\b(fuck|shit|bitch|asshole|motherfucker|dick|cunt|bastard|slut|whore|nigger|faggot)\b/i;
+const dangerousHtmlPatterns: Array<{ pattern: RegExp; matchedTerm: string }> = [
+  { pattern: /<\s*script\b/i, matchedTerm: '[xss]script_tag' },
+  { pattern: /<\s*iframe\b/i, matchedTerm: '[xss]iframe_tag' },
+  { pattern: /<\s*object\b/i, matchedTerm: '[xss]object_tag' },
+  { pattern: /<\s*embed\b/i, matchedTerm: '[xss]embed_tag' },
+  { pattern: /javascript\s*:/i, matchedTerm: '[xss]javascript_protocol' },
+  { pattern: /on\w+\s*=/i, matchedTerm: '[xss]event_handler' },
+];
 
 type ModerationField = {
   field: string;
@@ -84,6 +92,16 @@ export class ContentModerationService {
         });
       }
 
+      for (const { pattern, matchedTerm } of dangerousHtmlPatterns) {
+        if (pattern.test(rawContent)) {
+          detections.push({
+            category: 'abuse',
+            matchedTerm,
+            field: field.field,
+          });
+        }
+      }
+
       const lexiconMatches = this.cnLexiconFastscanService.search(normalized);
 
       lexiconMatches.forEach(([, matchedTerm]) => {
@@ -117,6 +135,10 @@ export class ContentModerationService {
 
   ensureReviewed(input: EnsureReviewInput) {
     const result = this.evaluate(input.fields);
+
+    if (result.matchedTerms.some((term) => term.startsWith('[xss]'))) {
+      throw new BadRequestException('检测到高风险脚本或注入内容，请移除后再提交。');
+    }
 
     if (!result.hasRisk) {
       return result;

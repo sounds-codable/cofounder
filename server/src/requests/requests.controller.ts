@@ -26,6 +26,7 @@ export class RequestsController {
       education: body.education,
       experience: body.experience,
       projectDetail: body.projectDetail,
+      riskConfirmed: body.riskConfirmed,
     });
   }
 

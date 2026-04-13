@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, ForbiddenException, Get, Headers, Param, Put, Query } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import { AdminService } from './admin.service';
+import { UpdatePublicWelfareMessageDto } from './dto/update-public-welfare-message.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -64,7 +65,7 @@ export class AdminController {
   async updatePublicWelfareMessage(
     @Headers('authorization') authorization: string | undefined,
     @Param('messageId') messageId: string,
-    @Body() body: { name?: string; contact: string; message: string; riskConfirmed?: boolean },
+    @Body() body: UpdatePublicWelfareMessageDto,
   ) {
     const user = await this.getRequiredAdmin(authorization);
     return this.adminService.updatePublicWelfareMessage(user.id, messageId, body);

@@ -20,6 +20,7 @@ type RequestDetailSnapshotInput = {
 
 type CreateRequestInput = {
   cardId: string;
+  riskConfirmed?: boolean;
 } & RequestDetailSnapshotInput;
 
 type DetailProfileSnapshot = {
@@ -72,7 +73,18 @@ export class RequestsService {
   }
 
   async createRequest(user: User, input: CreateRequestInput) {
-    const { cardId, intro, education, experience, projectDetail } = input;
+    const { cardId, intro, education, experience, projectDetail, riskConfirmed } = input;
+
+    const moderationResult = this.contentModerationService.ensureReviewed({
+      operationType: 'create_detail_request_snapshot',
+      riskConfirmed,
+      fields: [
+        { field: 'intro', content: intro },
+        { field: 'education', content: education },
+        { field: 'experience', content: experience },
+        { field: 'projectDetail', content: projectDetail },
+      ],
+    });
 
     let card = await this.cardRepository.findOne({
       where: { publicCode: cardId },
@@ -149,6 +161,27 @@ export class RequestsService {
         publisher: { contactMethods: true },
         requester: { contactMethods: true },
         targetCard: { owner: { contactMethods: true } },
+      },
+    });
+
+    await this.complianceLogService.recordPublishedContent({
+      userId: user.id,
+      userEmail: user.email,
+      cardId: card.id,
+      cardPublicCode: card.publicCode,
+      operationType: 'create_detail_request_snapshot',
+      riskReview: {
+        reviewRequired: moderationResult.hasRisk,
+        riskLevel: moderationResult.riskLevel,
+        categories: moderationResult.categories,
+        matchedTerms: moderationResult.matchedTerms,
+        confirmedToPublish: Boolean(riskConfirmed),
+        provider: moderationResult.provider,
+      },
+      contentSnapshot: {
+        requestId: savedRequest.id,
+        targetCardId: card.publicCode,
+        requesterSnapshot: savedRequest.requesterDetailSnapshot,
       },
     });
 
