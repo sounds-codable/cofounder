@@ -486,6 +486,7 @@ export type IncomingRequest = {
   exchangeReviewingAt?: string | null;
   requesterDeclinedContactAt?: string | null;
   targetCard: RequestTargetCard;
+  publisherOpenedDetail?: PublicCard['detailPreview'] | null;
   requester: {
     id: string;
     displayName: string;

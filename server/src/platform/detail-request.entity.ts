@@ -35,6 +35,9 @@ export class DetailRequest {
   @Column({ type: 'jsonb', nullable: true })
   requesterDetailSnapshot!: DetailProfileSnapshot | null;
 
+  @Column({ type: 'jsonb', nullable: true })
+  publisherDetailSnapshot!: DetailProfileSnapshot | null;
+
   @Column({ type: 'timestamptz', nullable: true })
   publisherViewedRequesterDetailAt!: Date | null;
 

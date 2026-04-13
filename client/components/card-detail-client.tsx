@@ -388,7 +388,6 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState<string | null>(null);
-  const [editingDetailInRequestModal, setEditingDetailInRequestModal] = useState(false);
   const [savingDetail, setSavingDetail] = useState(false);
   const [intro, setIntro] = useState('');
   const [education, setEducation] = useState('');
@@ -608,48 +607,6 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
     }
   }
 
-  async function handleSaveDetailOnly() {
-    const localErrors = validateDetailFields({
-      intro,
-      education,
-      experience,
-      projectDetail,
-    }, projectFieldLabel);
-
-    if (Object.keys(localErrors).length > 0) {
-      setFieldErrors(localErrors);
-      setModalMessage('请先修正标红字段后再保存。');
-      return;
-    }
-
-    setSavingDetail(true);
-    setFieldErrors({});
-    setModalMessage(null);
-    setMessage(null);
-
-    try {
-      await saveDetailProfile(buildDetailProfilePayload(currentUserRole, { intro, education, experience, projectDetail }));
-      await refresh();
-      setEditingDetailInRequestModal(false);
-      setMessage('详细信息已更新，可继续发送申请。');
-    } catch (error) {
-      const errorMessage = extractErrorMessage(error);
-      const backendFieldErrors = parseDetailFieldErrorsFromMessage(errorMessage, projectFieldLabel);
-
-      if (Object.keys(backendFieldErrors).length > 0) {
-        setFieldErrors((previous) => ({
-          ...previous,
-          ...backendFieldErrors,
-        }));
-        setModalMessage('请先修正标红字段后再保存。');
-      } else {
-        setModalMessage(errorMessage);
-      }
-    } finally {
-      setSavingDetail(false);
-    }
-  }
-
   async function handleCreateRequest() {
     setSubmittingRequest(true);
     setModalMessage(null);
@@ -725,7 +682,6 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
     setFieldErrors({});
     setModalMessage(null);
     setContactValidationMessage(null);
-    setEditingDetailInRequestModal(false);
     setRequestModalOpen(true);
   }
 
@@ -1125,7 +1081,6 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
   const projectFieldPlaceholder = getProjectFieldPlaceholder(currentUserRole);
   const hasDetailProfile = Boolean(profile?.completion.hasDetailProfile && profile.user.detailedProfile);
   const profilePreviewRows = buildDetailRows(profile?.user.detailedProfile, currentUserRole, '未填写');
-  const requestDraftRows = buildDetailRows({ intro, education, experience, projectDetail }, currentUserRole, '未填写');
   const submittedRequestRows = buildDetailRows(requestMeta?.requesterSubmittedDetail, currentUserRole, '未填写');
   const alertText = hasDetailProfile
     ? '小提醒：先把下面这些信息发给对方，对方会更放心，也更愿意继续聊下去。'
@@ -1515,6 +1470,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                   request.status === 'contact_exchanged' ? normalizeContactDisplayItems(request.requester.contactMethods, `incoming-visible-${request.id}`) : [];
                 const requesterRole: UserRole = request.targetCard.role === 'expert' ? 'developer' : 'expert';
                 const requesterDetailRows = buildDetailRows(request.requester.detailedProfile, requesterRole, '暂未查看');
+                const publisherOpenedDetailRows = buildDetailRows(request.publisherOpenedDetail, request.targetCard.role, '暂未开放');
                 const incomingCommunicationLogs = (() => {
                   const logs: Array<{ id: string; at: string; tone: 'neutral' | 'info' | 'success' | 'warning'; text: string; canExpandInfo?: boolean; detailRows?: ReadonlyArray<readonly [string, string]> }> = [
                     {
@@ -1552,7 +1508,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                       tone: 'success',
                       text: '你已点击“和Ta聊聊”，并向对方开放了更多信息。',
                       canExpandInfo: true,
-                      detailRows: profilePreviewRows,
+                      detailRows: publisherOpenedDetailRows,
                     });
                   }
 
@@ -1804,26 +1760,9 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
 
             {hasDetailProfile ? (
               <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm text-muted-foreground">以下信息将会被提交给对方：</p>
-                  {!editingDetailInRequestModal ? (
-                    <button
-                      className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8 px-3 text-xs')}
-                      disabled={submittingRequest || savingDetail}
-                      type="button"
-                      onClick={() => {
-                        setFieldErrors({});
-                        setModalMessage(null);
-                        setEditingDetailInRequestModal(true);
-                      }}
-                    >
-                      修改
-                    </button>
-                  ) : null}
-                </div>
+                <p className="text-sm text-muted-foreground">以下信息将会被提交给对方：</p>
 
-                {editingDetailInRequestModal ? (
-                  <form className="space-y-3" onSubmit={(event) => event.preventDefault()}>
+                <form className="space-y-3" onSubmit={(event) => event.preventDefault()}>
                     <label className="grid gap-1 text-sm text-foreground">
                       个人简介
                       <Textarea
@@ -1884,40 +1823,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                       />
                       {fieldErrors.projectDetail ? <span className="text-xs text-destructive">{fieldErrors.projectDetail}</span> : null}
                     </label>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button className={buttonVariants({ size: 'sm' })} disabled={savingDetail || submittingRequest} type="button" onClick={() => void handleSaveDetailOnly()}>
-                        {savingDetail ? '保存中…' : '保存修改'}
-                      </button>
-                      <button
-                        className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                        disabled={savingDetail || submittingRequest}
-                        type="button"
-                        onClick={() => {
-                          const defaultDetail = requestMeta?.requesterSubmittedDetail || profile?.user.detailedProfile || null;
-                          setIntro(defaultDetail?.intro || '');
-                          setEducation(defaultDetail?.education || '');
-                          setExperience(defaultDetail?.experience || '');
-                          setProjectDetail(getRoleSpecificProjectDetail(defaultDetail, currentUserRole));
-                          setFieldErrors({});
-                          setModalMessage(null);
-                          setEditingDetailInRequestModal(false);
-                        }}
-                      >
-                        取消修改
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="grid max-h-72 gap-2 overflow-y-auto rounded-lg border border-border/60 bg-background/50 p-2">
-                    {requestDraftRows.map(([label, value]) => (
-                      <div className="rounded-lg border border-border/60 bg-background/70 p-3" key={label}>
-                        <strong className="text-sm text-foreground">{label}</strong>
-                        <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                </form>
                 {modalMessage ? <p className="text-sm text-destructive">{modalMessage}</p> : null}
                 <div className="flex flex-wrap gap-2">
                   <button className={buttonVariants()} disabled={submittingRequest} type="button" onClick={() => void handleCreateRequest()}>
@@ -1996,7 +1902,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
                 {modalMessage ? <p className="text-sm text-destructive">{modalMessage}</p> : null}
                 <div className="flex flex-wrap gap-2">
                   <button className={buttonVariants()} disabled={savingDetail || submittingRequest} type="button" onClick={() => void handleSaveDetailAndCreateRequest()}>
-                    {savingDetail || submittingRequest ? '提交中…' : '保存详细信息并发送申请'}
+                    {savingDetail || submittingRequest ? '提交中…' : '发送并询问'}
                   </button>
                   <button className={buttonVariants({ variant: 'outline' })} disabled={savingDetail || submittingRequest} type="button" onClick={() => setRequestModalOpen(false)}>
                     取消申请

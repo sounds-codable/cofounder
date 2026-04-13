@@ -133,6 +133,7 @@ export class RequestsService {
         experience,
         projectDetail,
       }),
+      publisherDetailSnapshot: null,
       publisherViewedRequesterDetailAt: null,
       approvedAt: null,
       rejectedAt: null,
@@ -175,6 +176,7 @@ export class RequestsService {
 
     request.status = DetailRequestStatus.APPROVED_DETAIL_VISIBLE;
     request.approvedAt = new Date();
+    request.publisherDetailSnapshot = this.buildUserDetailSnapshot(request.publisher);
     await this.detailRequestRepository.save(request);
 
     return this.toIncomingRequestItem(request);
@@ -416,8 +418,25 @@ export class RequestsService {
     };
   }
 
+  private buildUserDetailSnapshot(user: User): DetailProfileSnapshot {
+    const base = user.detailedProfile || {};
+
+    return {
+      intro: base.intro || '',
+      education: base.education || '',
+      experience: base.experience || '',
+      expertProjectDetail: base.expertProjectDetail || base.projectDetail || '',
+      developerProjectExperience: base.developerProjectExperience || base.projectDetail || '',
+      projectDetail: base.projectDetail || base.expertProjectDetail || base.developerProjectExperience || '',
+    };
+  }
+
   private resolveRequesterDetailSnapshot(request: DetailRequest) {
-    return request.requesterDetailSnapshot || request.requester.detailedProfile || null;
+    return request.requesterDetailSnapshot || null;
+  }
+
+  private resolvePublisherDetailSnapshot(request: DetailRequest) {
+    return request.publisherDetailSnapshot || null;
   }
 
   private toIncomingRequestItem(request: DetailRequest) {
@@ -440,6 +459,7 @@ export class RequestsService {
       exchangeReviewingAt: request.exchangeReviewingAt,
       requesterDeclinedContactAt: request.requesterDeclinedContactAt,
       targetCard: this.toTargetCard(request),
+      publisherOpenedDetail: approved ? this.resolvePublisherDetailSnapshot(request) : null,
       requester: {
         id: request.requester.id,
         displayName: request.requester.displayName,
@@ -478,7 +498,7 @@ export class RequestsService {
       publisher: {
         id: request.publisher.id,
         displayName: request.publisher.displayName,
-        detailedProfile: detailVisible ? request.publisher.detailedProfile : null,
+        detailedProfile: detailVisible ? this.resolvePublisherDetailSnapshot(request) : null,
         contactMethods: contactVisible ? this.toContactMethods(request.publisher.contactMethods) : [],
       },
       actions: {
