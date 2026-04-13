@@ -20,7 +20,7 @@ export function CommunityRecruitmentEntry({ className }: CommunityRecruitmentEnt
         title="社群招募"
         className={cn(
           buttonVariants({ variant: 'outline', size: 'icon' }),
-          'rounded-full border-border/70 bg-background text-muted-foreground transition-colors hover:text-foreground',
+          'rounded-full border-border/70 bg-background text-muted-foreground transition-colors hover:text-foreground motion-safe:animate-[pulse_2.8s_ease-in-out_infinite]',
           className
         )}
         onClick={() => setOpen(true)}
