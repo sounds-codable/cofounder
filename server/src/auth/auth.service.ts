@@ -1,5 +1,5 @@
 import { createHmac, randomInt } from 'node:crypto';
-import { BadRequestException, HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -103,12 +103,17 @@ export class AuthService {
 
     const mailResult = await this.mailService.sendLoginCodeEmail(normalizedEmail, code);
     const isDevelopment = this.configService.get<string>('NODE_ENV', 'development') !== 'production';
+    const message = mailResult.delivered
+      ? '验证码邮件已发送，请留意邮箱。'
+      : isDevelopment
+        ? '验证码已生成，当前使用开发环境调试模式。'
+        : '邮件发送失败，请稍后重试或联系管理员。';
 
     return {
       ok: true,
       expiresInSeconds: 600,
       delivery: mailResult.delivered ? 'smtp' : 'dev',
-      message: mailResult.delivered ? '验证码邮件已发送，请留意邮箱。' : '验证码已生成，当前使用开发环境调试模式。',
+      message,
       devCode: !mailResult.delivered && isDevelopment ? code : undefined,
     };
   }
@@ -142,10 +147,12 @@ export class AuthService {
     await this.rewardService.finalizeInvitationIfNeeded(user);
     this.clearVerifyFailure(normalizedEmail, ipKey);
 
+    const tokenTtlDays = this.getAccessTokenTtlDays();
+
     return {
       accessToken: this.signToken({
         sub: user.id,
-        exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
+        exp: Math.floor(Date.now() / 1000) + tokenTtlDays * 24 * 60 * 60,
       }),
       user: this.toAuthUser(user),
     };
@@ -364,6 +371,11 @@ export class AuthService {
     }
 
     return Math.round(value);
+  }
+
+  private getAccessTokenTtlDays() {
+    const configuredDays = this.getPositiveIntegerConfig('AUTH_ACCESS_TOKEN_TTL_DAYS', 7);
+    return Math.min(30, Math.max(7, configuredDays));
   }
 
   private base64UrlEncode(value: string) {

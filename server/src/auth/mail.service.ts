@@ -16,7 +16,7 @@ export class MailService {
     }
 
     const transporter = this.getTransporter();
-    const from = this.configService.get<string>('MAIL_FROM', '叩饭（Cofounder） <hello@example.com>');
+    const from = this.getMailFrom();
     const expiresInMinutes = 10;
 
     await transporter.sendMail({
@@ -42,12 +42,13 @@ export class MailService {
       return this.transporter;
     }
 
-    const host = this.configService.get<string>('MAIL_HOST', '');
-    const port = Number(this.configService.get<string>('MAIL_PORT', '465'));
-    const user = this.configService.get<string>('MAIL_USER', '');
-    const pass = this.configService.get<string>('MAIL_PASS', '');
-    const secure = this.configService.get<string>('MAIL_SECURE', 'true') === 'true';
-    const requireTLS = this.configService.get<string>('MAIL_REQUIRE_TLS', 'false') === 'true';
+    const host = this.getMailHost();
+    const port = Number(this.getConfigValue(['MAIL_PORT'], '465'));
+    const user = this.getMailUser();
+    const pass = this.getMailPass();
+    const encryption = this.getConfigValue(['MAIL_ENCRYPTION'], '').toLowerCase();
+    const secure = this.getConfigValue(['MAIL_SECURE'], encryption === 'ssl' ? 'true' : 'false') === 'true';
+    const requireTLS = this.getConfigValue(['MAIL_REQUIRE_TLS'], encryption === 'tls' ? 'true' : 'false') === 'true';
 
     if (!host || !user || !pass || host === 'smtp.example.com' || pass === 'replace_with_mail_password') {
       throw new ServiceUnavailableException('邮件服务未正确配置，请检查 SMTP 环境变量');
@@ -68,6 +69,57 @@ export class MailService {
   }
 
   private isMailEnabled() {
-    return this.configService.get<string>('MAIL_ENABLED', 'false') === 'true';
+    const explicitEnabled = this.getConfigValue(['MAIL_ENABLED'], '').toLowerCase();
+    if (explicitEnabled === 'true') {
+      return true;
+    }
+    if (explicitEnabled === 'false') {
+      return false;
+    }
+
+    const driver = this.getConfigValue(['MAIL_DRIVER'], '').toLowerCase();
+    if (driver && driver !== 'smtp') {
+      return false;
+    }
+
+    return Boolean(this.getMailHost() && this.getMailUser() && this.getMailPass());
+  }
+
+  private getMailHost() {
+    return this.getConfigValue(['MAIL_HOST'], '');
+  }
+
+  private getMailUser() {
+    return this.getConfigValue(['MAIL_USER', 'MAIL_USERNAME'], '');
+  }
+
+  private getMailPass() {
+    return this.getConfigValue(['MAIL_PASS', 'MAIL_PASSWORD'], '');
+  }
+
+  private getMailFrom() {
+    const from = this.getConfigValue(['MAIL_FROM'], '');
+    if (from) {
+      return from;
+    }
+
+    const fromAddress = this.getConfigValue(['MAIL_FROM_ADDRESS'], '');
+    if (!fromAddress) {
+      return '叩饭（Cofounder） <hello@example.com>';
+    }
+
+    const fromName = this.getConfigValue(['MAIL_FROM_NAME'], '').trim();
+    return fromName ? `${fromName} <${fromAddress}>` : fromAddress;
+  }
+
+  private getConfigValue(keys: string[], fallback = '') {
+    for (const key of keys) {
+      const value = this.configService.get<string>(key, '').trim();
+      if (value) {
+        return value;
+      }
+    }
+
+    return fallback;
   }
 }
