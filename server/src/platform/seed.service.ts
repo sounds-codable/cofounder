@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ContactMethod } from '../contacts/contact-method.entity';
@@ -14,6 +15,7 @@ export class SeedService implements OnModuleInit {
   private readonly logger = new Logger(SeedService.name);
 
   constructor(
+    private readonly configService: ConfigService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Card)
@@ -25,6 +27,20 @@ export class SeedService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    const nodeEnv = this.configService.get<string>('NODE_ENV', '').toLowerCase();
+
+    if (nodeEnv === 'production') {
+      this.logger.log('Skip demo seed data in production environment');
+      return;
+    }
+
+    const seedEnabled = this.configService.get<string>('SEED_DEMO_DATA_ENABLED', 'false') === 'true';
+
+    if (!seedEnabled) {
+      this.logger.log('Skip demo seed data (SEED_DEMO_DATA_ENABLED is not true)');
+      return;
+    }
+
     const existingCardCount = await this.cardRepository.count();
 
     if (existingCardCount > 0) {
