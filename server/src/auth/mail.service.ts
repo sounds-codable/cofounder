@@ -22,7 +22,7 @@ export class MailService {
     await transporter.sendMail({
       from,
       to: email,
-      subject: '你的叩饭登录验证码',
+      subject: '叩饭(Cofounder) 登录验证码',
       text: `你的登录验证码是 ${code}，${expiresInMinutes} 分钟内有效。如果这不是你的操作，请忽略这封邮件。`,
       html: `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.8;color:#111827;">
         <h2 style="margin:0 0 12px;">叩饭 Cofounder 登录验证码</h2>
