@@ -6,6 +6,7 @@ import { Heart, Share2, Star } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { buildCardPathFromCard, buildCardSharePathFromCard } from '@/lib/card-url';
 import { useCardEngagement } from '@/lib/card-engagement';
+import { fetchInviteOverview } from '@/lib/platform-api';
 import { type PublicCard } from '@/lib/site-data';
 import { useAuthState } from '@/lib/use-auth';
 import { copyTextToClipboard } from '@/lib/utils';
@@ -14,6 +15,21 @@ type CardEngagementActionsProps = {
   card: Pick<PublicCard, 'id' | 'role' | 'headline'>;
   sharePath?: string | null;
 };
+
+function appendInviteCodeIfMissing(text: string, inviteCode: string | null) {
+  const normalizedText = text.trim();
+  const normalizedInviteCode = inviteCode?.trim();
+
+  if (!normalizedInviteCode) {
+    return normalizedText;
+  }
+
+  if (normalizedText.toLowerCase().includes(normalizedInviteCode.toLowerCase())) {
+    return normalizedText;
+  }
+
+  return `${normalizedText}\n邀请码：${normalizedInviteCode}`;
+}
 
 export function CardEngagementActions({ card, sharePath }: CardEngagementActionsProps) {
   const router = useRouter();
@@ -24,6 +40,8 @@ export function CardEngagementActions({ card, sharePath }: CardEngagementActions
   const [shareText, setShareText] = useState('');
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const [nativeShareMessage, setNativeShareMessage] = useState<string | null>(null);
+  const [inviteCodeForShare, setInviteCodeForShare] = useState<string | null>(null);
+  const [loadingInviteCode, setLoadingInviteCode] = useState(false);
   const cardPath = useMemo(() => buildCardPathFromCard(card), [card]);
   const shortSharePath = useMemo(() => buildCardSharePathFromCard({ id: card.id }), [card.id]);
   const resolvedSharePath = sharePath || shortSharePath;
@@ -39,12 +57,13 @@ export function CardEngagementActions({ card, sharePath }: CardEngagementActions
   }, [resolvedSharePath]);
 
   const defaultShareText = useMemo(() => {
-    if (card.role === 'developer') {
-      return `刚在叩饭（Cofounder）看到一位程序员，在找细分领域的项目。有人要看下吗？\n${shareUrl}`;
-    }
+    const baseText =
+      card.role === 'developer'
+        ? `刚在叩饭（Cofounder）看到一位程序员，在找细分领域的项目。有人要看下吗？\n${shareUrl}`
+        : `刚在叩饭（Cofounder）看到一个项目，在找技术合伙人。有人要看下吗？\n${shareUrl}`;
 
-    return `刚在叩饭（Cofounder）看到一个项目，在找技术合伙人。有人要看下吗？\n${shareUrl}`;
-  }, [card.role, shareUrl]);
+    return appendInviteCodeIfMissing(baseText, inviteCodeForShare);
+  }, [card.role, inviteCodeForShare, shareUrl]);
 
   const shareIntroText = useMemo(() => {
     if (card.role === 'developer') {
@@ -72,11 +91,28 @@ export function CardEngagementActions({ card, sharePath }: CardEngagementActions
     action();
   }
 
-  function handleOpenShareModal() {
+  async function handleOpenShareModal() {
     setShareText(defaultShareText);
     setCopyMessage(null);
     setNativeShareMessage(null);
     setShareModalOpen(true);
+
+    if (!authenticated || inviteCodeForShare || loadingInviteCode) {
+      return;
+    }
+
+    setLoadingInviteCode(true);
+
+    try {
+      const overview = await fetchInviteOverview();
+      const inviteCode = overview.inviteCode?.trim() || null;
+      setInviteCodeForShare(inviteCode);
+      setShareText((current) => appendInviteCodeIfMissing(current, inviteCode));
+    } catch {
+      // noop
+    } finally {
+      setLoadingInviteCode(false);
+    }
   }
 
   async function handleCopyShareText() {
@@ -214,7 +250,7 @@ export function CardEngagementActions({ card, sharePath }: CardEngagementActions
       >
         <Heart aria-hidden="true" className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} />
       </button>
-      <button aria-label="转发" className="icon-button icon-only" title="转发" type="button" onClick={handleOpenShareModal}>
+      <button aria-label="转发" className="icon-button icon-only" title="转发" type="button" onClick={() => void handleOpenShareModal()}>
         <Share2 aria-hidden="true" className="h-4 w-4" />
       </button>
       {shareModal}

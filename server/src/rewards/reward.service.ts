@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { randomBytes } from 'node:crypto';
 import { Repository } from 'typeorm';
 import { RewardAction } from '../common/enums/reward-action.enum';
 import { rewardPointsConfig } from '../config/reward-points.config';
 import { Card } from '../platform/card.entity';
+import { INVITE_CODE_MAX_LENGTH, normalizeDisplayName, resolveUniqueDisplayName } from '../users/display-name.util';
 import { User } from '../users/user.entity';
 import { RewardTransaction } from './reward-transaction.entity';
 
@@ -32,28 +32,48 @@ export class RewardService {
       return user.inviteCode;
     }
 
-    for (let attempt = 0; attempt < 10; attempt += 1) {
-      const nextCode = this.generateInviteCode();
-      const exists = await this.userRepository.findOne({ where: { inviteCode: nextCode } });
+    const inviteCode = await resolveUniqueDisplayName(
+      user.displayName,
+      async (candidate) => {
+        const existing = await this.userRepository
+          .createQueryBuilder('user')
+          .where('LOWER(user.inviteCode) = LOWER(:inviteCode)', { inviteCode: candidate })
+          .getOne();
 
-      if (!exists) {
-        user.inviteCode = nextCode;
-        await this.userRepository.save(user);
-        return user.inviteCode;
-      }
+        return Boolean(existing);
+      },
+      {
+        maxLength: INVITE_CODE_MAX_LENGTH,
+        fallbackValue: '邀请用户',
+        errorMessage: '无法生成可用邀请码',
+      },
+    );
+
+    user.inviteCode = inviteCode;
+    await this.userRepository.save(user);
+    return user.inviteCode;
+  }
+
+  async findInviterByInviteCode(rawInviteCode?: string | null, excludedUserId?: string | null) {
+    const inviteCode = normalizeDisplayName(rawInviteCode || '');
+
+    if (!inviteCode) {
+      return null;
     }
 
-    return null;
+    const query = this.userRepository
+      .createQueryBuilder('user')
+      .where('LOWER(user.inviteCode) = LOWER(:inviteCode)', { inviteCode });
+
+    if (excludedUserId) {
+      query.andWhere('user.id != :excludedUserId', { excludedUserId });
+    }
+
+    return query.getOne();
   }
 
   async attachInviterByCode(newUser: User, rawInviteCode?: string | null) {
-    const inviteCode = rawInviteCode?.trim().toUpperCase();
-
-    if (!inviteCode) {
-      return;
-    }
-
-    const inviter = await this.userRepository.findOne({ where: { inviteCode } });
+    const inviter = await this.findInviterByInviteCode(rawInviteCode, newUser.id);
 
     if (!inviter || inviter.id === newUser.id) {
       return;
@@ -177,14 +197,12 @@ export class RewardService {
       activationGuide: '激活邀请码的方式：先添加项目，或先登记程序员信息。完成其中任意一个动作后，会自动生成邀请码。',
       shareText: inviteCode
         ? [
-            '我最近在用「叩饭 Cofounder」找靠谱合作，体验比我预期更高效：先看基础信息，再逐步开放详细资料，沟通更有边界也更省时间。',
+            '最近在用「叩饭 Cofounder」找项目和技术合伙人。',
             '',
-            '如果你也想找项目/找程序员一起做事，欢迎用我的邀请码注册：',
+            '感觉不错，但现在是邀请制，想体验可以用我的邀请码：',
             `${inviteCode}`,
             '',
             inviteLink,
-            '',
-            '有问题也可以直接私信我，我很愿意把踩过的坑和经验分享给你。',
           ].join('\n')
         : null,
       invitedUsers: invitedUsers.map((item) => ({
@@ -203,9 +221,5 @@ export class RewardService {
     const value = metadata[key];
 
     return typeof value === 'string' ? value : null;
-  }
-
-  private generateInviteCode() {
-    return randomBytes(4).toString('hex').toUpperCase();
   }
 }

@@ -70,6 +70,24 @@ export class MeController {
     return this.meService.getDisplayNameAvailability(user.id, displayName || '');
   }
 
+  @Put('invite-code')
+  async saveInviteCode(@Headers('authorization') authorization: string | undefined, @Body() body: SaveDisplayNameDto) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.meService.saveInviteCode(user.id, {
+      inviteCode: body.displayName,
+      riskConfirmed: body.riskConfirmed,
+    });
+  }
+
+  @Get('invite-code-availability')
+  async getInviteCodeAvailability(
+    @Headers('authorization') authorization: string | undefined,
+    @Query('inviteCode') inviteCode?: string,
+  ) {
+    const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);
+    return this.meService.getInviteCodeAvailability(user.id, inviteCode || '');
+  }
+
   @Get('invites')
   async getInvites(@Headers('authorization') authorization?: string) {
     const user = await this.authService.getRequiredUserFromAuthorizationHeader(authorization);

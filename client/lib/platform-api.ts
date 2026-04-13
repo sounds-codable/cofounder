@@ -290,6 +290,12 @@ export type AdminUserDetail = {
   };
 };
 
+export type InviteCodeAvailability = {
+  available: boolean;
+  normalizedInviteCode: string;
+  message: string | null;
+};
+
 export type AdminDailyFeed = {
   riskQueue: Array<{
     id: string;
@@ -926,6 +932,13 @@ export async function fetchDisplayNameAvailability(displayName: string) {
   }>(`/me/display-name-availability?${searchParams.toString()}`);
 }
 
+export async function fetchInviteCodeAvailability(inviteCode: string) {
+  const searchParams = new URLSearchParams();
+  searchParams.set('inviteCode', inviteCode);
+
+  return requestJson<InviteCodeAvailability>(`/me/invite-code-availability?${searchParams.toString()}`);
+}
+
 export async function saveDisplayName(displayName: string, riskConfirmed?: boolean) {
   return requestJson<MeProfile>('/me/display-name', {
     method: 'PUT',
@@ -1015,6 +1028,13 @@ export async function submitPublicWelfareMessage(body: {
 
 export async function fetchInviteOverview() {
   return requestJson<InviteOverview>('/me/invites');
+}
+
+export async function saveInviteCode(inviteCode: string, riskConfirmed?: boolean) {
+  return requestJson<InviteOverview>('/me/invite-code', {
+    method: 'PUT',
+    body: { displayName: inviteCode, riskConfirmed },
+  });
 }
 
 export async function fetchPointsOverview() {

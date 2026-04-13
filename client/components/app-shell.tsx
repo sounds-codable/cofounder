@@ -16,6 +16,8 @@ type AppShellProps = {
   children: ReactNode;
 };
 
+const SAFE_ACCOUNT_NAME_PATTERN = /^[A-Za-z0-9_]+$/;
+
 type DashboardNavGroup = {
   title: string;
   items: Array<{
@@ -369,6 +371,13 @@ function AppShellContent({ children }: AppShellProps) {
       return;
     }
 
+    if (!SAFE_ACCOUNT_NAME_PATTERN.test(nextName)) {
+      setCheckingDisplayName(false);
+      setDisplayNameAvailable(false);
+      setDisplayNameMessage('昵称仅支持英文大小写、数字和下划线（_）。');
+      return;
+    }
+
     if (nextName === currentName) {
       setCheckingDisplayName(false);
       setDisplayNameAvailable(true);
@@ -463,6 +472,12 @@ function AppShellContent({ children }: AppShellProps) {
 
     if (nextName.length < 2) {
       setDisplayNameMessage('昵称至少需要 2 个字符。');
+      setDisplayNameAvailable(false);
+      return;
+    }
+
+    if (!SAFE_ACCOUNT_NAME_PATTERN.test(nextName)) {
+      setDisplayNameMessage('昵称仅支持英文大小写、数字和下划线（_）。');
       setDisplayNameAvailable(false);
       return;
     }

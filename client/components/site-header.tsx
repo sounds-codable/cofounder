@@ -23,6 +23,8 @@ type SiteHeaderProps = {
   logoVariant?: LogoVariant;
 };
 
+const SAFE_ACCOUNT_NAME_PATTERN = /^[A-Za-z0-9_]+$/;
+
 export function SiteHeader({ logoVariant = 'overlap' }: SiteHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -76,6 +78,11 @@ export function SiteHeader({ logoVariant = 'overlap' }: SiteHeaderProps) {
 
     if (nextName.length < 2) {
       setDisplayNameMessage('昵称至少需要 2 个字符。');
+      return;
+    }
+
+    if (!SAFE_ACCOUNT_NAME_PATTERN.test(nextName)) {
+      setDisplayNameMessage('昵称仅支持英文大小写、数字和下划线（_）。');
       return;
     }
 

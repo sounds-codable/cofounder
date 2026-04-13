@@ -10,7 +10,7 @@ import { UserRole } from '../common/enums/user-role.enum';
 import { ComplianceLogService } from '../compliance/compliance-log.service';
 import { RewardService } from '../rewards/reward.service';
 import { User } from '../users/user.entity';
-import { normalizeDisplayName } from '../users/display-name.util';
+import { INVITE_CODE_MAX_LENGTH, isSafeAccountName, normalizeDisplayName } from '../users/display-name.util';
 import { CardEngagement } from '../platform/card-engagement.entity';
 import { Card } from '../platform/card.entity';
 import { CardTag } from '../platform/card-tag.entity';
@@ -142,6 +142,54 @@ export class MeService {
     return this.getProfile(userId);
   }
 
+  async saveInviteCode(userId: string, body: { inviteCode: string; riskConfirmed?: boolean }) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: {
+        cards: true,
+        contactMethods: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+
+    const moderationResult = this.contentModerationService.ensureReviewed({
+      operationType: 'update_invite_code',
+      riskConfirmed: body.riskConfirmed,
+      fields: [{ field: 'inviteCode', content: body.inviteCode }],
+    });
+
+    const availability = await this.checkInviteCodeAvailability(userId, body.inviteCode);
+
+    if (!availability.available) {
+      throw new BadRequestException(availability.message || '邀请码已被使用，请换一个');
+    }
+
+    user.inviteCode = availability.normalizedInviteCode;
+    await this.userRepository.save(user);
+
+    await this.complianceLogService.recordPublishedContent({
+      userId: user.id,
+      userEmail: user.email,
+      operationType: 'update_invite_code',
+      riskReview: {
+        reviewRequired: moderationResult.hasRisk,
+        riskLevel: moderationResult.riskLevel,
+        categories: moderationResult.categories,
+        matchedTerms: moderationResult.matchedTerms,
+        confirmedToPublish: Boolean(body.riskConfirmed),
+        provider: moderationResult.provider,
+      },
+      contentSnapshot: {
+        inviteCode: user.inviteCode,
+      },
+    });
+
+    return this.rewardService.getMyInviteOverview(user.id);
+  }
+
   async updateCardBasic(userId: string, cardId: string, body: UpdateCardBasicDto) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
@@ -266,6 +314,10 @@ export class MeService {
 
   async getDisplayNameAvailability(userId: string, rawDisplayName: string) {
     return this.checkDisplayNameAvailability(userId, rawDisplayName);
+  }
+
+  async getInviteCodeAvailability(userId: string, rawInviteCode: string) {
+    return this.checkInviteCodeAvailability(userId, rawInviteCode);
   }
 
   async getInviteOverview(userId: string) {
@@ -783,6 +835,14 @@ export class MeService {
       };
     }
 
+    if (!isSafeAccountName(displayName)) {
+      return {
+        available: false,
+        normalizedDisplayName: displayName,
+        message: '昵称仅支持英文大小写、数字和下划线（_）',
+      };
+    }
+
     const existingUser = await this.userRepository
       .createQueryBuilder('user')
       .where('LOWER(user.displayName) = LOWER(:displayName)', { displayName })
@@ -800,6 +860,61 @@ export class MeService {
       available: false,
       normalizedDisplayName: displayName,
       message: '昵称已被使用，请换一个',
+    };
+  }
+
+  private async checkInviteCodeAvailability(userId: string, rawInviteCode: string) {
+    const inviteCode = normalizeDisplayName(rawInviteCode);
+
+    if (!inviteCode) {
+      return {
+        available: false,
+        normalizedInviteCode: inviteCode,
+        message: '邀请码不能为空',
+      };
+    }
+
+    if (inviteCode.length < 2) {
+      return {
+        available: false,
+        normalizedInviteCode: inviteCode,
+        message: '邀请码至少需要 2 个字符',
+      };
+    }
+
+    if (inviteCode.length > INVITE_CODE_MAX_LENGTH) {
+      return {
+        available: false,
+        normalizedInviteCode: inviteCode,
+        message: `邀请码不能超过 ${INVITE_CODE_MAX_LENGTH} 个字符`,
+      };
+    }
+
+    if (!isSafeAccountName(inviteCode)) {
+      return {
+        available: false,
+        normalizedInviteCode: inviteCode,
+        message: '邀请码仅支持英文大小写、数字和下划线（_）',
+      };
+    }
+
+    const existingUser = await this.userRepository
+      .createQueryBuilder('user')
+      .where('LOWER(user.inviteCode) = LOWER(:inviteCode)', { inviteCode })
+      .getOne();
+
+    if (!existingUser || existingUser.id === userId) {
+      return {
+        available: true,
+        normalizedInviteCode: inviteCode,
+        message: null,
+      };
+    }
+
+    return {
+      available: false,
+      normalizedInviteCode: inviteCode,
+      message: '邀请码已被使用，请换一个',
     };
   }
 

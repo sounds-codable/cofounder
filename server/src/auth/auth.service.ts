@@ -1,12 +1,12 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { createHmac, randomInt } from 'node:crypto';
+import { BadRequestException, HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { createHmac, randomInt } from 'node:crypto';
 import { Repository } from 'typeorm';
-import { RewardService } from '../rewards/reward.service';
 import { MailService } from './mail.service';
+import { RewardService } from '../rewards/reward.service';
+import { resolveUniqueDisplayName, sanitizeAccountNameForGeneration } from '../users/display-name.util';
 import { User } from '../users/user.entity';
-import { normalizeDisplayName, resolveUniqueDisplayName } from '../users/display-name.util';
 
 type AuthTokenPayload = {
   exp: number;
@@ -40,7 +40,7 @@ export class AuthService {
     this.enforceSendCodeRateLimit(normalizedEmail, ipKey);
 
     let user = await this.userRepository.findOne({ where: { email: normalizedEmail } });
-    const normalizedInviteCode = inviteCode?.trim().toUpperCase();
+    const normalizedInviteCode = inviteCode?.trim();
     const requireInviteForSignup = this.configService.get<string>('AUTH_REQUIRE_INVITE_FOR_SIGNUP', 'false') === 'true';
 
     if (!user) {
@@ -54,7 +54,7 @@ export class AuthService {
           });
         }
 
-        const inviter = await this.userRepository.findOne({ where: { inviteCode: normalizedInviteCode } });
+        const inviter = await this.rewardService.findInviterByInviteCode(normalizedInviteCode);
 
         if (!inviter) {
           throw new BadRequestException({
@@ -66,7 +66,7 @@ export class AuthService {
         invitedByUserId = inviter.id;
       }
 
-      const baseDisplayName = normalizeDisplayName(normalizedEmail.split('@')[0] || '新用户');
+      const baseDisplayName = sanitizeAccountNameForGeneration(normalizedEmail.split('@')[0] || 'user', 'user');
       const displayName = await resolveUniqueDisplayName(baseDisplayName, async (candidate) => {
         const existingUser = await this.userRepository
           .createQueryBuilder('user')
