@@ -24,8 +24,8 @@ APP_ROOT="${APP_ROOT:-/var/www/www.cofounder.icu}"
 NGINX_SITE_NAME="${NGINX_SITE_NAME:-cofounder.icu}"
 SUPERVISOR_PROGRAM_NAME="${SUPERVISOR_PROGRAM_NAME:-cofounder-backend}"
 
-LOCAL_NGINX_CONF="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/docs/nginx.cofounder.icu.conf"
-LOCAL_SUPERVISOR_CONF="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/docs/supervisor.cofounder-backend.conf"
+LOCAL_NGINX_CONF="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/docs/deployment/nginx.cofounder.icu.conf"
+LOCAL_SUPERVISOR_CONF="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/docs/deployment/supervisor.cofounder-backend.conf"
 
 log() {
   echo "[$(date '+%F %T')] $*"

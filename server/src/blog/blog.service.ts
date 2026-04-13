@@ -199,6 +199,7 @@ export class BlogService {
 
   async createComment(postId: string, user: Pick<User, 'id' | 'displayName' | 'email'>, body: CreateBlogCommentDto) {
     await this.ensurePublishedPost(postId);
+    this.ensureNoDangerousHtml(body.content, '评论内容');
 
     const parentCommentId = body.parentCommentId?.trim() || null;
 
@@ -317,6 +318,7 @@ export class BlogService {
 
   async adminCreatePost(adminUser: Pick<User, 'id' | 'isAdmin' | 'email'>, body: CreateBlogPostDto) {
     this.ensureAdmin(adminUser);
+    this.ensureNoDangerousHtml(body.contentMarkdown, '博客正文');
 
     const moderationResult = this.contentModerationService.ensureReviewed({
       operationType: 'blog_post',
@@ -374,6 +376,8 @@ export class BlogService {
     const nextTitle = body.title?.trim() ?? post.title;
     const nextSummary = body.summary?.trim() ?? post.summary;
     const nextContentMarkdown = body.contentMarkdown?.trim() ?? post.contentMarkdown;
+
+    this.ensureNoDangerousHtml(nextContentMarkdown, '博客正文');
 
     const moderationResult = this.contentModerationService.ensureReviewed({
       operationType: 'blog_post',
@@ -543,5 +547,21 @@ export class BlogService {
 
     const readable = normalized || 'blog';
     return `${readable}-${postId}`;
+  }
+
+  private ensureNoDangerousHtml(content: string, fieldLabel: string) {
+    const normalized = content.toLowerCase();
+    const patterns = [
+      /<\s*script\b/i,
+      /<\s*iframe\b/i,
+      /<\s*object\b/i,
+      /<\s*embed\b/i,
+      /javascript\s*:/i,
+      /on\w+\s*=/i,
+    ];
+
+    if (patterns.some((pattern) => pattern.test(normalized))) {
+      throw new BadRequestException(`${fieldLabel}包含高风险脚本内容，请移除后再提交`);
+    }
   }
 }
