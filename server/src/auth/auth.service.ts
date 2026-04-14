@@ -37,7 +37,6 @@ export class AuthService {
   async sendLoginCode(email: string, inviteCode?: string, clientIp?: string | null) {
     const normalizedEmail = this.normalizeEmail(email);
     const ipKey = this.normalizeClientIp(clientIp);
-    this.enforceSendCodeRateLimit(normalizedEmail, ipKey);
 
     let user = await this.userRepository.findOne({ where: { email: normalizedEmail } });
     const normalizedInviteCode = inviteCode?.trim();
@@ -94,6 +93,8 @@ export class AuthService {
     if (!user.invitedByUserId) {
       await this.rewardService.attachInviterByCode(user, normalizedInviteCode);
     }
+
+    this.enforceSendCodeRateLimit(normalizedEmail, ipKey);
 
     const code = String(randomInt(100000, 1000000));
     user.loginCode = code;
@@ -275,9 +276,9 @@ export class AuthService {
 
   private enforceSendCodeRateLimit(email: string, ipKey: string) {
     const now = Date.now();
-    const minIntervalSeconds = this.getPositiveIntegerConfig('AUTH_SEND_CODE_INTERVAL_SECONDS', 60);
-    const maxPerHourByEmail = this.getPositiveIntegerConfig('AUTH_SEND_CODE_MAX_PER_EMAIL_PER_HOUR', 8);
-    const maxPerHourByIp = this.getPositiveIntegerConfig('AUTH_SEND_CODE_MAX_PER_IP_PER_HOUR', 20);
+    const minIntervalSeconds = this.getPositiveIntegerConfig('AUTH_SEND_CODE_INTERVAL_SECONDS', 20);
+    const maxPerHourByEmail = this.getPositiveIntegerConfig('AUTH_SEND_CODE_MAX_PER_EMAIL_PER_HOUR', 15);
+    const maxPerHourByIp = this.getPositiveIntegerConfig('AUTH_SEND_CODE_MAX_PER_IP_PER_HOUR', 60);
     const hourStart = now - 60 * 60 * 1000;
 
     const emailLastAt = this.sendCodeLastAtByEmail.get(email);
