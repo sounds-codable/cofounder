@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { InfoDisclosure } from '@/components/info-disclosure';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { authenticated, loading } = useAuthState();
+  const hasNavigatedRef = useRef(false);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sending, setSending] = useState(false);
@@ -58,12 +59,12 @@ export function LoginForm() {
   }, [cooldownSeconds]);
 
   useEffect(() => {
-    if (loading || !authenticated) {
+    if (loading || !authenticated || hasNavigatedRef.current) {
       return;
     }
 
+    hasNavigatedRef.current = true;
     router.replace(resolvedNextPath);
-    router.refresh();
   }, [authenticated, loading, resolvedNextPath, router]);
 
   async function handleSendCode(overrideInviteCode?: string) {
@@ -106,8 +107,6 @@ export function LoginForm() {
     try {
       const result = await verifyLoginCode(email, code);
       setStoredAccessToken(result.accessToken);
-      router.replace(resolvedNextPath);
-      router.refresh();
     } catch (error) {
       setMessage(extractErrorMessage(error));
     } finally {
