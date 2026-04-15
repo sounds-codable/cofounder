@@ -89,13 +89,13 @@ const flowScenarios = [
       },
       {
         id: '02',
-        title: '引玉 —— 项目方：遴选',
+        title: '引玉 —— 项目方：甄选',
         description: '程序员申请时提交个人简介。项目方查阅后，决定是否提供项目详情。',
         icon: ShieldCheck,
       },
       {
         id: '03',
-        title: '连线 —— 程序员：拍板',
+        title: '连线 —— 程序员：定夺',
         description: '程序员看到完整信息后，决定是否交换联系方式。双方用微信等自行联络，不受平台限制。',
         icon: CheckCircle2,
       },
