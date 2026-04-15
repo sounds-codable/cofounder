@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useCardEngagementState } from '@/lib/card-engagement';
 import { fetchCards, fetchMyRequests } from '@/lib/platform-api';
-import { fallbackPublicCards, type PublicCard } from '@/lib/site-data';
+import type { PublicCard } from '@/lib/site-data';
 import { useAuthState } from '@/lib/use-auth';
 
 type RequestCardMeta = {
@@ -44,7 +44,8 @@ function DevelopersPageContent() {
   const searchParams = useSearchParams();
   const { authenticated, profile } = useAuthState();
   const engagement = useCardEngagementState();
-  const [cards, setCards] = useState(fallbackPublicCards.filter((card) => card.role === 'developer'));
+  const [cards, setCards] = useState<PublicCard[]>([]);
+  const [cardsLoaded, setCardsLoaded] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [publishBlockedMessage, setPublishBlockedMessage] = useState<string | null>(null);
   const [requestMetaByCardId, setRequestMetaByCardId] = useState<Record<string, RequestCardMeta>>({});
@@ -123,6 +124,7 @@ function DevelopersPageContent() {
 
       if (!cancelled) {
         setCards(nextCards);
+        setCardsLoaded(true);
       }
     }
 
@@ -390,6 +392,15 @@ function DevelopersPageContent() {
           onOwnerFilter={addOwnerFilter}
           subjectLabel="程序员"
         />
+      ) : !cardsLoaded ? (
+        <Card className="border-border/70 bg-card/82 shadow-[0_14px_36px_rgba(73,101,163,0.14)]">
+          <CardHeader>
+            <CardTitle>程序员信息加载中...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">正在同步最新程序员列表，请稍候。</p>
+          </CardContent>
+        </Card>
       ) : (
         <Card className="border-border/70 bg-card/82 shadow-[0_14px_36px_rgba(73,101,163,0.14)]">
           <CardHeader>
