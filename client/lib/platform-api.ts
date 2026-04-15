@@ -729,6 +729,10 @@ export async function fetchCards(role?: UserRole) {
     const search = role ? `?role=${role}` : '';
     return await requestJson<PublicCard[]>(`/platform/cards${search}`);
   } catch {
+    if (process.env.NODE_ENV === 'production') {
+      return [];
+    }
+
     if (role) {
       return fallbackPublicCards.filter((card) => card.role === role);
     }

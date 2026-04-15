@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useCardEngagementState } from '@/lib/card-engagement';
 import { fetchCards, fetchMyRequests } from '@/lib/platform-api';
-import { fallbackPublicCards, type PublicCard } from '@/lib/site-data';
+import type { PublicCard } from '@/lib/site-data';
 import { useAuthState } from '@/lib/use-auth';
 
 type RequestCardMeta = {
@@ -45,7 +45,8 @@ function ProjectsPageContent() {
   const searchParams = useSearchParams();
   const { authenticated, profile, refresh } = useAuthState();
   const engagement = useCardEngagementState();
-  const [cards, setCards] = useState(fallbackPublicCards.filter((card) => card.role === 'expert'));
+  const [cards, setCards] = useState<PublicCard[]>([]);
+  const [cardsLoaded, setCardsLoaded] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [requestMetaByCardId, setRequestMetaByCardId] = useState<Record<string, RequestCardMeta>>({});
   const view = searchParams.get('view') || 'all';
@@ -149,6 +150,7 @@ function ProjectsPageContent() {
 
       if (!cancelled) {
         setCards(nextCards);
+        setCardsLoaded(true);
       }
     }
 
@@ -418,6 +420,15 @@ function ProjectsPageContent() {
           onOwnerFilter={addOwnerFilter}
           subjectLabel="项目"
         />
+      ) : !cardsLoaded ? (
+        <Card className="border-border/70 bg-card/82 shadow-[0_14px_36px_rgba(73,101,163,0.14)]">
+          <CardHeader>
+            <CardTitle>项目加载中...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">正在同步最新项目列表，请稍候。</p>
+          </CardContent>
+        </Card>
       ) : (
         <Card className="border-border/70 bg-card/82 shadow-[0_14px_36px_rgba(73,101,163,0.14)]">
           <CardHeader>

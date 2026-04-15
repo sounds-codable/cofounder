@@ -7,20 +7,16 @@ function getCardApiBaseUrl() {
 }
 
 export async function getStaticCards(): Promise<CardRouteItem[]> {
-  const cards = new Map<string, CardRouteItem>();
-
-  fallbackPublicCards.forEach((card) => {
-    cards.set(card.id, {
-      id: card.id,
-      role: card.role,
-      headline: card.headline,
-      updatedAt: card.updatedAt,
-      titleSlug: card.titleSlug,
-      city: card.city,
-      basicSummary: card.basicSummary,
-      strengths: card.strengths,
-    });
-  });
+  const fallbackCards: CardRouteItem[] = fallbackPublicCards.map((card) => ({
+    id: card.id,
+    role: card.role,
+    headline: card.headline,
+    updatedAt: card.updatedAt,
+    titleSlug: card.titleSlug,
+    city: card.city,
+    basicSummary: card.basicSummary,
+    strengths: card.strengths,
+  }));
 
   try {
     const response = await fetch(`${getCardApiBaseUrl()}/platform/cards`, {
@@ -29,15 +25,20 @@ export async function getStaticCards(): Promise<CardRouteItem[]> {
 
     if (response.ok) {
       const apiCards = (await response.json()) as CardRouteItem[];
-      apiCards.forEach((card) => {
-        if (card.id && card.role && card.headline) {
-          cards.set(card.id, card);
-        }
-      });
+      const validCards = apiCards.filter((card) => card.id && card.role && card.headline);
+      return validCards;
     }
   } catch {
-    return Array.from(cards.values());
+    if (process.env.NODE_ENV === 'production') {
+      return [];
+    }
+
+    return fallbackCards;
   }
 
-  return Array.from(cards.values());
+  if (process.env.NODE_ENV === 'production') {
+    return [];
+  }
+
+  return fallbackCards;
 }
