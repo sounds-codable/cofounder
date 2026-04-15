@@ -40,7 +40,7 @@ type FlowScenario = {
 
 const rolePanels = [
   {
-    eyebrow: 'To: 项目方 / 专业人士',
+    eyebrow: 'To: 项目方 / 行业专家',
     title: '两件事会很快发生',
     items: ['AI 替代工作是必然，而且速度会超出多数人的预期。', '职场中年危机一直存在，年轻人会持续冲击传统岗位。'],
     note: '最明智的做法，不是观望，而是（比别人先）把行业经验做成细分应用。',
