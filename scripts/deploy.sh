@@ -260,12 +260,32 @@ deploy_frontend() {
     PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" ci --include=optional
   )
 
-  log "Installing native fallback packages in one shot (lightningcss + oxide)"
+  local libc_flavor
+  libc_flavor="$($FRONTEND_NODE_BIN/node -e "
+    try {
+      const { familySync, MUSL } = require('detect-libc');
+      const family = familySync();
+      process.stdout.write(family === MUSL ? 'musl' : 'gnu');
+    } catch (_) {
+      process.stdout.write('unknown');
+    }
+  ")"
+
+  if [[ "$libc_flavor" != "gnu" && "$libc_flavor" != "musl" ]]; then
+    if ldd --version 2>&1 | grep -qi musl; then
+      libc_flavor="musl"
+    else
+      libc_flavor="gnu"
+    fi
+  fi
+
+  log "Detected libc flavor: $libc_flavor"
+  log "Installing native fallback packages for $libc_flavor (lightningcss + oxide)"
   (
     cd "$RELEASE_DIR/client" && \
     PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" install --no-save \
-      lightningcss-linux-x64-gnu lightningcss-linux-x64-musl \
-      @tailwindcss/oxide-linux-x64-gnu @tailwindcss/oxide-linux-x64-musl
+      "lightningcss-linux-x64-$libc_flavor" \
+      "@tailwindcss/oxide-linux-x64-$libc_flavor"
   )
 
   log "Verifying native bindings (lightningcss + oxide)"
