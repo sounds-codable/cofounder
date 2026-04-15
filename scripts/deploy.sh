@@ -260,61 +260,19 @@ deploy_frontend() {
     PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" ci --include=optional
   )
 
-  log "Verifying lightningcss native binary"
-  if ! (
+  log "Installing native fallback packages in one shot (lightningcss + oxide)"
+  (
     cd "$RELEASE_DIR/client" && \
-    PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('lightningcss'); console.log('lightningcss ok')"
-  ); then
-    log "lightningcss binary missing, trying fallback install (linux-x64-gnu)"
-    (
-      cd "$RELEASE_DIR/client" && \
-      PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" install --no-save lightningcss-linux-x64-gnu
-    )
+    PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" install --no-save \
+      lightningcss-linux-x64-gnu lightningcss-linux-x64-musl \
+      @tailwindcss/oxide-linux-x64-gnu @tailwindcss/oxide-linux-x64-musl
+  )
 
-    if ! (
-      cd "$RELEASE_DIR/client" && \
-      PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('lightningcss'); console.log('lightningcss ok after gnu fallback')"
-    ); then
-      log "gnu fallback failed, trying fallback install (linux-x64-musl)"
-      (
-        cd "$RELEASE_DIR/client" && \
-        PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" install --no-save lightningcss-linux-x64-musl
-      )
-
-      (
-        cd "$RELEASE_DIR/client" && \
-        PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('lightningcss'); console.log('lightningcss ok after musl fallback')"
-      )
-    fi
-  fi
-
-  log "Verifying tailwindcss oxide native binary"
-  if ! (
+  log "Verifying native bindings (lightningcss + oxide)"
+  (
     cd "$RELEASE_DIR/client" && \
-    PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('@tailwindcss/oxide'); console.log('oxide ok')"
-  ); then
-    log "oxide binary missing, trying fallback install (linux-x64-gnu)"
-    (
-      cd "$RELEASE_DIR/client" && \
-      PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" install --no-save @tailwindcss/oxide-linux-x64-gnu
-    )
-
-    if ! (
-      cd "$RELEASE_DIR/client" && \
-      PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('@tailwindcss/oxide'); console.log('oxide ok after gnu fallback')"
-    ); then
-      log "gnu fallback failed, trying fallback install (linux-x64-musl)"
-      (
-        cd "$RELEASE_DIR/client" && \
-        PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" install --no-save @tailwindcss/oxide-linux-x64-musl
-      )
-
-      (
-        cd "$RELEASE_DIR/client" && \
-        PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('@tailwindcss/oxide'); console.log('oxide ok after musl fallback')"
-      )
-    fi
-  fi
+    PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('lightningcss'); require('@tailwindcss/oxide'); console.log('native bindings ok')"
+  )
 
   log "Building frontend (Next production build)"
   (cd "$RELEASE_DIR/client" && PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" run build)
