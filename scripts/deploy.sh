@@ -22,6 +22,7 @@ fi
 DEPLOY_HOST="${DEPLOY_HOST:-}"
 DEPLOY_USER="${DEPLOY_USER:-}"
 GIT_URL="${GIT_URL:-}"
+FRONTEND_NODE_BIN="${FRONTEND_NODE_BIN:-/home/deployer/.nvm/versions/node/v20.20.1/bin}"
 if [[ -z "$DEPLOY_HOST" || -z "$DEPLOY_USER" ]]; then
   echo "ERROR: Missing DEPLOY_HOST / DEPLOY_USER. Put them in project root .env" >&2
   exit 1
@@ -142,7 +143,7 @@ if [[ "$MODE" == "backend" || "$MODE" == "all" ]]; then
   upload_backend
 fi
 
-ssh -T "$SSH_TARGET" env APP_ROOT="$APP_ROOT" BRANCH="$BRANCH" MODE="$MODE" GIT_URL="$GIT_URL" RELEASE_ID="$RELEASE_ID" bash -s <<'EOSSH'
+ssh -T "$SSH_TARGET" env APP_ROOT="$APP_ROOT" BRANCH="$BRANCH" MODE="$MODE" GIT_URL="$GIT_URL" RELEASE_ID="$RELEASE_ID" FRONTEND_NODE_BIN="$FRONTEND_NODE_BIN" bash -s <<'EOSSH'
 set -euo pipefail
 
 MODE="${MODE:-all}"
@@ -154,6 +155,7 @@ CURRENT_DIR="$APP_ROOT/current"
 RELEASES_DIR="$APP_ROOT/releases"
 RELEASE_ID="${RELEASE_ID:-$(date +%Y%m%d%H%M%S)}"
 RELEASE_DIR="$RELEASES_DIR/$RELEASE_ID"
+FRONTEND_NODE_BIN="${FRONTEND_NODE_BIN:-/home/deployer/.nvm/versions/node/v20.20.1/bin}"
 
 GIT_URL="${GIT_URL:-}"
 if [[ -z "$GIT_URL" && -f "$SHARED_DIR/server/.env" ]]; then
@@ -245,11 +247,77 @@ deploy_frontend() {
     --exclude .next \
     "$REPO_DIR/client/" "$RELEASE_DIR/client/"
 
-  log "Installing frontend dependencies (release)"
-  (cd "$RELEASE_DIR/client" && npm ci)
+  if [[ ! -x "$FRONTEND_NODE_BIN/node" || ! -x "$FRONTEND_NODE_BIN/npm" ]]; then
+    die "Missing Node/NPM in FRONTEND_NODE_BIN=$FRONTEND_NODE_BIN，请先安装 Node >= 20.9 并在部署环境变量里配置 FRONTEND_NODE_BIN"
+  fi
+
+  log "Using frontend runtime: $FRONTEND_NODE_BIN/node"
+  "$FRONTEND_NODE_BIN/node" -v
+
+  log "Installing frontend dependencies (release, include optional deps)"
+  (
+    cd "$RELEASE_DIR/client" && \
+    PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" ci --include=optional
+  )
+
+  log "Verifying lightningcss native binary"
+  if ! (
+    cd "$RELEASE_DIR/client" && \
+    PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('lightningcss'); console.log('lightningcss ok')"
+  ); then
+    log "lightningcss binary missing, trying fallback install (linux-x64-gnu)"
+    (
+      cd "$RELEASE_DIR/client" && \
+      PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" install --no-save lightningcss-linux-x64-gnu
+    )
+
+    if ! (
+      cd "$RELEASE_DIR/client" && \
+      PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('lightningcss'); console.log('lightningcss ok after gnu fallback')"
+    ); then
+      log "gnu fallback failed, trying fallback install (linux-x64-musl)"
+      (
+        cd "$RELEASE_DIR/client" && \
+        PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" install --no-save lightningcss-linux-x64-musl
+      )
+
+      (
+        cd "$RELEASE_DIR/client" && \
+        PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('lightningcss'); console.log('lightningcss ok after musl fallback')"
+      )
+    fi
+  fi
+
+  log "Verifying tailwindcss oxide native binary"
+  if ! (
+    cd "$RELEASE_DIR/client" && \
+    PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('@tailwindcss/oxide'); console.log('oxide ok')"
+  ); then
+    log "oxide binary missing, trying fallback install (linux-x64-gnu)"
+    (
+      cd "$RELEASE_DIR/client" && \
+      PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" install --no-save @tailwindcss/oxide-linux-x64-gnu
+    )
+
+    if ! (
+      cd "$RELEASE_DIR/client" && \
+      PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('@tailwindcss/oxide'); console.log('oxide ok after gnu fallback')"
+    ); then
+      log "gnu fallback failed, trying fallback install (linux-x64-musl)"
+      (
+        cd "$RELEASE_DIR/client" && \
+        PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" install --no-save @tailwindcss/oxide-linux-x64-musl
+      )
+
+      (
+        cd "$RELEASE_DIR/client" && \
+        PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/node" -e "require('@tailwindcss/oxide'); console.log('oxide ok after musl fallback')"
+      )
+    fi
+  fi
 
   log "Building frontend (Next production build)"
-  (cd "$RELEASE_DIR/client" && npm run build)
+  (cd "$RELEASE_DIR/client" && PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" run build)
 
   log "Updating current/client -> $RELEASE_DIR/client (do not touch current/server)"
   mkdir -p "$CURRENT_DIR"
