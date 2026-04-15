@@ -169,7 +169,7 @@ export function PublicCardGrid({
             {card.headline}
           </h3>
           <p
-            className="text-sm leading-6 text-muted-foreground"
+            className="whitespace-pre-line break-words text-sm leading-6 text-muted-foreground"
             style={{
               display: '-webkit-box',
               WebkitLineClamp: 3,

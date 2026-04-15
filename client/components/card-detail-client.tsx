@@ -1244,7 +1244,7 @@ export function CardDetailClient({ id }: CardDetailClientProps) {
         <h1 className="text-2xl font-semibold leading-tight text-foreground md:text-3xl">{card.headline}</h1>
         <p className="text-xs text-muted-foreground">{formatPublishedAt(card.updatedAt, card.ownerName)}</p>
         <p className="text-xs text-muted-foreground">编号：{publicCardCode}</p>
-        <p className="text-sm leading-7 text-muted-foreground">{card.basicSummary}</p>
+        <p className="whitespace-pre-wrap break-words text-sm leading-7 text-muted-foreground">{card.basicSummary}</p>
         <div className="flex flex-wrap gap-2">
           {card.strengths.map((strength) => (
             <span className="inline-flex rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground" key={strength}>
