@@ -1,10 +1,10 @@
 # 部署说明（Ubuntu 24.04 + Nginx + Supervisor + PostgreSQL）
 
-本文档用于将本项目（前端 Next.js v16 静态导出 + 后端 NestJS v11）部署到你自己的 Ubuntu 24.04 服务器。
+本文档用于将本项目（前端 Next.js v16 动态服务 + 后端 NestJS v11）部署到你自己的 Ubuntu 24.04 服务器。
 
 - 服务器代码目录：`/var/www/www.cofounder.icu`
-- 进程管理：Supervisor（后端）
-- Web Server：Nginx（仅 HTTP，HTTPS 后续你用 certbot 自行加）
+- 进程管理：Supervisor（前端 + 后端）
+- Web Server：Nginx（反向代理到前端 3000 与后端 3010）
 
 ## 0. 约定的目录结构（推荐）
 
@@ -280,22 +280,23 @@ cd server
 - 构建：`npm run build`
 - 运行：`npm run start:prod`（本质是 `node dist/main`）
 
-### 5.2 前端（Next.js v16 静态导出）
+### 5.2 前端（Next.js v16 动态服务）
 
 前端构建命令：
 
 - `npm run build`
 
-构建产物输出到：
+前端生产启动命令：
 
-- `client/dist/`
+- `npm run start -- --port 3000`
 
-说明：新的前端使用 Next.js `App Router`，但部署时采用静态导出方式，构建脚本会把导出产物整理到 `client/dist/`，继续由 Nginx 直接托管。
+说明：线上由 Next.js Node 进程直接处理应用路由（如 `/p00003/{slug}`），页面会按应用逻辑读取 DB 数据；不再依赖 `client/dist` 静态托管。
 
 ## 6. Nginx 与 Supervisor 配置
 
-- Nginx 配置文件：见 `docs/nginx.cofounder.icu.conf`
-- Supervisor 配置文件：见 `docs/supervisor.cofounder-backend.conf`
+- Nginx 配置文件：见 `docs/deployment/nginx.cofounder.icu.conf`
+- Supervisor 后端配置：见 `docs/deployment/supervisor.cofounder-backend.conf`
+- Supervisor 前端配置：见 `docs/deployment/supervisor.cofounder-frontend.conf`
 
 ## 7. 后续每次部署（发布流程）
 
@@ -308,10 +309,9 @@ cd server
 脚本会完成：
 
 - 拉取最新代码（你可以按需固定分支/commit）
-- 安装依赖
-- 构建
+- 在服务器端构建前端 release（`npm ci` + `npm run build`）
+- 安装并构建后端（后端仍是本地构建后上传 dist）
 - 更新 `current` 指向
-- 重启 supervisor 管理的后端进程
-- 更新前端静态文件目录
+- 重启 supervisor 管理的前端与后端进程
 
 （脚本细节以你实际落地为准，见后续脚本文件。）

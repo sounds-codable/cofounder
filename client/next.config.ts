@@ -3,11 +3,11 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const rootDirectory = dirname(fileURLToPath(import.meta.url));
-const shouldUseStaticExport = process.env.NODE_ENV === 'production';
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const shouldUseStaticExport = process.env.NEXT_OUTPUT_EXPORT === 'true';
 const devApiProxyTarget = process.env.NEXT_PUBLIC_API_PROXY_TARGET || 'http://localhost:3010';
-const devOnlyConfig: NextConfig = shouldUseStaticExport
-  ? {}
-  : {
+const devOnlyConfig: NextConfig = isDevelopment
+  ? {
       async rewrites() {
         return [
           {
@@ -16,7 +16,8 @@ const devOnlyConfig: NextConfig = shouldUseStaticExport
           },
         ];
       },
-    };
+    }
+  : {};
 
 const nextConfig: NextConfig = {
   ...(shouldUseStaticExport ? { output: 'export' as const } : {}),

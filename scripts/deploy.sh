@@ -36,7 +36,6 @@ CURRENT_DIR="$APP_ROOT/current"
 RELEASES_DIR="$APP_ROOT/releases"
 
 RELEASE_ID="$(date +%Y%m%d%H%M%S)"
-LOCAL_FRONTEND_DIST="$PROJECT_ROOT/client/dist"
 LOCAL_BACKEND_DIST="$PROJECT_ROOT/server/dist"
 
 log() {
@@ -120,29 +119,6 @@ if [[ "$MODE" == "backend" || "$MODE" == "all" ]]; then
   fi
 fi
 
-if [[ "$MODE" == "frontend" || "$MODE" == "all" ]]; then
-  log "Building frontend locally"
-  (cd "$PROJECT_ROOT/client" && npm ci)
-  (cd "$PROJECT_ROOT/client" && npm run build)
-
-  if [[ ! -d "$LOCAL_FRONTEND_DIST" ]]; then
-    die "Local frontend dist not found at $LOCAL_FRONTEND_DIST"
-  fi
-fi
-
-upload_frontend() {
-  local remote_dist
-  remote_dist="$APP_ROOT/releases/$RELEASE_ID/client/dist"
-
-  log "Uploading frontend dist to $SSH_TARGET:$remote_dist"
-  ssh -T "$SSH_TARGET" "mkdir -p '$remote_dist'"
-
-  # 使用 rsync 增量上传，避免每次全量 copy
-  # -a: 保留权限/时间戳等
-  # --delete: 远端删除本地已删除的文件（确保 dist 同步）
-  rsync -az --delete -e ssh "$LOCAL_FRONTEND_DIST/" "$SSH_TARGET:$remote_dist/"
-}
-
 upload_backend() {
   local remote_server_dir
   remote_server_dir="$APP_ROOT/releases/$RELEASE_ID/server"
@@ -161,10 +137,6 @@ upload_backend() {
 
   # .env symlink will be created on remote
 }
-
-if [[ "$MODE" == "frontend" || "$MODE" == "all" ]]; then
-  upload_frontend
-fi
 
 if [[ "$MODE" == "backend" || "$MODE" == "all" ]]; then
   upload_backend
@@ -260,16 +232,34 @@ deploy_backend() {
 }
 
 deploy_frontend() {
-  log "Deploying frontend (remote receives static files from local)"
+  log "Deploying frontend (build on server for Next runtime)"
 
-  log "Preparing frontend release dir"
+  if [[ ! -f "$REPO_DIR/client/package.json" ]]; then
+    die "Missing $REPO_DIR/client/package.json"
+  fi
+
+  log "Syncing frontend source from repo to release"
   mkdir -p "$RELEASE_DIR/client"
-  mkdir -p "$RELEASE_DIR/client/dist"
+  rsync -a --delete \
+    --exclude node_modules \
+    --exclude .next \
+    "$REPO_DIR/client/" "$RELEASE_DIR/client/"
+
+  log "Installing frontend dependencies (release)"
+  (cd "$RELEASE_DIR/client" && npm ci)
+
+  log "Building frontend (Next production build)"
+  (cd "$RELEASE_DIR/client" && npm run build)
 
   log "Updating current/client -> $RELEASE_DIR/client (do not touch current/server)"
   mkdir -p "$CURRENT_DIR"
   rm -f "$CURRENT_DIR/client"
   ln -s "$RELEASE_DIR/client" "$CURRENT_DIR/client"
+
+  log "Restarting supervisor program cofounder-frontend"
+  sudo supervisorctl reread
+  sudo supervisorctl update
+  sudo supervisorctl restart cofounder-frontend
 }
 
 log "Creating release dir: $RELEASE_DIR"
