@@ -228,7 +228,7 @@ export function BlogDetailClient({ postId }: BlogDetailClientProps) {
                 className="min-h-28 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 maxLength={3000}
                 onChange={(event) => setCommentDraft(event.target.value)}
-                placeholder="写下你的评论（支持纯文本）"
+                placeholder="写下你的评论"
                 value={commentDraft}
               />
               <button className={buttonVariants()} disabled={submittingComment || !detail} onClick={() => void handleSubmitComment()} type="button">
