@@ -1,30 +1,7 @@
-import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { BlogDetailClient } from '@/components/blog-detail-client';
-import { fetchBlogPostById, fetchBlogPosts } from '@/lib/platform-api';
+import { fetchBlogPostById } from '@/lib/platform-api';
 import { buildPageMetadata, getBlogPostingJsonLd, getBreadcrumbListJsonLd, stringifyJsonLd } from '@/lib/seo';
-
-export const dynamicParams = false;
-export const dynamic = 'force-static';
-const BLOG_PLACEHOLDER_POST_ID = '__placeholder__';
-
-export async function generateStaticParams() {
-  try {
-    const list = await fetchBlogPosts();
-    const params = list.items
-      .map((item) => item.pathSegment)
-      .filter((segment): segment is string => Boolean(segment))
-      .map((postId) => ({ postId }));
-
-    if (params.length > 0) {
-      return params;
-    }
-  } catch {
-    return [{ postId: BLOG_PLACEHOLDER_POST_ID }];
-  }
-
-  return [{ postId: BLOG_PLACEHOLDER_POST_ID }];
-}
 
 type BlogDetailPageProps = {
   params: Promise<{
@@ -34,15 +11,6 @@ type BlogDetailPageProps = {
 
 export async function generateMetadata({ params }: BlogDetailPageProps): Promise<Metadata> {
   const { postId } = await params;
-
-  if (postId === BLOG_PLACEHOLDER_POST_ID) {
-    return {
-      robots: {
-        index: false,
-        follow: false,
-      },
-    };
-  }
 
   try {
     const detail = await fetchBlogPostById(postId);
@@ -67,10 +35,6 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
 
 export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   const { postId } = await params;
-
-  if (postId === BLOG_PLACEHOLDER_POST_ID) {
-    notFound();
-  }
 
   let jsonLd: object[] = [];
 

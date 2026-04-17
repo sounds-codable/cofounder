@@ -15,6 +15,9 @@ export type BlogPostListResult = {
     pathSegment: string;
     title: string;
     summary: string;
+    contentPreview: string;
+    contentPreviewMobile: string;
+    contentPreviewDesktop: string;
     authorDisplayName: string;
     updatedAt: string;
     createdAt: string;

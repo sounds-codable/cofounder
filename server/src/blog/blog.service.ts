@@ -88,6 +88,9 @@ export class BlogService {
         pathSegment: this.buildPostPathSegment(post.title, post.id),
         title: post.title,
         summary: post.summary,
+        contentPreview: this.buildContentPreview(post.contentMarkdown, post.summary, 100),
+        contentPreviewMobile: this.buildContentPreview(post.contentMarkdown, post.summary, 90),
+        contentPreviewDesktop: this.buildContentPreview(post.contentMarkdown, post.summary, 120),
         authorDisplayName: authorMap.get(post.authorUserId) || '管理员',
         updatedAt: post.updatedAt,
         createdAt: post.createdAt,
@@ -547,6 +550,52 @@ export class BlogService {
 
     const readable = normalized || 'blog';
     return `${readable}-${postId}`;
+  }
+
+  private buildContentPreview(contentMarkdown: string, fallbackSummary: string, maxLength: number) {
+    const plainText = this.extractPlainTextFromMarkdown(contentMarkdown) || fallbackSummary.trim();
+    return this.truncateWithEllipsisByLanguage(plainText, maxLength);
+  }
+
+  private extractPlainTextFromMarkdown(contentMarkdown: string) {
+    return contentMarkdown
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/`[^`]*`/g, ' ')
+      .replace(/!\[[^\]]*\]\([^\)]*\)/g, ' ')
+      .replace(/\[([^\]]+)\]\([^\)]*\)/g, '$1')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/^[>#\-*_+\d.\s]+/gm, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private truncateWithEllipsisByLanguage(text: string, maxLength: number) {
+    const normalized = text.trim();
+
+    if (!normalized) {
+      return '';
+    }
+
+    if (this.isLikelyChineseText(normalized)) {
+      if (normalized.length <= maxLength) {
+        return normalized;
+      }
+
+      return `${normalized.slice(0, maxLength)}......`;
+    }
+
+    const words = normalized.split(/\s+/).filter(Boolean);
+
+    if (words.length <= maxLength) {
+      return normalized;
+    }
+
+    return `${words.slice(0, maxLength).join(' ')}......`;
+  }
+
+  private isLikelyChineseText(text: string) {
+    const chineseCharCount = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+    return chineseCharCount >= Math.max(1, text.length * 0.2);
   }
 
   private ensureNoDangerousHtml(content: string, fieldLabel: string) {

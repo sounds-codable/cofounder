@@ -68,7 +68,12 @@ export function BlogPageClient() {
               <span>{formatBeijingDate(post.updatedAt)}</span>
             </div>
             <h2 className="text-xl font-semibold leading-8 text-foreground">{post.title}</h2>
-            <p className="mt-2 line-clamp-2 text-sm leading-7 text-muted-foreground">{post.summary}</p>
+            <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-muted-foreground md:hidden">
+              {post.contentPreviewMobile || post.contentPreview || post.summary}
+            </p>
+            <p className="mt-2 hidden whitespace-pre-wrap break-words text-sm leading-7 text-muted-foreground md:block">
+              {post.contentPreviewDesktop || post.contentPreview || post.summary}
+            </p>
             <div className="mt-3 grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
               <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
                 <span>👍 {post.likeCount}</span>
