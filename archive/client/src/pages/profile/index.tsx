@@ -1,5 +1,5 @@
 import { View, Text, Button } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
 import { storage } from '@/utils/storage'
 import { userApi } from '@/services/api'
@@ -12,6 +12,10 @@ export default function Profile() {
   useEffect(() => {
     loadProfile()
   }, [])
+
+  useDidShow(() => {
+    loadProfile()
+  })
 
   const loadProfile = async () => {
     try {
@@ -43,6 +47,11 @@ export default function Profile() {
 
   const goToTab = (page: string) => {
     Taro.redirectTo({ url: `/pages/${page}/index` })
+  }
+
+  const formatWorkYears = (value: any) => {
+    if (value === null || value === undefined || value === '') return '未设置'
+    return /^\d+$/.test(String(value)) ? `${value}年` : String(value)
   }
 
   if (loading) {
@@ -106,7 +115,7 @@ export default function Profile() {
             </View>
             <View className='info-item'>
               <Text className='info-label'>工作年限</Text>
-              <Text className='info-value'>{user?.workYears || '未设置'}年</Text>
+              <Text className='info-value'>{formatWorkYears(user?.workYears)}</Text>
             </View>
           </>
         )}
@@ -127,11 +136,11 @@ export default function Profile() {
             className='section-action'
             onClick={() => Taro.navigateTo({ url: '/pages/profile/detail' })}
           >
-            {user?.detailedProfileCompleted ? '编辑' : '去完善'}
+            {(user?.detailedProfileCompleted || user?.detailedProfileCompletedAt) ? '编辑' : '去完善'}
           </Text>
         </View>
         
-        {user?.detailedProfileCompleted ? (
+        {(user?.detailedProfileCompleted || user?.detailedProfileCompletedAt) ? (
           <View className='info-item'>
             <Text className='info-value complete'>✅ 已完善</Text>
           </View>

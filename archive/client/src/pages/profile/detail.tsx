@@ -40,6 +40,7 @@ export default function EditDetailedProfile() {
   const [company, setCompany] = useState('')
   const [position, setPosition] = useState('')
   const [employmentStatus, setEmploymentStatus] = useState('')
+  const [workYears, setWorkYears] = useState('')
   const [workExperienceDesc, setWorkExperienceDesc] = useState('')
 
   // ========== 项目方专属详细资料 ==========
@@ -54,35 +55,49 @@ export default function EditDetailedProfile() {
   const [interestedIndustries, setInterestedIndustries] = useState<string[]>([])
   const [weeklyHours, setWeeklyHours] = useState('')
 
+  const hydrateFormFromUser = (currentUser: any) => {
+    if (!currentUser) return
+
+    setUser(currentUser)
+    if (currentUser.role === 'developer') {
+      setStep('profile')
+    }
+
+    if (currentUser.realName) setRealName(currentUser.realName)
+    if (currentUser.phone) setPhone(currentUser.phone)
+    if (currentUser.wechat) setWechat(currentUser.wechat)
+    if (currentUser.city) setCity(currentUser.city)
+    if (currentUser.education) setEducation(currentUser.education)
+    if (currentUser.school) setSchool(currentUser.school)
+    if (currentUser.major) setMajor(currentUser.major)
+    if (currentUser.company) setCompany(currentUser.company)
+    if (currentUser.position) setPosition(currentUser.position)
+    if (currentUser.employmentStatus) setEmploymentStatus(currentUser.employmentStatus)
+    if (currentUser.workYears) setWorkYears(String(currentUser.workYears))
+    if (currentUser.workExperienceDesc) setWorkExperienceDesc(currentUser.workExperienceDesc)
+    if (currentUser.industryResources) setIndustryResources(currentUser.industryResources)
+    if (currentUser.relatedExperience) setRelatedExperience(currentUser.relatedExperience)
+    if (currentUser.canProvide) setCanProvide(currentUser.canProvide)
+    if (currentUser.techStack) setTechStack(currentUser.techStack)
+    if (currentUser.github) setGithub(currentUser.github)
+    if (currentUser.detailedProjects) setDetailedProjects(currentUser.detailedProjects)
+    if (currentUser.interestedIndustries) setInterestedIndustries(currentUser.interestedIndustries)
+    if (currentUser.weeklyHours) setWeeklyHours(currentUser.weeklyHours)
+  }
+
   useEffect(() => {
     const currentUser = storage.getUser()
-    if (currentUser) {
-      setUser(currentUser)
-      // 程序员直接进入详细资料页
-      if (currentUser.role === 'developer') {
-        setStep('profile')
-      }
-      // 加载已有数据
-      if (currentUser.realName) setRealName(currentUser.realName)
-      if (currentUser.phone) setPhone(currentUser.phone)
-      if (currentUser.wechat) setWechat(currentUser.wechat)
-      if (currentUser.city) setCity(currentUser.city)
-      if (currentUser.education) setEducation(currentUser.education)
-      if (currentUser.school) setSchool(currentUser.school)
-      if (currentUser.major) setMajor(currentUser.major)
-      if (currentUser.company) setCompany(currentUser.company)
-      if (currentUser.position) setPosition(currentUser.position)
-      if (currentUser.employmentStatus) setEmploymentStatus(currentUser.employmentStatus)
-      if (currentUser.workExperienceDesc) setWorkExperienceDesc(currentUser.workExperienceDesc)
-      if (currentUser.industryResources) setIndustryResources(currentUser.industryResources)
-      if (currentUser.relatedExperience) setRelatedExperience(currentUser.relatedExperience)
-      if (currentUser.canProvide) setCanProvide(currentUser.canProvide)
-      if (currentUser.techStack) setTechStack(currentUser.techStack)
-      if (currentUser.github) setGithub(currentUser.github)
-      if (currentUser.detailedProjects) setDetailedProjects(currentUser.detailedProjects)
-      if (currentUser.interestedIndustries) setInterestedIndustries(currentUser.interestedIndustries)
-      if (currentUser.weeklyHours) setWeeklyHours(currentUser.weeklyHours)
-    }
+    if (currentUser) hydrateFormFromUser(currentUser)
+
+    userApi.getProfile()
+      .then((latestUser) => {
+        if (!latestUser) return
+        storage.setUser(latestUser)
+        hydrateFormFromUser(latestUser)
+      })
+      .catch(() => {
+        // 保持本地缓存回填，避免首次进入表单空白
+      })
   }, [])
 
   const toggleTech = (tech: string) => {
@@ -172,6 +187,8 @@ export default function EditDetailedProfile() {
 
     setLoading(true)
     try {
+      let updatedUser: any = null
+
       if (user?.role === 'project_owner') {
         if (!industryResources || industryResources.length < 100) {
           Taro.showToast({ title: '行业资源描述至少100个字符', icon: 'none' })
@@ -182,9 +199,9 @@ export default function EditDetailedProfile() {
           setLoading(false); return
         }
 
-        await userApi.updateDetailedProfile({
+        updatedUser = await userApi.updateDetailedProfile({
           realName, phone, wechat, city, education, school, major,
-          company, position, employmentStatus, workExperienceDesc,
+          company, position, employmentStatus, workYears, workExperienceDesc,
           industryResources, relatedExperience, canProvide,
         })
       } else {
@@ -205,15 +222,53 @@ export default function EditDetailedProfile() {
           setLoading(false); return
         }
 
-        await userApi.updateDetailedProfile({
+        updatedUser = await userApi.updateDetailedProfile({
           realName, phone, wechat, city, education, school, major,
-          company, position, employmentStatus, workExperienceDesc,
+          company, position, employmentStatus, workYears, workExperienceDesc,
           techStack, github, detailedProjects, interestedIndustries, weeklyHours,
         })
       }
 
-      const updatedUser = await userApi.getProfile()
-      storage.setUser(updatedUser)
+      try {
+        const contactUpdatedUser = await userApi.updateContactMethods({
+          phone,
+          wechat,
+          email: user?.email,
+        })
+        if (contactUpdatedUser) {
+          updatedUser = contactUpdatedUser
+        }
+      } catch (_contactError) {
+        // 联系方式同步失败不影响已保存的详细资料，避免用户重复填写
+      }
+
+      if (updatedUser) {
+        updatedUser = {
+          ...updatedUser,
+          realName,
+          phone,
+          wechat,
+          city,
+          education,
+          school,
+          major,
+          company,
+          position,
+          employmentStatus,
+          workYears,
+          workExperienceDesc,
+          industryResources,
+          relatedExperience,
+          canProvide,
+          techStack,
+          github,
+          detailedProjects,
+          interestedIndustries,
+          weeklyHours,
+        }
+        storage.setUser(updatedUser)
+        setUser(updatedUser)
+      }
 
       Taro.showToast({ title: '保存成功', icon: 'success' })
       setTimeout(() => Taro.navigateBack(), 1000)
@@ -389,6 +444,12 @@ export default function EditDetailedProfile() {
             onChange={(e) => setEmploymentStatus(EMPLOYMENT_STATUS[Number(e.detail.value)])}>
             <View className='form-picker'>{employmentStatus || '请选择在职状态'}</View>
           </Picker>
+        </View>
+
+        <View className='form-item'>
+          <Text className='form-label'>工作年限</Text>
+          <Input className='form-input' type='number' placeholder='如：3'
+            value={workYears} onInput={(e) => setWorkYears(e.detail.value)} />
         </View>
 
         <View className='form-item'>

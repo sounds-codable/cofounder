@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "miniapp:install": "npm install --prefix archive/client",
+    "miniapp:dev": "TARO_APP_API_BASE=https://cofounder.icu npm run dev:weapp --prefix archive/client",
+    "miniapp:build": "TARO_APP_API_BASE=https://cofounder.icu npm run build:weapp --prefix archive/client"
+  },
   "devDependencies": {
     "baseline-browser-mapping": "^2.10.18"
   }

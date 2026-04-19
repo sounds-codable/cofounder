@@ -51,7 +51,12 @@ export default function EditBasicProfile() {
         : { nickname, bio, weeklyHours, techDirections, workYears: Number(workYears) }
       
       const result = await userApi.updateBasicProfile(data)
-      storage.setUser(result)
+      const merged = {
+        ...result,
+        weeklyHours: weeklyHours || result?.weeklyHours || '',
+        workYears: user?.role === 'developer' ? (workYears || result?.workYears || '') : result?.workYears,
+      }
+      storage.setUser(merged)
       
       Taro.showToast({ title: '保存成功', icon: 'success' })
       setTimeout(() => {

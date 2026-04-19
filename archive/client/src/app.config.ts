@@ -1,6 +1,5 @@
 export default {
   pages: [
-    'pages/index',
     'pages/index/index',
     'pages/login/index',
     'pages/onboarding/index',
@@ -18,7 +17,7 @@ export default {
     'pages/index2',
     'pages/index3',
     'pages/index4',
-    'pages/index5',
+    'pages/index5/index',
     'pages/index6',
     'pages/index7',
     'pages/welcome',

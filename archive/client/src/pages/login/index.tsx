@@ -10,6 +10,7 @@ export default function Login() {
   const role = router.params.role || 'developer'
   
   const [email, setEmail] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
   const [code, setCode] = useState('')
   const [step, setStep] = useState<'email' | 'code'>('email')
   const [loading, setLoading] = useState(false)
@@ -40,9 +41,15 @@ export default function Login() {
       return
     }
 
+    const normalizedInviteCode = inviteCode.trim()
+    if (!normalizedInviteCode) {
+      Taro.showToast({ title: '请输入邀请码', icon: 'none' })
+      return
+    }
+
     setLoading(true)
     try {
-      await authApi.sendCode(email, role)
+      await authApi.sendCode(email, normalizedInviteCode)
       setStep('code')
       startCountdown()
       Taro.showToast({ title: '验证码已发送', icon: 'success' })
@@ -61,14 +68,19 @@ export default function Login() {
 
     setLoading(true)
     try {
-      const result = await authApi.verify(email, code, role)
-      storage.setToken(result.access_token)
-      storage.setUser(result.user)
+      const result = await authApi.verify(email, code)
+      const normalizedUser = {
+        ...result.user,
+        role: result.user?.role || role,
+        basicProfileCompleted: Boolean(result.user?.basicProfileCompleted ?? result.user?.detailedProfileCompletedAt),
+      }
+      storage.setToken(result.accessToken)
+      storage.setUser(normalizedUser)
       
       Taro.showToast({ title: '登录成功', icon: 'success' })
       
       setTimeout(() => {
-        if (result.user.basicProfileCompleted) {
+        if (normalizedUser.basicProfileCompleted) {
           Taro.redirectTo({ url: '/pages/projects/index' })
         } else {
           Taro.redirectTo({ url: '/pages/onboarding/index' })
@@ -107,6 +119,17 @@ export default function Login() {
                 value={email}
                 onInput={(e) => setEmail(e.detail.value)}
               />
+            </View>
+            <View className='form-item'>
+              <Text className='form-label'>邀请码</Text>
+              <Input
+                className='form-input'
+                type='text'
+                placeholder='请输入邀请码'
+                value={inviteCode}
+                onInput={(e) => setInviteCode(e.detail.value)}
+              />
+              <Text className='form-hint'>当前站点为邀请制，需要先填写邀请码</Text>
             </View>
             <Button
               className='btn-primary'

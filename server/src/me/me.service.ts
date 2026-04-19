@@ -514,6 +514,24 @@ export class MeService {
 
     let expertProjectDetail = this.normalizeOptionalDetailField(body.expertProjectDetail) ?? existingExpertProjectDetail;
     let developerProjectExperience = this.normalizeOptionalDetailField(body.developerProjectExperience) ?? existingDeveloperProjectExperience;
+    const company = this.normalizeOptionalDetailField(body.company) ?? this.normalizeOptionalDetailField(previousDetail.company);
+    const position = this.normalizeOptionalDetailField(body.position) ?? this.normalizeOptionalDetailField(previousDetail.position);
+    const employmentStatus =
+      this.normalizeOptionalDetailField(body.employmentStatus) ?? this.normalizeOptionalDetailField(previousDetail.employmentStatus);
+    const workYears = this.normalizeOptionalDetailField(body.workYears) ?? this.normalizeOptionalDetailField(previousDetail.workYears);
+    const workExperienceDesc =
+      this.normalizeOptionalDetailField(body.workExperienceDesc) ?? this.normalizeOptionalDetailField(previousDetail.workExperienceDesc);
+    const weeklyHours = this.normalizeOptionalDetailField(body.weeklyHours) ?? this.normalizeOptionalDetailField(previousDetail.weeklyHours);
+    const techStack = this.normalizeOptionalDetailField(body.techStack) ?? this.normalizeOptionalDetailField(previousDetail.techStack);
+    const github = this.normalizeOptionalDetailField(body.github) ?? this.normalizeOptionalDetailField(previousDetail.github);
+    const interestedIndustries =
+      this.normalizeOptionalDetailField(body.interestedIndustries) ?? this.normalizeOptionalDetailField(previousDetail.interestedIndustries);
+    const canProvide = this.normalizeOptionalDetailField(body.canProvide) ?? this.normalizeOptionalDetailField(previousDetail.canProvide);
+    const relatedExperience =
+      this.normalizeOptionalDetailField(body.relatedExperience) ?? this.normalizeOptionalDetailField(previousDetail.relatedExperience);
+    const school = this.normalizeOptionalDetailField(body.school) ?? this.normalizeOptionalDetailField(previousDetail.school);
+    const major = this.normalizeOptionalDetailField(body.major) ?? this.normalizeOptionalDetailField(previousDetail.major);
+    const city = this.normalizeOptionalDetailField(body.city) ?? this.normalizeOptionalDetailField(previousDetail.city);
 
     if (legacyProjectDetail) {
       if (cardRole === UserRole.EXPERT) {
@@ -541,6 +559,20 @@ export class MeService {
       expertProjectDetail: expertProjectDetail ?? '',
       developerProjectExperience: developerProjectExperience ?? '',
       projectDetail: expertProjectDetail ?? developerProjectExperience ?? '',
+      company: company ?? '',
+      position: position ?? '',
+      employmentStatus: employmentStatus ?? '',
+      workYears: workYears ?? '',
+      workExperienceDesc: workExperienceDesc ?? '',
+      weeklyHours: weeklyHours ?? '',
+      techStack: techStack ?? '',
+      github: github ?? '',
+      interestedIndustries: interestedIndustries ?? '',
+      canProvide: canProvide ?? '',
+      relatedExperience: relatedExperience ?? '',
+      school: school ?? '',
+      major: major ?? '',
+      city: city ?? '',
     };
     user.detailedProfileCompletedAt = new Date();
     await this.userRepository.save(user);

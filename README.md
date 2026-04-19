@@ -13,6 +13,9 @@
 
 ## 快速命令
 - 本地开发 ./scripts/dev.sh
+- 小程序安装依赖 `npm run miniapp:install`
+- 小程序本地编译 `npm run miniapp:dev`
+- 小程序生产构建 `TARO_APP_API_BASE=https://api.your-domain.com npm run miniapp:build`
 
 ## 当前状态
 
@@ -159,6 +162,12 @@ npm run dev --prefix client
 
 因此 Nginx 静态托管方式可以继续沿用。
 
+## 小程序发布（与网页端并行）
+
+- 网页端继续使用 `client/`（Next.js），不受小程序构建流程影响。
+- 小程序端使用 `archive/client/`（Taro）构建并上传微信开发者工具。
+- 完整实操文档见：`docs/小程序编译发布与多端架构实施说明.md`
+
 ## 关键文档
 
  - `docs/产品需求文档-角色双向授权与Nextjs重构.md`
@@ -167,6 +176,7 @@ npm run dev --prefix client
  - `docs/mac本地PostgreSQL创建cofounder_new.md`
  - `docs/服务器端原库清空说明.md`
  - `docs/deployment.md`
+- `docs/小程序编译发布与多端架构实施说明.md`
 
 ## 下一步建议
 

@@ -1,11 +1,9 @@
-import { View, Text } from '@tarojs/components'
+import { View, Text, Button } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
-import { AtSegmentedControl, AtButton } from 'taro-ui'
 import { requestApi } from '@/services/api'
 import { storage } from '@/utils/storage'
 import { clearRequestBadgeCache } from '@/utils/request-badge'
-import TabBar from '@/components/TabBar'
 import './index.scss'
 
 export default function Requests() {
@@ -65,23 +63,26 @@ export default function Requests() {
 
   const currentRequests = activeTab === 0 ? receivedRequests : sentRequests
 
+  const goToTab = (page: string) => {
+    Taro.redirectTo({ url: `/pages/${page}/index` })
+  }
+
   return (
     <View className='requests'>
-      <View className='page-header'>
-        <Text className='page-title'>我的请求</Text>
-        <Text className='page-subtitle'>管理您的合伙请求</Text>
+      <View className='tabs'>
+        <View className='tab' onClick={() => goToTab('projects')}>项目广场</View>
+        <View className='tab' onClick={() => goToTab('developers')}>程序员广场</View>
+        <View className='tab active'>我的请求</View>
+        <View className='tab' onClick={() => goToTab('profile')}>个人中心</View>
       </View>
 
       <View className='segment-wrapper'>
-        <AtSegmentedControl
-          values={[
-            `收到的 (${receivedRequests.length})${pendingCount > 0 ? ' 🔴' : ''}`,
-            `发出的 (${sentRequests.length})`
-          ]}
-          onClick={setActiveTab}
-          current={activeTab}
-          color='#2563eb'
-        />
+        <View className={`segment-item ${activeTab === 0 ? 'active' : ''}`} onClick={() => setActiveTab(0)}>
+          收到的 ({receivedRequests.length}){pendingCount > 0 ? ' 🔴' : ''}
+        </View>
+        <View className={`segment-item ${activeTab === 1 ? 'active' : ''}`} onClick={() => setActiveTab(1)}>
+          发出的 ({sentRequests.length})
+        </View>
       </View>
 
       {loading ? (
@@ -150,12 +151,12 @@ export default function Requests() {
 
               {activeTab === 0 && request.status === 'pending' && (
                 <View className='request-actions'>
-                  <AtButton type='primary' size='small' onClick={() => handleAccept(request.id)}>
+                  <Button className='btn-accept' onClick={() => handleAccept(request.id)}>
                     接受
-                  </AtButton>
-                  <AtButton size='small' onClick={() => handleReject(request.id)}>
+                  </Button>
+                  <Button className='btn-reject' onClick={() => handleReject(request.id)}>
                     拒绝
-                  </AtButton>
+                  </Button>
                 </View>
               )}
 
@@ -173,8 +174,6 @@ export default function Requests() {
           ))}
         </View>
       )}
-
-      <TabBar current={2} />
     </View>
   )
 }
