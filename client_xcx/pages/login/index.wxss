@@ -1,0 +1,103 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx;
+  box-sizing: border-box;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 680rpx;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1rpx solid rgba(104, 142, 186, 0.22);
+  border-radius: 40rpx;
+  padding: 48rpx 40rpx;
+  box-shadow: 0 20rpx 56rpx rgba(103, 129, 171, 0.18);
+}
+
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 40rpx;
+}
+
+.brand-mark {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(145deg, #20d6c2 0%, #13bfa8 52%, #4cc8ff 100%);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.brand-core {
+  position: absolute;
+  top: 16rpx;
+  left: 14rpx;
+  width: 28rpx;
+  height: 28rpx;
+  border-radius: 10rpx;
+  border: 3rpx solid rgba(255, 255, 255, 0.94);
+}
+
+.brand-core-alt {
+  top: 28rpx;
+  left: 30rpx;
+  border-color: rgba(255, 255, 255, 0.74);
+}
+
+.brand-dot {
+  position: absolute;
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 999rpx;
+  top: 14rpx;
+  right: 14rpx;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.brand-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #10233f;
+  display: block;
+}
+
+.brand-slogan {
+  font-size: 22rpx;
+  color: #597693;
+  display: block;
+  margin-top: 4rpx;
+}
+
+.login-title {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #10233f;
+  margin-bottom: 8rpx;
+}
+
+.login-subtitle {
+  font-size: 26rpx;
+  color: #597693;
+  margin-bottom: 40rpx;
+}
+
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.error-text {
+  margin-top: 20rpx;
+  padding: 16rpx 24rpx;
+  border-radius: 16rpx;
+  border: 1rpx solid rgba(213, 72, 92, 0.38);
+  background: rgba(255, 240, 243, 0.85);
+  color: #a22a3f;
+  font-size: 26rpx;
+}

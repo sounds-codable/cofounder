@@ -1,0 +1,64 @@
+<view class="container safe-bottom">
+  <view class="page-title">程序员</view>
+
+  <view class="tab-header">
+    <view class="tab-item {{activeTab === 'all' ? 'active' : ''}}" bindtap="switchTab" data-tab="all">全部程序员</view>
+    <view class="tab-item {{activeTab === 'created' ? 'active' : ''}}" bindtap="switchTab" data-tab="created">我的登记</view>
+    <view class="tab-item {{activeTab === 'favorited' ? 'active' : ''}}" bindtap="switchTab" data-tab="favorited">我收藏的</view>
+  </view>
+
+  <view wx:if="{{activeTab === 'all' && cities.length > 0}}" class="filter-section">
+    <scroll-view scroll-x class="filter-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="filter-tags">
+        <view class="pill filter-pill {{!filterCity ? 'pill-role' : ''}}" bindtap="clearFilter">全部</view>
+        <block wx:for="{{cities}}" wx:key="*this">
+          <view class="pill filter-pill {{filterCity === item ? 'pill-role' : ''}}" bindtap="setCity" data-city="{{item}}">{{item}}</view>
+        </block>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading-wrap">
+    <text class="text-muted">加载中...</text>
+  </view>
+
+  <view wx:elif="{{filteredCards.length === 0}}" class="empty-state">
+    <text class="empty-icon">💻</text>
+    <text class="empty-text" wx:if="{{activeTab === 'all'}}">暂无程序员登记</text>
+    <text class="empty-text" wx:elif="{{activeTab === 'created'}}">你还没有登记</text>
+    <text class="empty-text" wx:else>你还没有收藏</text>
+    <button wx:if="{{activeTab !== 'favorited'}}" class="btn-primary mt-md" bindtap="goPublish">登记为程序员</button>
+  </view>
+
+  <block wx:else>
+    <view wx:for="{{filteredCards}}" wx:key="id" class="card" bindtap="goDetail" data-id="{{item.id}}">
+      <view class="flex-row flex-between mb-sm">
+        <text class="pill text-xs" style="color:#13bfa8;background:rgba(19,191,168,0.1);">程序员</text>
+        <text class="text-xs text-muted">{{item.publishedAtText}}</text>
+      </view>
+      <view class="card-title">{{item.headline}}</view>
+      <view class="card-desc">{{item.basicSummary}}</view>
+      <view class="card-meta" wx:if="{{item.city || (item.strengths && item.strengths.length > 0)}}">
+        <text wx:if="{{item.city}}" class="pill">{{item.city}}</text>
+        <block wx:if="{{item.strengths}}">
+          <text wx:for="{{item.strengths}}" wx:for-item="s" wx:key="*this" class="tag">{{s}}</text>
+        </block>
+      </view>
+      <view class="engagement-row">
+        <view class="engagement-icons">
+          <view class="engagement-btn {{item.isLiked ? 'active' : ''}}" catchtap="toggleLike" data-id="{{item.id}}" data-index="{{index}}">
+            <text>{{item.isLiked ? '♥' : '♡'}}</text>
+          </view>
+          <view class="engagement-btn {{item.isFavorited ? 'active' : ''}}" catchtap="toggleFavorite" data-id="{{item.id}}" data-index="{{index}}">
+            <text>{{item.isFavorited ? '★' : '☆'}}</text>
+          </view>
+        </view>
+        <view class="pill text-xs" catchtap="goDetail" data-id="{{item.id}}">了解详情 →</view>
+      </view>
+    </view>
+  </block>
+
+  <view wx:if="{{!loading && activeTab === 'all'}}" class="mt-md" style="text-align:center;">
+    <button class="btn-primary" bindtap="goPublish">登记为程序员</button>
+  </view>
+</view>

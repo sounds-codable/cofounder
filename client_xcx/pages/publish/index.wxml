@@ -1,0 +1,37 @@
+<view class="container safe-bottom">
+  <view class="page-title">{{isEdit ? '编辑' : (role === 'expert' ? '发布新项目' : '登记为程序员')}}</view>
+  <view class="page-subtitle">{{role === 'expert' ? '分享你的项目需求，寻找志同道合的程序员' : '展示你的技术实力，寻找有趣的项目'}}</view>
+
+  <view class="card">
+    <view class="form-group">
+      <text class="form-label">{{role === 'expert' ? '项目名称 / 方向' : '技术方向 / 专长'}}</text>
+      <input class="input-field" placeholder="{{role === 'expert' ? '如：AI 智能客服系统' : '如：全栈工程师 / React + Node'}}" value="{{headline}}" bindinput="onInput" data-field="headline" placeholder-class="input-field-placeholder" />
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">简要描述</text>
+      <textarea class="textarea-field" placeholder="{{role === 'expert' ? '介绍项目背景和核心需求...' : '介绍你的技术栈和期望的项目类型...'}}" value="{{basicSummary}}" bindinput="onInput" data-field="basicSummary" placeholder-class="input-field-placeholder" maxlength="500" />
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">所在城市</text>
+      <input class="input-field" placeholder="如：北京、上海、远程" value="{{city}}" bindinput="onInput" data-field="city" placeholder-class="input-field-placeholder" />
+    </view>
+
+    <view wx:if="{{role === 'expert'}}" class="form-group">
+      <text class="form-label">期望方向（可选）</text>
+      <input class="input-field" placeholder="如：希望找到擅长 AI 的全栈开发" value="{{desiredDirection}}" bindinput="onInput" data-field="desiredDirection" placeholder-class="input-field-placeholder" />
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">技能标签（用逗号分隔）</text>
+      <input class="input-field" placeholder="如：React, Node.js, Python" value="{{strengthsText}}" bindinput="onStrengthsInput" placeholder-class="input-field-placeholder" />
+    </view>
+
+    <view wx:if="{{errMsg}}" class="error-text mb-md">{{errMsg}}</view>
+
+    <button class="btn-primary" bindtap="submit" disabled="{{submitting}}">
+      {{submitting ? '提交中...' : (isEdit ? '保存修改' : '发布')}}
+    </button>
+  </view>
+</view>

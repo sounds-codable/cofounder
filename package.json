@@ -1,8 +1,9 @@
 {
   "scripts": {
-    "miniapp:install": "npm install --prefix archive/client",
-    "miniapp:dev": "TARO_APP_API_BASE=https://cofounder.icu npm run dev:weapp --prefix archive/client",
-    "miniapp:build": "TARO_APP_API_BASE=https://cofounder.icu npm run build:weapp --prefix archive/client"
+    "miniapp:dev": "echo '新版小程序 client_xcx/ 为微信原生项目，请用微信开发者工具直接导入 client_xcx/ 目录'",
+    "miniapp:old:install": "npm install --prefix archive/client",
+    "miniapp:old:dev": "TARO_APP_API_BASE=https://cofounder.icu npm run dev:weapp --prefix archive/client",
+    "miniapp:old:build": "TARO_APP_API_BASE=https://cofounder.icu npm run build:weapp --prefix archive/client"
   },
   "devDependencies": {
     "baseline-browser-mapping": "^2.10.18"

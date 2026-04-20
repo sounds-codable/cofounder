@@ -1,0 +1,137 @@
+<view class="container safe-bottom">
+  <view wx:if="{{loading}}" class="loading-wrap">
+    <text class="text-muted">加载中...</text>
+  </view>
+
+  <block wx:elif="{{card}}">
+    <!-- 返回导航 -->
+    <view class="back-nav" bindtap="goBack">
+      <text>← 返回{{card.role === 'expert' ? '项目库' : '程序员列表'}}</text>
+    </view>
+
+    <!-- 卡片主信息 -->
+    <view class="detail-hero-card">
+      <view class="flex-row flex-between mb-sm">
+        <text class="pill pill-role text-xs">{{roleName}}</text>
+        <text class="text-xs text-muted">{{publishedAtText}}</text>
+      </view>
+      <view class="detail-headline">{{card.headline}}</view>
+      <view class="detail-summary">{{card.basicSummary}}</view>
+
+      <view class="card-meta" wx:if="{{card.city || card.strengths.length > 0}}">
+        <text wx:if="{{card.city}}" class="pill">📍 {{card.city}}</text>
+        <text wx:for="{{card.strengths}}" wx:for-item="s" wx:key="*this" class="tag">{{s}}</text>
+      </view>
+
+      <view wx:if="{{card.desiredDirection}}" class="mt-md">
+        <text class="text-sm text-muted">期望方向：{{card.desiredDirection}}</text>
+      </view>
+
+      <!-- 互动按钮 -->
+      <view class="engagement-row mt-md">
+        <view class="engagement-icons">
+          <view class="engagement-btn {{isLiked ? 'active' : ''}}" bindtap="toggleLike">
+            {{isLiked ? '❤️' : '🤍'}}
+          </view>
+          <view class="engagement-btn {{isFavorited ? 'active' : ''}}" bindtap="toggleFavorite">
+            {{isFavorited ? '⭐' : '☆'}}
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 我是发布者 - 管理操作 -->
+    <view wx:if="{{isOwner}}" class="card mt-md">
+      <view class="section-title">管理卡片</view>
+      <view class="flex-row gap-sm">
+        <button class="btn-ghost btn-small" bindtap="goEdit">编辑</button>
+        <button class="btn-danger btn-small" bindtap="deleteCard">删除</button>
+      </view>
+    </view>
+
+    <!-- 非发布者 - 请求详情 -->
+    <view wx:if="{{!isOwner}}" class="card mt-md">
+      <block wx:if="{{!requestState}}">
+        <view class="section-title">了解更多</view>
+        <text class="text-sm text-muted mb-md" style="display:block;">发起「了解详情」请求后，对方可以查看你的详细信息，并决定是否批准。</text>
+        <button class="btn-primary" bindtap="sendRequest">发起了解详情请求</button>
+      </block>
+
+      <block wx:elif="{{requestState === 'pending_request'}}">
+        <view class="status-badge status-pending">等待对方回应</view>
+        <text class="text-sm text-muted mt-sm" style="display:block;">你的请求已发送，请耐心等待对方查看。</text>
+      </block>
+
+      <block wx:elif="{{requestState === 'publisher_viewed_detail'}}">
+        <view class="status-badge status-pending">对方已查看你的详情</view>
+        <text class="text-sm text-muted mt-sm" style="display:block;">对方正在考虑是否批准你的请求。</text>
+      </block>
+
+      <block wx:elif="{{requestState === 'approved_detail_visible'}}">
+        <view class="status-badge status-success">已批准 - 可查看详情</view>
+        <view wx:if="{{revealedDetail}}" class="detail-revealed mt-md">
+          <view class="section-title">详细信息</view>
+          <view wx:if="{{revealedDetail.intro}}" class="detail-block">
+            <text class="form-label">自我介绍</text>
+            <text class="text-sm">{{revealedDetail.intro}}</text>
+          </view>
+          <view wx:if="{{revealedDetail.education}}" class="detail-block">
+            <text class="form-label">教育背景</text>
+            <text class="text-sm">{{revealedDetail.education}}</text>
+          </view>
+          <view wx:if="{{revealedDetail.experience}}" class="detail-block">
+            <text class="form-label">工作经验</text>
+            <text class="text-sm">{{revealedDetail.experience}}</text>
+          </view>
+          <view wx:if="{{revealedDetail.projectDetail}}" class="detail-block">
+            <text class="form-label">项目详情</text>
+            <text class="text-sm">{{revealedDetail.projectDetail}}</text>
+          </view>
+        </view>
+        <button class="btn-primary mt-md" bindtap="requestExchange">请求交换联系方式</button>
+      </block>
+
+      <block wx:elif="{{requestState === 'exchange_reviewing'}}">
+        <view class="status-badge status-pending">联系方式交换审核中</view>
+      </block>
+
+      <block wx:elif="{{requestState === 'contact_exchanged'}}">
+        <view class="status-badge status-success">已交换联系方式</view>
+        <view wx:if="{{contactMethods}}" class="contact-list mt-md">
+          <view wx:for="{{contactMethods}}" wx:key="type" class="contact-item">
+            <text class="form-label">{{item.type}}</text>
+            <text class="text-sm" selectable>{{item.value}}</text>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{requestState === 'rejected'}}">
+        <view class="status-badge status-error">请求已被拒绝</view>
+      </block>
+    </view>
+
+    <!-- 请求列表（发布者视角） -->
+    <view wx:if="{{isOwner && incomingRequests.length > 0}}" class="mt-md">
+      <view class="section-title">收到的请求</view>
+      <view wx:for="{{incomingRequests}}" wx:key="id" class="card">
+        <view class="flex-row flex-between mb-sm">
+          <text class="card-title text-sm">来自：{{item.requesterDisplayName || '匿名用户'}}</text>
+          <view class="status-badge {{item.statusClass}}">{{item.statusText}}</view>
+        </view>
+        <view wx:if="{{item.status === 'pending_request'}}" class="flex-row gap-sm mt-sm">
+          <button class="btn-ghost btn-small" bindtap="viewRequester" data-rid="{{item.id}}">查看详情</button>
+          <button class="btn-primary btn-small" bindtap="approveReq" data-rid="{{item.id}}">批准</button>
+          <button class="btn-danger btn-small" bindtap="rejectReq" data-rid="{{item.id}}">拒绝</button>
+        </view>
+        <view wx:if="{{item.status === 'publisher_viewed_detail'}}" class="flex-row gap-sm mt-sm">
+          <button class="btn-primary btn-small" bindtap="approveReq" data-rid="{{item.id}}">批准</button>
+          <button class="btn-danger btn-small" bindtap="rejectReq" data-rid="{{item.id}}">拒绝</button>
+        </view>
+        <view wx:if="{{item.status === 'approved_detail_visible'}}" class="flex-row gap-sm mt-sm">
+          <button class="btn-primary btn-small" bindtap="doExchange" data-rid="{{item.id}}">交换联系方式</button>
+          <button class="btn-danger btn-small" bindtap="doDecline" data-rid="{{item.id}}">拒绝交换</button>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

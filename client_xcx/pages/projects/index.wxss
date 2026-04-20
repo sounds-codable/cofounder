@@ -1,0 +1,17 @@
+.filter-section {
+  margin-bottom: 24rpx;
+}
+
+.filter-scroll {
+  white-space: nowrap;
+}
+
+.filter-tags {
+  display: inline-flex;
+  gap: 12rpx;
+  padding: 4rpx 0;
+}
+
+.filter-pill {
+  flex-shrink: 0;
+}

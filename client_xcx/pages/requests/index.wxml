@@ -1,0 +1,93 @@
+<view class="container safe-bottom">
+  <view class="page-title">请求中心</view>
+
+  <view wx:if="{{!loggedIn}}" class="empty-state">
+    <text class="empty-icon">🔑</text>
+    <text class="empty-text">请先登录后查看请求</text>
+    <button class="btn-primary mt-md" bindtap="goLogin">去登录</button>
+  </view>
+
+  <block wx:else>
+    <view class="tab-header">
+      <view class="tab-item {{activeTab === 'incoming' ? 'active' : ''}}" bindtap="switchTab" data-tab="incoming">收到的 ({{incomingCount}})</view>
+      <view class="tab-item {{activeTab === 'outgoing' ? 'active' : ''}}" bindtap="switchTab" data-tab="outgoing">发出的 ({{outgoingCount}})</view>
+    </view>
+
+    <view wx:if="{{loading}}" class="loading-wrap">
+      <text class="text-muted">加载中...</text>
+    </view>
+
+    <!-- 收到的请求 -->
+    <block wx:if="{{activeTab === 'incoming' && !loading}}">
+      <view wx:if="{{incoming.length === 0}}" class="empty-state">
+        <text class="empty-icon">📭</text>
+        <text class="empty-text">暂时没有收到请求</text>
+      </view>
+      <view wx:for="{{incoming}}" wx:key="id" class="card">
+        <view class="flex-row flex-between mb-sm">
+          <text class="card-title text-sm">来自：{{item.requesterName || '匿名用户'}}</text>
+          <view class="status-badge {{item.statusClass}}">{{item.statusText}}</view>
+        </view>
+        <view class="request-target" bindtap="goCardDetail" data-card-id="{{item.cardId}}">
+          <text class="text-sm">请求查看「{{item.displayTitle}}」</text>
+          <text wx:if="{{item.cardCity}}" class="text-xs text-muted"> · {{item.cardCity}}</text>
+        </view>
+        <text class="text-xs text-muted mt-sm" style="display:block;">{{item.createdAtText}}</text>
+
+        <view wx:if="{{item.status === 'pending_request'}}" class="flex-row gap-sm mt-md">
+          <button class="btn-ghost btn-small" bindtap="viewRequester" data-rid="{{item.id}}">查看TA的详情</button>
+          <button class="btn-primary btn-small" bindtap="approveReq" data-rid="{{item.id}}">批准</button>
+          <button class="btn-danger btn-small" bindtap="rejectReq" data-rid="{{item.id}}">拒绝</button>
+        </view>
+
+        <view wx:if="{{item.status === 'publisher_viewed_detail'}}" class="flex-row gap-sm mt-md">
+          <button class="btn-primary btn-small" bindtap="approveReq" data-rid="{{item.id}}">批准</button>
+          <button class="btn-danger btn-small" bindtap="rejectReq" data-rid="{{item.id}}">拒绝</button>
+        </view>
+
+        <view wx:if="{{item.status === 'approved_detail_visible'}}" class="flex-row gap-sm mt-md">
+          <button class="btn-primary btn-small" bindtap="doExchange" data-rid="{{item.id}}">交换联系方式</button>
+          <button class="btn-danger btn-small" bindtap="doDecline" data-rid="{{item.id}}">拒绝交换</button>
+        </view>
+
+        <view wx:if="{{item.status === 'contact_exchanged' && item.exchangedContacts.length > 0}}" class="mt-md">
+          <text class="form-label mb-sm" style="display:block;">已交换的联系方式</text>
+          <view wx:for="{{item.exchangedContacts}}" wx:for-item="c" wx:key="type" class="contact-chip">
+            <text class="text-sm text-primary" selectable>{{c.type}}: {{c.value}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 发出的请求 -->
+    <block wx:if="{{activeTab === 'outgoing' && !loading}}">
+      <view wx:if="{{outgoing.length === 0}}" class="empty-state">
+        <text class="empty-icon">📤</text>
+        <text class="empty-text">暂时没有发出请求</text>
+        <text class="text-sm text-muted mt-sm">在项目库或程序员列表中，点击「了解详情」可以发起请求</text>
+      </view>
+      <view wx:for="{{outgoing}}" wx:key="id" class="card">
+        <view class="flex-row flex-between mb-sm">
+          <text class="card-title text-sm">{{item.displayTitle}}</text>
+          <view class="status-badge {{item.statusClass}}">{{item.statusText}}</view>
+        </view>
+        <view class="request-target" bindtap="goCardDetail" data-card-id="{{item.cardId}}">
+          <text wx:if="{{item.cardCity}}" class="text-xs text-muted">📍 {{item.cardCity}}</text>
+          <text wx:if="{{item.publisherName}}" class="text-xs text-muted"> · 发布者：{{item.publisherName}}</text>
+        </view>
+        <text class="text-xs text-muted mt-sm" style="display:block;">{{item.createdAtText}}</text>
+
+        <view class="mt-sm">
+          <text class="text-primary text-xs" bindtap="goCardDetail" data-card-id="{{item.cardId}}">查看卡片详情 →</text>
+        </view>
+
+        <view wx:if="{{item.status === 'contact_exchanged' && item.exchangedContacts.length > 0}}" class="mt-md">
+          <text class="form-label mb-sm" style="display:block;">已交换的联系方式</text>
+          <view wx:for="{{item.exchangedContacts}}" wx:for-item="c" wx:key="type" class="contact-chip">
+            <text class="text-sm text-primary" selectable>{{c.type}}: {{c.value}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+  </block>
+</view>

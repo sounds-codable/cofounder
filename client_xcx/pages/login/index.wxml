@@ -1,0 +1,45 @@
+<view class="login-page">
+  <view class="login-card">
+    <view class="brand-wrap">
+      <view class="brand-mark">
+        <view class="brand-core"></view>
+        <view class="brand-core brand-core-alt"></view>
+        <view class="brand-dot"></view>
+      </view>
+      <view class="brand-text">
+        <text class="brand-name">叩饭 Cofounder</text>
+        <text class="brand-slogan">行业专家 × 程序员，细分应用一起玩</text>
+      </view>
+    </view>
+
+    <view class="login-title">登录 / 注册</view>
+    <view class="login-subtitle">使用邮箱验证码，无需区分身份</view>
+
+    <view wx:if="{{step === 'email'}}" class="form-stack">
+      <view class="form-group">
+        <text class="form-label">邮箱地址</text>
+        <input class="input-field" placeholder="请输入邮箱" type="text" value="{{email}}" bindinput="onEmailInput" placeholder-class="input-field-placeholder" />
+      </view>
+      <view wx:if="{{showInviteCode}}" class="form-group">
+        <text class="form-label">邀请码</text>
+        <input class="input-field" placeholder="请输入邀请码" value="{{inviteCode}}" bindinput="onInviteInput" placeholder-class="input-field-placeholder" />
+      </view>
+      <button class="btn-primary" bindtap="sendCode" disabled="{{sending}}">
+        {{sending ? '发送中...' : '发送验证码'}}
+      </button>
+    </view>
+
+    <view wx:if="{{step === 'code'}}" class="form-stack">
+      <view class="form-group">
+        <text class="form-label">验证码</text>
+        <input class="input-field" placeholder="请输入验证码" type="number" maxlength="6" value="{{code}}" bindinput="onCodeInput" placeholder-class="input-field-placeholder" />
+      </view>
+      <button class="btn-primary" bindtap="verifyCode" disabled="{{verifying}}">
+        {{verifying ? '验证中...' : '登录'}}
+      </button>
+      <button class="btn-ghost" bindtap="backToEmail">返回修改邮箱</button>
+    </view>
+
+    <view wx:if="{{errMsg}}" class="error-text">{{errMsg}}</view>
+  </view>
+</view>

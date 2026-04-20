@@ -1,0 +1,102 @@
+<view class="container safe-bottom">
+  <view wx:if="{{!loggedIn}}" class="empty-state" style="min-height:60vh;">
+    <view class="brand-wrap-center">
+      <view class="brand-mark-lg">
+        <view class="brand-core-lg"></view>
+        <view class="brand-core-lg brand-core-alt-lg"></view>
+        <view class="brand-dot-lg"></view>
+      </view>
+    </view>
+    <text class="page-title" style="text-align:center;">叩饭 Cofounder</text>
+    <text class="empty-text">行业专家 × 程序员，细分应用一起玩</text>
+    <button class="btn-primary mt-md" bindtap="goLogin">登录 / 注册</button>
+  </view>
+
+  <block wx:else>
+    <view class="page-title">我的</view>
+
+    <!-- 用户基本信息 -->
+    <view class="card">
+      <view class="flex-row flex-between">
+        <view>
+          <text class="card-title">{{displayName || '未设置昵称'}}</text>
+          <text class="text-sm text-muted" style="display:block;">{{email}}</text>
+        </view>
+        <view class="avatar-circle">
+          <text>{{avatarLetter}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 我的卡片 -->
+    <view wx:if="{{myCard}}" class="card">
+      <view class="flex-row flex-between mb-sm">
+        <text class="section-title" style="margin-bottom:0;">我的{{myCard.role === 'expert' ? '项目' : '登记'}}</text>
+        <text class="pill pill-role text-xs">{{myCard.role === 'expert' ? '项目方' : '程序员'}}</text>
+      </view>
+      <text class="card-title">{{myCard.headline}}</text>
+      <text class="card-desc">{{myCard.basicSummary}}</text>
+      <view class="flex-row gap-sm mt-md">
+        <button class="btn-ghost btn-small" bindtap="goEditCard">编辑卡片</button>
+        <button class="btn-ghost btn-small" bindtap="goCardDetail">查看详情</button>
+      </view>
+    </view>
+
+    <!-- 昵称设置 -->
+    <view class="card">
+      <text class="section-title">昵称</text>
+      <view class="flex-row gap-sm">
+        <input class="input-field" style="flex:1;" placeholder="设置昵称" value="{{displayNameInput}}" bindinput="onDisplayNameInput" placeholder-class="input-field-placeholder" />
+        <button class="btn-primary btn-small" bindtap="saveDisplayName" disabled="{{savingName}}">保存</button>
+      </view>
+    </view>
+
+    <!-- 联系方式 -->
+    <view class="card">
+      <text class="section-title">联系方式</text>
+      <text class="text-sm text-muted mb-md" style="display:block;">填写后，在交换联系方式时会发送给对方</text>
+
+      <view class="form-group">
+        <text class="form-label">手机</text>
+        <input class="input-field" placeholder="手机号码" value="{{phone}}" bindinput="onContactInput" data-field="phone" placeholder-class="input-field-placeholder" />
+      </view>
+      <view class="form-group">
+        <text class="form-label">微信</text>
+        <input class="input-field" placeholder="微信号" value="{{wechat}}" bindinput="onContactInput" data-field="wechat" placeholder-class="input-field-placeholder" />
+      </view>
+      <view class="form-group">
+        <text class="form-label">QQ</text>
+        <input class="input-field" placeholder="QQ号" value="{{qq}}" bindinput="onContactInput" data-field="qq" placeholder-class="input-field-placeholder" />
+      </view>
+      <view class="form-group">
+        <text class="form-label">邮箱</text>
+        <input class="input-field" placeholder="联系邮箱" value="{{contactEmail}}" bindinput="onContactInput" data-field="contactEmail" placeholder-class="input-field-placeholder" />
+      </view>
+      <view class="form-group">
+        <text class="form-label">其他</text>
+        <input class="input-field" placeholder="其他联系方式" value="{{other}}" bindinput="onContactInput" data-field="other" placeholder-class="input-field-placeholder" />
+      </view>
+
+      <button class="btn-primary" bindtap="saveContacts" disabled="{{savingContacts}}">
+        {{savingContacts ? '保存中...' : '保存联系方式'}}
+      </button>
+    </view>
+
+    <!-- 详细资料 -->
+    <view class="card">
+      <view class="flex-row flex-between">
+        <text class="section-title" style="margin-bottom:0;">详细资料</text>
+        <text class="pill text-xs {{hasDetailProfile ? 'status-success' : 'status-pending'}}">{{hasDetailProfile ? '已填写' : '未填写'}}</text>
+      </view>
+      <text class="text-sm text-muted mt-sm" style="display:block;">在发起「了解详情」请求时需要填写，填写后自动回填。</text>
+      <button class="btn-ghost btn-small mt-md" bindtap="goDetailProfile">{{hasDetailProfile ? '编辑详细资料' : '去填写'}}</button>
+    </view>
+
+    <!-- 退出登录 -->
+    <view class="mt-md" style="text-align:center;">
+      <button class="btn-ghost" bindtap="logout">退出登录</button>
+    </view>
+
+    <view style="height:40rpx;"></view>
+  </block>
+</view>

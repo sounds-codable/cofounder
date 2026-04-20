@@ -1,0 +1,36 @@
+<view class="container safe-bottom">
+  <view class="page-title">完善详细资料</view>
+  <view class="page-subtitle">这些信息仅在对方批准你的「了解详情」请求后可见，不会公开展示。</view>
+
+  <view wx:if="{{loading}}" class="loading-wrap">
+    <text class="text-muted">加载中...</text>
+  </view>
+
+  <view wx:else class="card">
+    <view class="form-group">
+      <text class="form-label">自我介绍</text>
+      <textarea class="textarea-field" placeholder="简要介绍自己的背景和专业方向..." value="{{intro}}" bindinput="onInput" data-field="intro" placeholder-class="input-field-placeholder" maxlength="1000"></textarea>
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">教育背景</text>
+      <textarea class="textarea-field" placeholder="学历和学校信息..." value="{{education}}" bindinput="onInput" data-field="education" placeholder-class="input-field-placeholder" maxlength="500"></textarea>
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">工作经验</text>
+      <textarea class="textarea-field" placeholder="工作经历和行业经验..." value="{{experience}}" bindinput="onInput" data-field="experience" placeholder-class="input-field-placeholder" maxlength="1000"></textarea>
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">{{role === 'developer' ? '项目经验 / 技术项目' : '项目详情'}}</text>
+      <textarea class="textarea-field" placeholder="{{role === 'developer' ? '描述你参与过的项目和技术栈...' : '更详细地描述项目需求和计划...'}}" value="{{projectDetail}}" bindinput="onInput" data-field="projectDetail" placeholder-class="input-field-placeholder" maxlength="2000"></textarea>
+    </view>
+
+    <view wx:if="{{errMsg}}" class="error-text mb-md">{{errMsg}}</view>
+
+    <button class="btn-primary" bindtap="submit" disabled="{{submitting}}">
+      {{submitting ? '保存中...' : '保存详细资料'}}
+    </button>
+  </view>
+</view>

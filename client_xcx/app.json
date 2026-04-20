@@ -1,0 +1,54 @@
+{
+  "pages": [
+    "pages/projects/index",
+    "pages/developers/index",
+    "pages/requests/index",
+    "pages/profile/index",
+    "pages/login/index",
+    "pages/card-detail/index",
+    "pages/publish/index",
+    "pages/detail-profile/index"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#f4f8ff",
+    "navigationBarTitleText": "叩饭 Cofounder",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#edf7ff"
+  },
+  "tabBar": {
+    "color": "#597693",
+    "selectedColor": "#13bfa8",
+    "backgroundColor": "#f4f8ff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/projects/index",
+        "text": "项目库",
+        "iconPath": "assets/tab-projects.png",
+        "selectedIconPath": "assets/tab-projects-active.png"
+      },
+      {
+        "pagePath": "pages/developers/index",
+        "text": "程序员",
+        "iconPath": "assets/tab-developers.png",
+        "selectedIconPath": "assets/tab-developers-active.png"
+      },
+      {
+        "pagePath": "pages/requests/index",
+        "text": "请求中心",
+        "iconPath": "assets/tab-requests.png",
+        "selectedIconPath": "assets/tab-requests-active.png"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "assets/tab-profile.png",
+        "selectedIconPath": "assets/tab-profile-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}
