@@ -326,8 +326,8 @@ esac
 
 log "Current layout: $CURRENT_DIR/{server,client} are symlinks to release content"
 
-log "Keeping last 5 releases"
-ls -1dt "$RELEASES_DIR"/* 2>/dev/null | tail -n +6 | xargs -r rm -rf
+log "Keeping last 2 releases"
+ls -1dt "$RELEASES_DIR"/* 2>/dev/null | tail -n +3 | xargs -r rm -rf
 
 log "Done"
 EOSSH
