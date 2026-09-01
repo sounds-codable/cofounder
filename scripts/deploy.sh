@@ -22,7 +22,7 @@ fi
 DEPLOY_HOST="${DEPLOY_HOST:-}"
 DEPLOY_USER="${DEPLOY_USER:-}"
 GIT_URL="${GIT_URL:-}"
-FRONTEND_NODE_BIN="${FRONTEND_NODE_BIN:-/home/deployer/.nvm/versions/node/v20.20.1/bin}"
+FRONTEND_NODE_BIN="${FRONTEND_NODE_BIN:-/usr/bin}"
 if [[ -z "$DEPLOY_HOST" || -z "$DEPLOY_USER" ]]; then
   echo "ERROR: Missing DEPLOY_HOST / DEPLOY_USER. Put them in project root .env" >&2
   exit 1
@@ -70,7 +70,7 @@ check_moderation_lexicon_freshness() {
   lexicon_dir="$PROJECT_ROOT/server/src/config/content-moderation-lexicon/upstream"
 
   if [[ ! -d "$lexicon_dir" ]]; then
-    die "Missing lexicon dir: $lexicon_dir\n请先执行：\n  cd server\n  npm run moderation:sync-lexicon"
+    die "Missing lexicon dir: $lexicon_dir\n请先执行：\n  cd server\n  corepack pnpm moderation:sync-lexicon"
   fi
 
   local latest_mtime=0
@@ -88,7 +88,7 @@ check_moderation_lexicon_freshness() {
   done
 
   if (( latest_mtime == 0 )); then
-    die "No lexicon txt found in $lexicon_dir\n请先执行：\n  cd server\n  npm run moderation:sync-lexicon"
+    die "No lexicon txt found in $lexicon_dir\n请先执行：\n  cd server\n  corepack pnpm moderation:sync-lexicon"
   fi
 
   local now
@@ -98,7 +98,7 @@ check_moderation_lexicon_freshness() {
 
   if (( age_seconds > max_age_seconds )); then
     local age_days=$((age_seconds / 86400))
-    die "内容风控词库已超过30天未更新（最新文件：$latest_file，约 ${age_days} 天前）。\n请先执行以下命令后再部署：\n  cd server\n  npm run moderation:sync-lexicon"
+    die "内容风控词库已超过30天未更新（最新文件：${latest_file}，约 ${age_days} 天前）。\n请先执行以下命令后再部署：\n  cd server\n  corepack pnpm moderation:sync-lexicon"
   fi
 }
 
@@ -112,8 +112,8 @@ log "Deploy target: $SSH_TARGET"
 
 if [[ "$MODE" == "backend" || "$MODE" == "all" ]]; then
   log "Building backend locally"
-  (cd "$PROJECT_ROOT/server" && npm ci)
-  (cd "$PROJECT_ROOT/server" && npm run build)
+  (cd "$PROJECT_ROOT/server" && corepack pnpm install --frozen-lockfile)
+  (cd "$PROJECT_ROOT/server" && corepack pnpm build)
 
   if [[ ! -d "$LOCAL_BACKEND_DIST" ]]; then
     die "Local backend dist not found at $LOCAL_BACKEND_DIST"
@@ -132,9 +132,10 @@ upload_backend() {
 
   # package files (dependencies will be installed on server)
   rsync -az -e ssh "$PROJECT_ROOT/server/package.json" "$SSH_TARGET:$remote_server_dir/package.json"
-  if [[ -f "$PROJECT_ROOT/server/package-lock.json" ]]; then
-    rsync -az -e ssh "$PROJECT_ROOT/server/package-lock.json" "$SSH_TARGET:$remote_server_dir/package-lock.json"
-  fi
+  [[ -f "$PROJECT_ROOT/server/pnpm-lock.yaml" ]] || die "Missing $PROJECT_ROOT/server/pnpm-lock.yaml"
+  [[ -f "$PROJECT_ROOT/server/pnpm-workspace.yaml" ]] || die "Missing $PROJECT_ROOT/server/pnpm-workspace.yaml"
+  rsync -az -e ssh "$PROJECT_ROOT/server/pnpm-lock.yaml" "$SSH_TARGET:$remote_server_dir/pnpm-lock.yaml"
+  rsync -az -e ssh "$PROJECT_ROOT/server/pnpm-workspace.yaml" "$SSH_TARGET:$remote_server_dir/pnpm-workspace.yaml"
 
   # .env symlink will be created on remote
 }
@@ -143,7 +144,24 @@ if [[ "$MODE" == "backend" || "$MODE" == "all" ]]; then
   upload_backend
 fi
 
-ssh -T "$SSH_TARGET" env APP_ROOT="$APP_ROOT" BRANCH="$BRANCH" MODE="$MODE" GIT_URL="$GIT_URL" RELEASE_ID="$RELEASE_ID" FRONTEND_NODE_BIN="$FRONTEND_NODE_BIN" bash -s <<'EOSSH'
+upload_frontend() {
+  local remote_client_dir
+  remote_client_dir="$APP_ROOT/releases/$RELEASE_ID/client"
+
+  log "Uploading frontend source to $SSH_TARGET:$remote_client_dir"
+  ssh -T "$SSH_TARGET" "mkdir -p '$remote_client_dir'"
+  rsync -az --delete -e ssh \
+    --exclude node_modules \
+    --exclude .next \
+    "$PROJECT_ROOT/client/" "$SSH_TARGET:$remote_client_dir/"
+}
+
+if [[ "$MODE" == "frontend" || "$MODE" == "all" ]]; then
+  upload_frontend
+fi
+
+ssh -T -o ServerAliveInterval=15 -o ServerAliveCountMax=4 "$SSH_TARGET" \
+  env APP_ROOT="$APP_ROOT" BRANCH="$BRANCH" MODE="$MODE" GIT_URL="$GIT_URL" RELEASE_ID="$RELEASE_ID" FRONTEND_NODE_BIN="$FRONTEND_NODE_BIN" bash -s <<'EOSSH'
 set -euo pipefail
 
 MODE="${MODE:-all}"
@@ -155,7 +173,7 @@ CURRENT_DIR="$APP_ROOT/current"
 RELEASES_DIR="$APP_ROOT/releases"
 RELEASE_ID="${RELEASE_ID:-$(date +%Y%m%d%H%M%S)}"
 RELEASE_DIR="$RELEASES_DIR/$RELEASE_ID"
-FRONTEND_NODE_BIN="${FRONTEND_NODE_BIN:-/home/deployer/.nvm/versions/node/v20.20.1/bin}"
+FRONTEND_NODE_BIN="${FRONTEND_NODE_BIN:-/usr/bin}"
 
 GIT_URL="${GIT_URL:-}"
 if [[ -z "$GIT_URL" && -f "$SHARED_DIR/server/.env" ]]; then
@@ -172,29 +190,33 @@ die() {
   exit 1
 }
 
+pnpm_install_shared() {
+  local project_dir=$1
+  shift
+  sudo env PNPM_SHARED_STORE_DIR="${PNPM_SHARED_STORE_DIR:-/root/.local/share/pnpm/store}" \
+    flock -x /run/lock/xixisys-pnpm-store.lock bash -c '
+      set -Eeuo pipefail
+      project_dir=$1
+      shift
+      shared_store=$PNPM_SHARED_STORE_DIR
+      [[ $shared_store == /* ]] || { echo "PNPM_SHARED_STORE_DIR 必须是绝对路径。" >&2; exit 1; }
+      install -d -o root -g root -m 0755 "$shared_store"
+      cd "$project_dir"
+      echo "使用全服务器共享 pnpm store：$shared_store"
+      if ! corepack pnpm install "$@" --frozen-lockfile --offline \
+        --store-dir "$shared_store" --package-import-method=hardlink; then
+        echo "共享 store 尚缺少部分依赖，联网补齐后继续；已存在的包不会重复下载。"
+        corepack pnpm install "$@" --frozen-lockfile \
+          --store-dir "$shared_store" --package-import-method=hardlink
+      fi
+    ' _ "$project_dir" "$@"
+}
+
 if [[ "$MODE" != "frontend" && "$MODE" != "backend" && "$MODE" != "all" ]]; then
   die "Usage: deploy.sh [frontend|backend|all]"
 fi
 
 mkdir -p "$SHARED_DIR/server" "$SHARED_DIR/logs" "$RELEASES_DIR"
-
-if [[ ! -d "$REPO_DIR/.git" ]]; then
-  if [[ -n "$GIT_URL" ]]; then
-    log "Repo not initialized. Cloning $GIT_URL into $REPO_DIR"
-    if [[ -n "$(ls -A "$REPO_DIR" 2>/dev/null || true)" ]]; then
-      die "$REPO_DIR is not empty but not a git repo. Please clean it up manually."
-    fi
-    mkdir -p "$REPO_DIR"
-    git clone "$GIT_URL" "$REPO_DIR"
-  else
-    die "Repo not found at $REPO_DIR. Set GIT_URL env on server (or initialize repo manually)."
-  fi
-fi
-
-log "Updating repo ($BRANCH)"
-git -C "$REPO_DIR" fetch --all --prune
-git -C "$REPO_DIR" checkout "$BRANCH"
-git -C "$REPO_DIR" reset --hard "origin/$BRANCH"
 
 deploy_backend() {
   log "Deploying backend (remote receives build artifacts from local)"
@@ -210,9 +232,12 @@ deploy_backend() {
   if [[ ! -f "$RELEASE_DIR/server/package.json" ]]; then
     die "Missing $RELEASE_DIR/server/package.json on server. Upload step may have failed."
   fi
+  if [[ ! -f "$RELEASE_DIR/server/pnpm-workspace.yaml" ]]; then
+    die "Missing $RELEASE_DIR/server/pnpm-workspace.yaml on server. Upload step may have failed."
+  fi
 
-  log "Installing backend dependencies (release)"
-  (cd "$RELEASE_DIR/server" && npm ci)
+  log "Installing backend dependencies from the server-wide pnpm store"
+  pnpm_install_shared "$RELEASE_DIR/server" --prod
 
   # env symlink
   rm -f "$RELEASE_DIR/server/.env"
@@ -236,16 +261,8 @@ deploy_backend() {
 deploy_frontend() {
   log "Deploying frontend (build on server for Next runtime)"
 
-  if [[ ! -f "$REPO_DIR/client/package.json" ]]; then
-    die "Missing $REPO_DIR/client/package.json"
-  fi
-
-  log "Syncing frontend source from repo to release"
-  mkdir -p "$RELEASE_DIR/client"
-  rsync -a --delete \
-    --exclude node_modules \
-    --exclude .next \
-    "$REPO_DIR/client/" "$RELEASE_DIR/client/"
+  [[ -f "$RELEASE_DIR/client/package.json" ]] || die "Missing uploaded $RELEASE_DIR/client/package.json"
+  [[ -f "$RELEASE_DIR/client/pnpm-lock.yaml" ]] || die "Missing $RELEASE_DIR/client/pnpm-lock.yaml"
 
   if [[ ! -x "$FRONTEND_NODE_BIN/node" || ! -x "$FRONTEND_NODE_BIN/npm" ]]; then
     die "Missing Node/NPM in FRONTEND_NODE_BIN=$FRONTEND_NODE_BIN，请先安装 Node >= 20.9 并在部署环境变量里配置 FRONTEND_NODE_BIN"
@@ -254,11 +271,8 @@ deploy_frontend() {
   log "Using frontend runtime: $FRONTEND_NODE_BIN/node"
   "$FRONTEND_NODE_BIN/node" -v
 
-  log "Installing frontend dependencies (release, include optional deps)"
-  (
-    cd "$RELEASE_DIR/client" && \
-    PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" ci --include=optional
-  )
+  log "Installing frontend dependencies from the server-wide pnpm store"
+  pnpm_install_shared "$RELEASE_DIR/client"
 
   local libc_flavor
   libc_flavor="$($FRONTEND_NODE_BIN/node -e "
@@ -280,14 +294,6 @@ deploy_frontend() {
   fi
 
   log "Detected libc flavor: $libc_flavor"
-  log "Installing native fallback packages for $libc_flavor (lightningcss + oxide)"
-  (
-    cd "$RELEASE_DIR/client" && \
-    PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" install --no-save \
-      "lightningcss-linux-x64-$libc_flavor" \
-      "@tailwindcss/oxide-linux-x64-$libc_flavor"
-  )
-
   log "Verifying native bindings (lightningcss + oxide)"
   (
     cd "$RELEASE_DIR/client" && \
@@ -295,7 +301,7 @@ deploy_frontend() {
   )
 
   log "Building frontend (Next production build)"
-  (cd "$RELEASE_DIR/client" && PATH="$FRONTEND_NODE_BIN:$PATH" "$FRONTEND_NODE_BIN/npm" run build)
+  (cd "$RELEASE_DIR/client" && PATH="$FRONTEND_NODE_BIN:$PATH" corepack pnpm build)
 
   log "Updating current/client -> $RELEASE_DIR/client (do not touch current/server)"
   mkdir -p "$CURRENT_DIR"
@@ -326,8 +332,28 @@ esac
 
 log "Current layout: $CURRENT_DIR/{server,client} are symlinks to release content"
 
-log "Keeping last 2 releases"
-ls -1dt "$RELEASES_DIR"/* 2>/dev/null | tail -n +3 | xargs -r rm -rf
+log "Keeping current component releases plus the 2 newest rollback releases"
+current_client_target="$(readlink -f "$CURRENT_DIR/client" 2>/dev/null || true)"
+current_server_target="$(readlink -f "$CURRENT_DIR/server" 2>/dev/null || true)"
+current_client_release="${current_client_target:+$(dirname "$current_client_target")}"
+current_server_release="${current_server_target:+$(dirname "$current_server_target")}"
+rollback_releases_kept=0
+mapfile -t release_dirs < <(
+  find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' |
+    sort -rn |
+    cut -d' ' -f2-
+)
+for old_release in "${release_dirs[@]}"; do
+  [[ $old_release == "$RELEASES_DIR/"* ]] || die "Invalid release cleanup target: $old_release"
+  if [[ $old_release == "$current_client_release" || $old_release == "$current_server_release" ]]; then
+    continue
+  fi
+  if (( rollback_releases_kept < 2 )); then
+    ((rollback_releases_kept += 1))
+    continue
+  fi
+  sudo rm -rf -- "$old_release"
+done
 
 log "Done"
 EOSSH

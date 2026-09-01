@@ -2,6 +2,7 @@
   "name": "cofounder-server",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.17.0",
   "description": "叩饭（Cofounder）NestJS v11 后端",
   "scripts": {
     "build": "nest build",
@@ -27,6 +28,7 @@
     "bad-words": "^4.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "express": "^5.2.1",
     "fastscan": "^1.0.6",
     "nodemailer": "^8.0.4",
     "pg": "^8.16.3",

@@ -1,1 +1,0 @@
-"use strict";(wx["webpackJsonp"]=wx["webpackJsonp"]||[]).push([[604],{2320:function(e,n,o){var r=o(8870),a=o(8102),c=a.A,s={},t=(0,r.eU)(c,"pages/welcome",{root:{cn:[]}},s||{});c&&c.behaviors&&(t.behaviors=(t.behaviors||[]).concat(c.behaviors));Page(t)}},function(e){var n=function(n){return e(e.s=n)};e.O(0,[907,96,76],function(){return n(2320)});e.O()}]);

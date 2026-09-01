@@ -1,1 +1,0 @@
-{"version":3,"file":"update-request.dto.js","sourceRoot":"","sources":["../../../src/requests/dto/update-request.dto.ts"],"names":[],"mappings":";;;;;;;;;;;;AAAA,qDAAqD;AACrD,+DAA2D;AAE3D,MAAa,sBAAsB;IAGjC,MAAM,CAAgB;CACvB;AAJD,wDAIC;AADC;IAFC,IAAA,wBAAM,EAAC,8BAAa,EAAE,EAAE,OAAO,EAAE,OAAO,EAAE,CAAC;IAC3C,IAAA,4BAAU,EAAC,EAAE,OAAO,EAAE,QAAQ,EAAE,CAAC;;sDACZ"}
