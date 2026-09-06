@@ -332,11 +332,22 @@ esac
 
 log "Current layout: $CURRENT_DIR/{server,client} are symlinks to release content"
 
-log "Keeping current component releases plus the 2 newest rollback releases"
+log "Keeping at most 2 releases in total (current component releases plus rollback)"
 current_client_target="$(readlink -f "$CURRENT_DIR/client" 2>/dev/null || true)"
 current_server_target="$(readlink -f "$CURRENT_DIR/server" 2>/dev/null || true)"
 current_client_release="${current_client_target:+$(dirname "$current_client_target")}"
 current_server_release="${current_server_target:+$(dirname "$current_server_target")}"
+current_releases_kept=0
+if [[ -n $current_client_release ]]; then
+  ((current_releases_kept += 1))
+fi
+if [[ -n $current_server_release && $current_server_release != "$current_client_release" ]]; then
+  ((current_releases_kept += 1))
+fi
+rollback_releases_limit=$((2 - current_releases_kept))
+if (( rollback_releases_limit < 0 )); then
+  rollback_releases_limit=0
+fi
 rollback_releases_kept=0
 mapfile -t release_dirs < <(
   find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' |
@@ -348,7 +359,7 @@ for old_release in "${release_dirs[@]}"; do
   if [[ $old_release == "$current_client_release" || $old_release == "$current_server_release" ]]; then
     continue
   fi
-  if (( rollback_releases_kept < 2 )); then
+  if (( rollback_releases_kept < rollback_releases_limit )); then
     ((rollback_releases_kept += 1))
     continue
   fi
