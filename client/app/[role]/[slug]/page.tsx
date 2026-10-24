@@ -5,18 +5,8 @@ import { buildCardPathFromCard, normalizeCardPublicCode } from '@/lib/card-url';
 import { getStaticCards } from '@/lib/card-route-data';
 import { buildPageMetadata, getBreadcrumbListJsonLd, getCardDescription, getCardKeywords, getCardProfileJsonLd, getCardWebPageJsonLd, stringifyJsonLd } from '@/lib/seo';
 
-export async function generateStaticParams() {
-  const cards = await getStaticCards();
-
-  return cards.map((card) => {
-    const path = buildCardPathFromCard(card);
-    const segments = path.split('/').filter(Boolean);
-    return {
-      role: segments[0],
-      slug: segments[1],
-    };
-  });
-}
+// 卡片数据在服务端实时读取，独立构建时不连接生产数据库。
+export const dynamic = 'force-dynamic';
 
 type CardDetailPageProps = {
   params: Promise<{

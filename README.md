@@ -24,7 +24,7 @@
  - 旧版 `client/`、`server/` 已移入 `archive/`
  - 新版前端已切换为 `Next.js v16`
  - 新版后端已切换为全新的 `NestJS v11` 骨架
- - 部署入口仍然保留：`scripts/` 与 `docs/deployment.md`
+ - 部署入口仍然保留：`scripts/` 与 `docs/deployment/deployment.md`
 
 ## 当前目录结构
 
@@ -151,16 +151,9 @@ npm run dev --prefix client
 
 ## 部署
 
-当前部署方式保持不变，继续使用：
-
- - `scripts/deploy.sh`
- - `docs/deployment.md`
-
-新前端虽然改成了 Next.js，但仍会在构建后整理产物到：
-
- - `client/dist/`
-
-因此 Nginx 静态托管方式可以继续沿用。
+首次安装执行 `pnpm server:install us`，日常完整发布执行 `pnpm server:deploy us`。
+区域参数为 `china / us / all`；`all` 按 China → US 执行，不再支持 frontend/backend。
+Next.js 使用 Node 动态服务，由 Nginx 反向代理。详细配置与迁移步骤见 [部署文档](docs/deployment/deployment.md)。
 
 ## 小程序发布（与网页端并行）
 

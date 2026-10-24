@@ -3,7 +3,7 @@ import { fallbackPublicCards, type PublicCard } from '@/lib/site-data';
 export type CardRouteItem = Pick<PublicCard, 'id' | 'role' | 'headline' | 'updatedAt' | 'titleSlug' | 'city' | 'basicSummary' | 'strengths'>;
 
 function getCardApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3010/api';
+  return process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3010/api';
 }
 
 export async function getStaticCards(): Promise<CardRouteItem[]> {

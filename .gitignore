@@ -47,3 +47,6 @@ temp/
 # Old folders
 backend/
 
+
+# 部署私有配置
+.deploy.env

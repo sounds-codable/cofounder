@@ -6,6 +6,7 @@ export class HealthController {
   getHealth() {
     return {
       ok: true,
+      service: 'cofounder-server',
       timestamp: new Date().toISOString(),
     };
   }

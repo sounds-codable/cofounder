@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { CardDetailClient } from '@/components/card-detail-client';
-import { buildCardPathFromCard, compactCardPublicCode, normalizeCardPublicCode } from '@/lib/card-url';
+import { buildCardPathFromCard, normalizeCardPublicCode } from '@/lib/card-url';
 import { getStaticCards } from '@/lib/card-route-data';
 import { buildPageMetadata, getBreadcrumbListJsonLd, getCardDescription, getCardKeywords, getCardProfileJsonLd, getCardWebPageJsonLd, stringifyJsonLd } from '@/lib/seo';
 
@@ -11,11 +11,8 @@ type ShareCardPageProps = {
   }>;
 };
 
-export async function generateStaticParams() {
-  const cards = await getStaticCards();
-
-  return cards.map((card) => ({ role: compactCardPublicCode(card.id) }));
-}
+// 卡片数据在服务端实时读取，独立构建时不连接生产数据库。
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: ShareCardPageProps): Promise<Metadata> {
   const { role } = await params;

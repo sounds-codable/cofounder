@@ -539,7 +539,7 @@ function getDefaultApiBaseUrl() {
     return '/api';
   }
 
-  return 'http://localhost:3010/api';
+  return process.env.API_INTERNAL_URL || 'http://localhost:3010/api';
 }
 
 function getApiBaseUrl() {

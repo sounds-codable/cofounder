@@ -3,9 +3,19 @@
     "miniapp:dev": "echo '新版小程序 client_xcx/ 为微信原生项目，请用微信开发者工具直接导入 client_xcx/ 目录'",
     "miniapp:old:install": "npm install --prefix archive/client",
     "miniapp:old:dev": "TARO_APP_API_BASE=https://cofounder.icu npm run dev:weapp --prefix archive/client",
-    "miniapp:old:build": "TARO_APP_API_BASE=https://cofounder.icu npm run build:weapp --prefix archive/client"
+    "miniapp:old:build": "TARO_APP_API_BASE=https://cofounder.icu npm run build:weapp --prefix archive/client",
+    "server:install": "bash scripts/install-remote.sh",
+    "server:deploy": "bash scripts/deploy-remote.sh",
+    "server:ports": "python3 scripts/server-port-audit.py",
+    "server:migrate": "node scripts/migrate-remote.mjs",
+    "release:build": "bash scripts/build-release.sh",
+    "test:deploy": "node --test tests/deployment.mjs",
+    "dev": "node scripts/dev.mjs"
   },
   "devDependencies": {
     "baseline-browser-mapping": "^2.10.18"
-  }
+  },
+  "name": "cofounder",
+  "private": true,
+  "packageManager": "pnpm@11.17.0"
 }
