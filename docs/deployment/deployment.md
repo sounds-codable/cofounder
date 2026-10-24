@@ -72,3 +72,28 @@ ssh deployer@170.106.81.213 'sudo systemctl is-active pm2-cofounder; sudo system
 ```
 
 `www.cofounder.icu` 若仍解析到 China，会继续由 China 的有效证书站点跳转到主域名。若将 www 也改到 US，应为 US 扩充包含 www 的证书与 Nginx server_name。
+
+## 按区域卸载项目
+
+卸载入口参考 zhenzhuo 项目的原生卸载脚本，兼容 China 旧 Supervisor 安装及 US 原生 PM2 安装。必须显式指定 `china` 或 `us`，不接受 `all`，不使用 `DEPLOY_TARGET` 默认值。
+
+```bash
+# 只读预览 China 的资源及删除范围
+pnpm server:uninstall china
+
+# 一键卸载 China，执行后自动逐项验收
+pnpm server:uninstall china --execute --yes
+
+# 此后可随时单独复查 China；存在残留则返回非零退出码
+pnpm server:uninstall china --check
+```
+
+去掉 `--yes` 会要求输入 `cofounder/china` 确认。US 是独立目标，只有显式指定 `us --execute` 才会执行 US 删除。执行前只读比较两端 SSH 地址解析结果及 `/etc/machine-id`，阻止两个区域实际落在同一台机器；因此需要两端 SSH 可连接和现有 sudo 权限。上传和清理仅发生在选定服务器上。
+
+删除范围包括项目发布目录、生产配置、日志、该服务器的迁移备份与临时发布包；本机专属 PostgreSQL 数据库与角色；Supervisor/PM2 自启配置；项目 Nginx 站点及已识别旧配置备份；项目独占 TLS 证书及续期配置。保留共享 Node、PostgreSQL、Nginx、Supervisor、deployer 账号和其它项目。共享证书或未知配置引用会报告待处理，不会宣称清理干净。
+
+执行过程中显示核对、停止、删除、通过、待处理等详细信息，同时将输出保存到本机临时目录中的 `cofounder-uninstall-log-*/<区域>.log`。退出码 `0` 为预览完成或已知本机资源验收通过；`1` 为失败；`2` 为发现残留。清理失败时会尝试列出残留。验收包括文件、数据库与角色、服务自启、进程、历史应用端口、证书和额外配置引用。保留 `/var/log/cofounder-uninstall/<区域>.json` 非敏感记录及 `/run/lock/cofounder-uninstall.lock`，支持删除应用配置后复查及防止并发执行。
+
+**当前 China 的 Nginx 仍为 US 提供转发和 www 跳转。卸载 China 将移除这些入口；请将仍指向 China 的 `www.cofounder.icu` DNS 迁至 US，并在 US 配置对应证书与站点。** DNS、外部平台配置、异机备份和未登记自定义路径不属于本机卸载范围。
+
+本地验证：`pnpm test:uninstall`（临时文件系统与模拟服务，无真实删除），以及 `pnpm test:deploy`。

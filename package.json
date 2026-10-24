@@ -10,7 +10,9 @@
     "server:migrate": "node scripts/migrate-remote.mjs",
     "release:build": "bash scripts/build-release.sh",
     "test:deploy": "node --test tests/deployment.mjs",
-    "dev": "node scripts/dev.mjs"
+    "dev": "node scripts/dev.mjs",
+    "server:uninstall": "node scripts/uninstall-remote.mjs",
+    "test:uninstall": "node --test tests/uninstall.mjs && python3 -B -m unittest discover -s tests -p test_uninstall.py"
   },
   "devDependencies": {
     "baseline-browser-mapping": "^2.10.18"
